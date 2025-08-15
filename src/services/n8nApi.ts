@@ -2,8 +2,8 @@ import axios from 'axios';
 import { Agent, AgentExecution, CreateAgentInput, UpdateAgentInput } from '@/types/agent';
 
 // Configuración de la API de n8n
-const N8N_API_URL = process.env.VITE_N8N_API_URL || 'http://localhost:5678/api/v1';
-const N8N_API_TOKEN = process.env.VITE_N8N_API_TOKEN || '';
+const N8N_API_URL = import.meta.env.VITE_N8N_API_URL || 'http://localhost:5678/api/v1';
+const N8N_API_TOKEN = import.meta.env.VITE_N8N_API_TOKEN || '';
 
 const api = axios.create({
   baseURL: N8N_API_URL,
