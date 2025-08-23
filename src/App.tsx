@@ -6,6 +6,7 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { EmailVerification } from "@/components/auth/EmailVerification";
 import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
@@ -34,6 +35,10 @@ const App = () => {
           <Routes>
             {/* Ruta de autenticación */}
             <Route path="/login" element={<AuthPage />} />
+            <Route path="/auth" element={<AuthPage />} />
+            
+            {/* Ruta de verificación de email */}
+            <Route path="/verify-email" element={<EmailVerification />} />
             
             {/* Rutas protegidas */}
             <Route

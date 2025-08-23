@@ -1,5 +1,13 @@
 import axios from 'axios';
-import { LoginRequest, SignupRequest, JwtResponse } from '@/types/auth';
+import { 
+  LoginRequest, 
+  SignupRequest, 
+  JwtResponse, 
+  SignupResponse,
+  EmailVerificationRequest,
+  EmailVerificationResponse,
+  ResendVerificationRequest
+} from '@/types/auth';
 
 // En desarrollo usar el proxy, en producción la URL completa
 const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api';
@@ -95,9 +103,15 @@ export const authService = {
           case 401:
             throw new Error('Usuario o contraseña incorrectos');
           case 403:
+            // Verificar si es por email no verificado
+            if (message?.includes('email') || message?.includes('verificar') || message?.includes('verify')) {
+              throw new Error('Debe verificar su email antes de iniciar sesión');
+            }
             throw new Error('Acceso denegado. Verifique sus credenciales');
           case 404:
             throw new Error('Usuario no encontrado');
+          case 423:
+            throw new Error('Cuenta bloqueada. Verifique su email para activarla');
           case 500:
             throw new Error('Error del servidor. Intente más tarde');
           default:
@@ -112,9 +126,9 @@ export const authService = {
   },
 
   // Registro
-  async signup(data: SignupRequest): Promise<{ message: string }> {
+  async signup(data: SignupRequest): Promise<SignupResponse> {
     try {
-      const response = await api.post<{ message: string }>('/auth/signup', data);
+      const response = await api.post<SignupResponse>('/auth/signup', data);
       return response.data;
     } catch (error: unknown) {
       console.error('❌ AuthService: Error en signup:', error);
@@ -128,7 +142,7 @@ export const authService = {
           case 400:
             throw new Error(message || 'Datos de registro inválidos');
           case 409:
-            throw new Error('El usuario ya existe');
+            throw new Error('El usuario o email ya existe');
           case 500:
             throw new Error('Error del servidor. Intente más tarde');
           default:
@@ -139,6 +153,60 @@ export const authService = {
       } else {
         throw new Error('Error al procesar la solicitud de registro');
       }
+    }
+  },
+
+  // Verificar email con token
+  async verifyEmail(token: string): Promise<EmailVerificationResponse> {
+    try {
+      const response = await api.post<EmailVerificationResponse>('/auth/verify-email', { token });
+      return response.data;
+    } catch (error: unknown) {
+      console.error('❌ AuthService: Error en verificación de email:', error);
+      
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message;
+        
+        switch (status) {
+          case 400:
+            throw new Error('Token de verificación inválido o expirado');
+          case 404:
+            throw new Error('Token de verificación no encontrado');
+          case 410:
+            throw new Error('El token de verificación ha expirado');
+          default:
+            throw new Error(message || 'Error al verificar el email');
+        }
+      }
+      throw new Error('Error al procesar la verificación');
+    }
+  },
+
+  // Reenviar email de verificación
+  async resendVerificationEmail(email: string): Promise<{ message: string }> {
+    try {
+      const response = await api.post<{ message: string }>('/auth/resend-verification', { email });
+      return response.data;
+    } catch (error: unknown) {
+      console.error('❌ AuthService: Error al reenviar verificación:', error);
+      
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message;
+        
+        switch (status) {
+          case 400:
+            throw new Error('Email no válido');
+          case 404:
+            throw new Error('Usuario no encontrado');
+          case 429:
+            throw new Error('Demasiadas solicitudes. Espere antes de intentar nuevamente');
+          default:
+            throw new Error(message || 'Error al reenviar verificación');
+        }
+      }
+      throw new Error('Error al procesar la solicitud');
     }
   },
 

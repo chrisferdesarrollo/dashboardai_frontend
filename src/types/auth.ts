@@ -10,6 +10,25 @@ export interface SignupRequest {
   role?: string[];
 }
 
+export interface SignupResponse {
+  message: string;
+  requiresEmailVerification?: boolean;
+  email?: string;
+}
+
+export interface EmailVerificationRequest {
+  token: string;
+}
+
+export interface EmailVerificationResponse {
+  message: string;
+  success: boolean;
+}
+
+export interface ResendVerificationRequest {
+  email: string;
+}
+
 export interface JwtResponse {
   accessToken: string;
   tokenType: string;
@@ -24,6 +43,7 @@ export interface User {
   username: string;
   email: string;
   roles: string[];
+  emailVerified?: boolean;
 }
 
 export interface AuthState {
@@ -35,7 +55,7 @@ export interface AuthState {
 
 export interface AuthContextType extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
-  signup: (data: SignupRequest) => Promise<void>;
+  signup: (data: SignupRequest) => Promise<SignupResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
 }

@@ -9,6 +9,7 @@ import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle }
 import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
 import { Loader2, Eye, EyeOff, CheckCircle, AlertCircle, WifiOff, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
+import { EmailVerificationPending } from './EmailVerificationPending';
 
 const signupSchema = z.object({
   username: z
@@ -40,6 +41,7 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState<string | null>(null);
+  const [emailVerificationPending, setEmailVerificationPending] = useState<string | null>(null);
   
   const { signup, isLoading } = useAuthStore();
 
@@ -73,21 +75,26 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
       setError(null);
       setSuccess(null);
       
-      await signup({
+      const response = await signup({
         username: data.username,
         email: data.email,
         password: data.password,
         role: ['user'], // Por defecto asignar rol de usuario
       });
       
-      setSuccess('Usuario registrado exitosamente. Ya puedes iniciar sesión.');
-      reset();
-      
-      // Cambiar al formulario de login después de 2 segundos
-      if (onSwitchToLogin) {
-        setTimeout(() => {
-          onSwitchToLogin();
-        }, 2000);
+      // Verificar si requiere verificación de email
+      if (response.requiresEmailVerification) {
+        setEmailVerificationPending(data.email);
+      } else {
+        setSuccess(response.message || 'Usuario registrado correctamente');
+        reset();
+        
+        // Cambiar al formulario de login después de 2 segundos
+        if (onSwitchToLogin) {
+          setTimeout(() => {
+            onSwitchToLogin();
+          }, 2000);
+        }
       }
     } catch (err) {
       let errorMessage = 'Error desconocido al registrar usuario';
@@ -99,6 +106,21 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
       setError(errorMessage);
     }
   };
+
+  // Si está pendiente la verificación de email, mostrar componente especial
+  if (emailVerificationPending) {
+    return (
+      <EmailVerificationPending
+        email={emailVerificationPending}
+        onBackToLogin={() => {
+          setEmailVerificationPending(null);
+          if (onSwitchToLogin) {
+            onSwitchToLogin();
+          }
+        }}
+      />
+    );
+  }
 
   return (
     <Card className="w-full max-w-md">
