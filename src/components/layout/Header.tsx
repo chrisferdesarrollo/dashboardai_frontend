@@ -1,4 +1,4 @@
-import { Bell, Settings, User, LogOut } from 'lucide-react';
+import { Bell, Settings, User, LogOut, Bot } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -9,6 +9,7 @@ import {
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback } from '@/components/ui/avatar';
+import { ThemeToggle } from '@/components/ui/theme-toggle';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -27,11 +28,16 @@ export function Header() {
 
   return (
     <header className="border-b border-border bg-card/50 backdrop-blur-sm">
-      <div className="flex h-16 items-center justify-between px-6">
+      <div className="flex h-16 items-center justify-between pl-3 pr-6">
         <div className="flex items-center space-x-4">
-          <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
-            Dashboard AI
-          </h1>
+          <div className="flex items-center space-x-3 px-3">
+            <div className="h-8 w-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center shadow-sm">
+              <Bot className="h-5 w-5 text-white" />
+            </div>
+            <h1 className="text-2xl font-bold bg-gradient-primary bg-clip-text text-transparent">
+              DashboardAI
+            </h1>
+          </div>
         </div>
 
         <div className="flex items-center space-x-4">
@@ -40,6 +46,9 @@ export function Header() {
             <Bell className="h-5 w-5" />
             <span className="absolute -top-1 -right-1 h-2 w-2 bg-primary rounded-full"></span>
           </Button>
+
+          {/* Toggle de tema */}
+          <ThemeToggle />
 
           {/* Configuración */}
           <Button variant="ghost" size="icon">

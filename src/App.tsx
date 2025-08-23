@@ -7,6 +7,7 @@ import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
 import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailVerification } from "@/components/auth/EmailVerification";
+import { ThemeProvider } from "@/components/theme-provider";
 import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
@@ -28,10 +29,11 @@ const App = () => {
 
   return (
     <QueryClientProvider client={queryClient}>
-      <TooltipProvider>
-        <Toaster />
-        <Sonner />
-        <BrowserRouter>
+      <ThemeProvider defaultTheme="system" storageKey="dashboard-theme">
+        <TooltipProvider>
+          <Toaster />
+          <Sonner />
+          <BrowserRouter>
           <Routes>
             {/* Ruta de autenticación */}
             <Route path="/login" element={<AuthPage />} />
@@ -114,7 +116,8 @@ const App = () => {
             <Route path="*" element={<NotFound />} />
           </Routes>
         </BrowserRouter>
-      </TooltipProvider>
+        </TooltipProvider>
+      </ThemeProvider>
     </QueryClientProvider>
   );
 };
