@@ -55,9 +55,17 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('❌ AuthStore: Error en login:', error);
           set({ isLoading: false });
-          const errorMessage = error instanceof Error 
-            ? error.message 
-            : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error en el login';
+          
+          // Mejorar el manejo de errores para mostrar mensajes más específicos
+          let errorMessage = 'Error al iniciar sesión';
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null) {
+            const errorObj = error as { response?: { data?: { message?: string } } };
+            errorMessage = errorObj?.response?.data?.message || 'Error al iniciar sesión';
+          }
+          
           console.error('❌ AuthStore: Mensaje de error:', errorMessage);
           throw new Error(errorMessage);
         }
@@ -70,9 +78,16 @@ export const useAuthStore = create<AuthStore>()(
           set({ isLoading: false });
         } catch (error) {
           set({ isLoading: false });
-          const errorMessage = error instanceof Error 
-            ? error.message 
-            : (error as { response?: { data?: { message?: string } } })?.response?.data?.message || 'Error en el registro';
+          
+          let errorMessage = 'Error en el registro';
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null) {
+            const errorObj = error as { response?: { data?: { message?: string } } };
+            errorMessage = errorObj?.response?.data?.message || 'Error en el registro';
+          }
+          
           throw new Error(errorMessage);
         }
       },

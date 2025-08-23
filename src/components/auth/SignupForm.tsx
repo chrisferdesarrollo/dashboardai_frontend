@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff, CheckCircle } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Eye, EyeOff, CheckCircle, AlertCircle, WifiOff, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 
 const signupSchema = z.object({
@@ -52,6 +52,22 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
     resolver: zodResolver(signupSchema),
   });
 
+  // Función para determinar el tipo de error y mostrar el ícono apropiado
+  const getErrorIcon = (errorMessage: string) => {
+    if (errorMessage.includes('conexión') || errorMessage.includes('servidor')) {
+      return <WifiOff className="h-4 w-4" />;
+    }
+    return <AlertCircle className="h-4 w-4" />;
+  };
+
+  // Función para determinar si el error es crítico o de conexión
+  const getErrorVariant = (errorMessage: string) => {
+    if (errorMessage.includes('conexión') || errorMessage.includes('servidor')) {
+      return 'default' as const;
+    }
+    return 'destructive' as const;
+  };
+
   const onSubmit = async (data: SignupFormData) => {
     try {
       setError(null);
@@ -74,7 +90,13 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
         }, 2000);
       }
     } catch (err) {
-      setError(err instanceof Error ? err.message : 'Error en el registro');
+      let errorMessage = 'Error desconocido al registrar usuario';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      setError(errorMessage);
     }
   };
 
@@ -89,15 +111,36 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant={getErrorVariant(error)} className="relative pr-12">
+              {getErrorIcon(error)}
+              <AlertTitle>Error de registro</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-transparent hover:opacity-70 flex items-center justify-center"
+                onClick={() => setError(null)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </Alert>
           )}
           
           {success && (
-            <Alert className="border-green-200 bg-green-50 text-green-800">
+            <Alert className="border-green-200 bg-green-50 text-green-800 relative pr-12">
               <CheckCircle className="h-4 w-4" />
+              <AlertTitle>¡Registro exitoso!</AlertTitle>
               <AlertDescription>{success}</AlertDescription>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-transparent hover:opacity-70 flex items-center justify-center"
+                onClick={() => setSuccess(null)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </Alert>
           )}
           
@@ -109,6 +152,12 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
               placeholder="Nombre de usuario (3-20 caracteres)"
               {...register('username')}
               disabled={isLoading}
+              onFocus={() => setError(null)}
+              onChange={(e) => {
+                setError(null);
+                const { onChange } = register('username');
+                onChange(e);
+              }}
             />
             {errors.username && (
               <p className="text-sm text-red-500">{errors.username.message}</p>
@@ -123,6 +172,12 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
               placeholder="correo@ejemplo.com"
               {...register('email')}
               disabled={isLoading}
+              onFocus={() => setError(null)}
+              onChange={(e) => {
+                setError(null);
+                const { onChange } = register('email');
+                onChange(e);
+              }}
             />
             {errors.email && (
               <p className="text-sm text-red-500">{errors.email.message}</p>
@@ -138,6 +193,12 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
                 placeholder="Contraseña (mínimo 6 caracteres)"
                 {...register('password')}
                 disabled={isLoading}
+                onFocus={() => setError(null)}
+                onChange={(e) => {
+                  setError(null);
+                  const { onChange } = register('password');
+                  onChange(e);
+                }}
                 className="pr-10"
               />
               <Button
@@ -169,6 +230,12 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
                 placeholder="Confirma tu contraseña"
                 {...register('confirmPassword')}
                 disabled={isLoading}
+                onFocus={() => setError(null)}
+                onChange={(e) => {
+                  setError(null);
+                  const { onChange } = register('confirmPassword');
+                  onChange(e);
+                }}
                 className="pr-10"
               />
               <Button

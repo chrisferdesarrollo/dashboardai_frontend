@@ -6,8 +6,8 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardFooter, CardHeader, CardTitle } from '@/components/ui/card';
-import { Alert, AlertDescription } from '@/components/ui/alert';
-import { Loader2, Eye, EyeOff } from 'lucide-react';
+import { Alert, AlertDescription, AlertTitle } from '@/components/ui/alert';
+import { Loader2, Eye, EyeOff, AlertCircle, Wifi, WifiOff, X } from 'lucide-react';
 import { useAuthStore } from '@/store/authStore';
 import { useNavigate } from 'react-router-dom';
 
@@ -25,6 +25,7 @@ interface LoginFormProps {
 export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
   const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   
   const { login, isLoading } = useAuthStore();
@@ -37,12 +38,30 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
     resolver: zodResolver(loginSchema),
   });
 
+  // Función para determinar el tipo de error y mostrar el ícono apropiado
+  const getErrorIcon = (errorMessage: string) => {
+    if (errorMessage.includes('conexión') || errorMessage.includes('servidor')) {
+      return <WifiOff className="h-4 w-4" />;
+    }
+    return <AlertCircle className="h-4 w-4" />;
+  };
+
+  // Función para determinar si el error es crítico o de conexión
+  const getErrorVariant = (errorMessage: string) => {
+    if (errorMessage.includes('conexión') || errorMessage.includes('servidor')) {
+      return 'default' as const;
+    }
+    return 'destructive' as const;
+  };
+
   const onSubmit = async (data: LoginFormData) => {
     try {
       console.log('🔵 LoginForm: Iniciando submit del formulario');
       console.log('🔵 LoginForm: Datos del formulario:', { username: data.username });
       
+      // Limpiar errores previos y marcar como enviando
       setError(null);
+      setIsSubmitting(true);
       
       await login({
         username: data.username,
@@ -50,12 +69,23 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
       });
       
       console.log('✅ LoginForm: Login exitoso, navegando al dashboard');
+      setIsSubmitting(false);
       navigate('/');
     } catch (err) {
       console.error('❌ LoginForm: Error capturado:', err);
-      const errorMessage = err instanceof Error ? err.message : 'Error en el login';
+      setIsSubmitting(false);
+      
+      let errorMessage = 'Error desconocido al iniciar sesión';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
       console.error('❌ LoginForm: Mensaje de error a mostrar:', errorMessage);
       setError(errorMessage);
+      
+      // No auto-limpiar el error para que el usuario pueda leerlo
+      // El error se limpiará solo cuando se intente enviar el formulario nuevamente
     }
   };
 
@@ -70,8 +100,19 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
       <form onSubmit={handleSubmit(onSubmit)}>
         <CardContent className="space-y-4">
           {error && (
-            <Alert variant="destructive">
+            <Alert variant={getErrorVariant(error)} className="relative pr-12">
+              {getErrorIcon(error)}
+              <AlertTitle>Error de autenticación</AlertTitle>
               <AlertDescription>{error}</AlertDescription>
+              <Button
+                variant="ghost"
+                size="sm"
+                className="absolute top-2 right-2 h-8 w-8 p-0 hover:bg-transparent hover:opacity-70 flex items-center justify-center"
+                onClick={() => setError(null)}
+                type="button"
+              >
+                <X className="h-4 w-4" />
+              </Button>
             </Alert>
           )}
           
@@ -82,7 +123,14 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
               type="text"
               placeholder="Ingresa tu usuario"
               {...register('username')}
-              disabled={isLoading}
+              disabled={isLoading || isSubmitting}
+              onFocus={() => setError(null)}
+              onChange={(e) => {
+                setError(null);
+                // Llamar al onChange original del register
+                const { onChange } = register('username');
+                onChange(e);
+              }}
             />
             {errors.username && (
               <p className="text-sm text-red-500">{errors.username.message}</p>
@@ -97,7 +145,14 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
                 type={showPassword ? 'text' : 'password'}
                 placeholder="Ingresa tu contraseña"
                 {...register('password')}
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
+                onFocus={() => setError(null)}
+                onChange={(e) => {
+                  setError(null);
+                  // Llamar al onChange original del register
+                  const { onChange } = register('password');
+                  onChange(e);
+                }}
                 className="pr-10"
               />
               <Button
@@ -106,7 +161,7 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
                 size="sm"
                 className="absolute right-0 top-0 h-full px-3 py-2 hover:bg-transparent"
                 onClick={() => setShowPassword(!showPassword)}
-                disabled={isLoading}
+                disabled={isLoading || isSubmitting}
               >
                 {showPassword ? (
                   <EyeOff className="h-4 w-4" />
@@ -124,9 +179,9 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
           <Button 
             type="submit" 
             className="w-full" 
-            disabled={isLoading}
+            disabled={isLoading || isSubmitting}
           >
-            {isLoading ? (
+            {(isLoading || isSubmitting) ? (
               <>
                 <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                 Iniciando sesión...
