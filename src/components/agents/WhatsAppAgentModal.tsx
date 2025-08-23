@@ -36,6 +36,8 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   const [whatsappSession, setWhatsappSession] = useState<WhatsAppSession | null>(null);
   const [isConnecting, setIsConnecting] = useState(false);
   const [connectionChecking, setConnectionChecking] = useState(false);
+  const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  const [qrExpired, setQrExpired] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -44,6 +46,53 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   });
 
   const isEditing = !!agent;
+
+  // Función para limpiar sesión cuando se cancela o cierra
+  const cleanupSession = async (sessionName: string) => {
+    try {
+      console.log('Cleaning up WhatsApp session:', sessionName);
+      await n8nApi.deleteWhatsAppSession(sessionName);
+      console.log('Session cleaned up successfully');
+    } catch (error) {
+      console.error('Error cleaning up session:', error);
+      // No mostrar error al usuario, es limpieza en background
+    }
+  };
+
+  // Manejar cierre del modal
+  const handleModalClose = () => {
+    // Limpiar polling si está activo
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    
+    // Limpiar sesión si no está conectada
+    if (whatsappSession && !whatsappSession.isConnected) {
+      cleanupSession(whatsappSession.sessionName);
+    }
+    
+    setConnectionChecking(false);
+    onClose();
+  };
+
+  // Manejar cancelación en el step de vinculación
+  const handleCancelLinking = () => {
+    // Limpiar polling si está activo
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    
+    // Limpiar sesión
+    if (whatsappSession) {
+      cleanupSession(whatsappSession.sessionName);
+    }
+    
+    setWhatsappSession(null);
+    setConnectionChecking(false);
+    onBack();
+  };
 
   // Reset modal state when opening
   useEffect(() => {
@@ -54,12 +103,24 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
     }
   }, [isOpen, isEditing]);
 
+  // Cleanup on unmount
+  useEffect(() => {
+    return () => {
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+    };
+  }, [pollingInterval]);
+
   // Crear sesión de WhatsApp
   const createWhatsAppSession = async () => {
     setIsConnecting(true);
     
     try {
       const sessionName = `agent_${Date.now()}`;
+      
+      // Resetear estado de expiración cuando se genera nuevo QR
+      setQrExpired(false);
       
       // Llamar al webhook de n8n para crear la sesión
       const response = await n8nApi.createWhatsAppSession(sessionName);
@@ -114,6 +175,7 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
           setWhatsappSession(prev => prev ? { ...prev, isConnected: true } : null);
           setConnectionChecking(false);
           clearInterval(interval);
+          setPollingInterval(null);
           
           toast({
             title: 'WhatsApp conectado',
@@ -133,15 +195,21 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
       }
     }, 3000); // Verificar cada 3 segundos
 
+    // Guardar referencia del interval
+    setPollingInterval(interval);
+
     // Detener verificación después de 5 minutos
     setTimeout(() => {
       console.log('Stopping polling due to timeout (5 minutes)');
       clearInterval(interval);
+      setPollingInterval(null);
       setConnectionChecking(false);
+      setQrExpired(true);
+      
       if (whatsappSession && !whatsappSession.isConnected) {
         toast({
-          title: 'Tiempo agotado',
-          description: 'El código QR ha expirado. Intenta nuevamente.',
+          title: 'Código QR expirado',
+          description: 'El código QR ha expirado. Genera uno nuevo para continuar.',
           variant: 'destructive',
         });
       }
@@ -299,6 +367,35 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
                     </CardContent>
                   </Card>
                 )}
+                
+                {/* Botones de acción */}
+                <div className="flex gap-3 mt-6">
+                  <Button
+                    type="button"
+                    variant="outline"
+                    onClick={handleCancelLinking}
+                    className="flex-1"
+                  >
+                    Cancelar
+                  </Button>
+                  {!whatsappSession.isConnected && qrExpired && (
+                    <Button
+                      type="button"
+                      onClick={createWhatsAppSession}
+                      disabled={isConnecting}
+                      className="flex-1"
+                    >
+                      {isConnecting ? (
+                        <>
+                          <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                          Generando...
+                        </>
+                      ) : (
+                        'Generar nuevo QR'
+                      )}
+                    </Button>
+                  )}
+                </div>
               </div>
             )}
           </div>
@@ -396,7 +493,11 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   };
 
   return (
-    <Dialog open={isOpen} onOpenChange={onClose}>
+    <Dialog open={isOpen} onOpenChange={(open) => {
+      if (!open) {
+        handleModalClose();
+      }
+    }}>
       <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">

@@ -24,6 +24,47 @@ interface WhatsAppStatusResponse {
   timestamp: string;
 }
 
+interface WhatsAppDeleteResponse {
+  success: boolean;
+  sessionName: string;
+  message: string;
+  timestamp: string;
+}
+
+// Tipos para n8n workflows
+interface N8nWorkflow {
+  id: string;
+  name: string;
+  active: boolean;
+  nodes: N8nNode[];
+  connections: Record<string, unknown>;
+  createdAt: string;
+  updatedAt: string;
+}
+
+interface N8nNode {
+  name: string;
+  type: string;
+  position: [number, number];
+  parameters: Record<string, unknown>;
+}
+
+interface N8nExecution {
+  id: string;
+  workflowId: string;
+  mode: string;
+  startedAt: string;
+  stoppedAt?: string;
+  finished: boolean;
+  data?: N8nExecutionData;
+}
+
+interface N8nExecutionData {
+  resultData: {
+    runData: Record<string, unknown>;
+  };
+}
+
 // Configuración de la API de n8n
 const N8N_API_URL = import.meta.env.VITE_N8N_API_URL || 'http://localhost:5678/api/v1';
 const N8N_API_TOKEN = import.meta.env.VITE_N8N_API_TOKEN || '';
@@ -62,22 +103,22 @@ api.interceptors.response.use(
 
 export const n8nApi = {
   // Gestión de workflows (agentes)
-  async getWorkflows(): Promise<any[]> {
+  async getWorkflows(): Promise<N8nWorkflow[]> {
     const response = await api.get('/workflows');
     return response.data.data || [];
   },
 
-  async getWorkflow(id: string): Promise<any> {
+  async getWorkflow(id: string): Promise<N8nWorkflow> {
     const response = await api.get(`/workflows/${id}`);
     return response.data;
   },
 
-  async createWorkflow(workflow: any): Promise<any> {
+  async createWorkflow(workflow: Partial<N8nWorkflow>): Promise<N8nWorkflow> {
     const response = await api.post('/workflows', workflow);
     return response.data;
   },
 
-  async updateWorkflow(id: string, workflow: any): Promise<any> {
+  async updateWorkflow(id: string, workflow: Partial<N8nWorkflow>): Promise<N8nWorkflow> {
     const response = await api.put(`/workflows/${id}`, workflow);
     return response.data;
   },
@@ -95,18 +136,18 @@ export const n8nApi = {
   },
 
   // Ejecuciones
-  async executeWorkflow(id: string, input?: any): Promise<any> {
+  async executeWorkflow(id: string, input?: Record<string, unknown>): Promise<N8nExecution> {
     const response = await api.post(`/workflows/${id}/execute`, input);
     return response.data;
   },
 
-  async getExecutions(workflowId?: string): Promise<any[]> {
+  async getExecutions(workflowId?: string): Promise<N8nExecution[]> {
     const params = workflowId ? { workflowId } : {};
     const response = await api.get('/executions', { params });
     return response.data.data || [];
   },
 
-  async getExecution(id: string): Promise<any> {
+  async getExecution(id: string): Promise<N8nExecution> {
     const response = await api.get(`/executions/${id}`);
     return response.data;
   },
@@ -116,7 +157,7 @@ export const n8nApi = {
   },
 
   // Logs en tiempo real (usar con WebSocket en el futuro)
-  async getExecutionLogs(executionId: string): Promise<any[]> {
+  async getExecutionLogs(executionId: string): Promise<Record<string, unknown>[]> {
     try {
       const response = await api.get(`/executions/${executionId}`);
       // Extraer logs de la respuesta de ejecución
@@ -178,6 +219,33 @@ export const n8nApi = {
         throw new Error(`No se pudo verificar el estado de WhatsApp: ${error.message}`);
       }
       throw new Error('No se pudo verificar el estado de WhatsApp');
+    }
+  },
+
+  // WhatsApp - Eliminar sesión
+  async deleteWhatsAppSession(sessionName: string): Promise<WhatsAppDeleteResponse> {
+    try {
+      const url = '/delete-whatsapp-session';
+      const payload = { sessionName };
+      
+      console.log('Deleting WhatsApp session:', {
+        baseURL: N8N_WEBHOOK_URL,
+        url,
+        fullURL: `${N8N_WEBHOOK_URL}${url}`,
+        payload
+      });
+      
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('WhatsApp delete response:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error eliminando sesión WhatsApp:', error);
+      if (error instanceof Error) {
+        throw new Error(`No se pudo eliminar la sesión de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo eliminar la sesión de WhatsApp');
     }
   },
 };
