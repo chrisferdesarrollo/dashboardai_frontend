@@ -18,6 +18,23 @@ import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useState, useEffect, useRef } from 'react';
 
+// Hook simple para detectar móvil
+const useIsMobile = () => {
+  const [isMobile, setIsMobile] = useState(false);
+
+  useEffect(() => {
+    const checkMobile = () => {
+      setIsMobile(window.innerWidth < 768);
+    };
+    
+    checkMobile();
+    window.addEventListener('resize', checkMobile);
+    return () => window.removeEventListener('resize', checkMobile);
+  }, []);
+
+  return isMobile;
+};
+
 const navigation = [
   {
     name: 'Inicio',
@@ -55,9 +72,10 @@ export function Sidebar() {
   const [isHovered, setIsHovered] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
+  const isMobile = useIsMobile();
 
-  // El sidebar se expande solo con hover
-  const isExpanded = isHovered;
+  // El sidebar se expande con hover solo en desktop, en móvil permanece colapsado
+  const isExpanded = !isMobile && isHovered;
 
   // Cerrar menú de usuario al hacer click fuera
   useEffect(() => {
@@ -73,15 +91,24 @@ export function Sidebar() {
     }
   }, [isUserMenuOpen]);
 
-  // Manejar hover del sidebar
+  // Manejar hover del sidebar (solo en desktop)
   const handleMouseEnter = () => {
-    setIsHovered(true);
+    if (!isMobile) {
+      setIsHovered(true);
+    }
   };
 
   const handleMouseLeave = () => {
-    setIsHovered(false);
-    // Cerrar menú de usuario al salir del hover
-    setIsUserMenuOpen(false);
+    if (!isMobile) {
+      setIsHovered(false);
+      // Cerrar menú de usuario al salir del hover
+      setIsUserMenuOpen(false);
+    }
+  };
+
+  // Cerrar sidebar móvil al hacer click en un enlace
+  const handleLinkClick = () => {
+    // En móvil no hay funcionalidad especial por ahora
   };
 
   return (
@@ -90,31 +117,36 @@ export function Sidebar() {
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       className={cn(
-        "flex flex-col bg-background border-r border-border/60 transition-all duration-300 ease-in-out relative z-40",
+        "flex flex-col bg-background border-r border-border/60 transition-all duration-300 ease-in-out relative",
         "h-[calc(100vh-4rem)]", // Resta la altura del header (4rem = 64px)
+        // Mostrar siempre en desktop con hover, en móvil simplemente colapsado por defecto
         isExpanded ? "w-64" : "w-16"
       )}
     >
       {/* Navegación */}
-      <nav className="flex-1 overflow-y-auto px-3 py-6">
+      <nav className={`flex-1 py-6 px-3 ${(!isMobile && isExpanded) ? 'sidebar-scroll' : 'scrollbar-hide'}`}>
         <div className="space-y-6">
-          {navigation.map((section) => (
+          {navigation.map((section, sectionIndex) => (
             <div key={section.name}>
-              <div className={cn(
-                "transition-opacity duration-300",
-                isExpanded ? "opacity-100" : "opacity-0"
-              )}>
-                {isExpanded && (
-                  <h3 className="px-3 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2 whitespace-nowrap">
-                    {section.name}
-                  </h3>
-                )}
-              </div>
+              {/* Separador delgado para secciones cuando está contraído */}
+              {(isMobile || !isExpanded) && sectionIndex > 0 && (
+                <div className="flex justify-center mb-3">
+                  <div className="w-8 h-px bg-border/80"></div>
+                </div>
+              )}
+              
+              {/* Headers de sección solo en desktop expandido */}
+              {!isMobile && isExpanded && (
+                <h3 className="px-3 text-xs font-medium text-muted-foreground/70 uppercase tracking-wider mb-2 whitespace-nowrap">
+                  {section.name}
+                </h3>
+              )}
               <div className="space-y-1">
                 {section.items.map((item) => (
                   <NavLink
                     key={item.name}
                     to={item.href}
+                    onClick={handleLinkClick}
                     title={!isExpanded ? item.name : undefined}
                     className={({ isActive }) =>
                       cn(
@@ -133,15 +165,15 @@ export function Sidebar() {
                       )}
                       aria-hidden="true"
                     />
-                    <span className={cn(
-                      "transition-opacity duration-300 whitespace-nowrap",
-                      isExpanded ? "opacity-100" : "opacity-0"
-                    )}>
-                      {isExpanded && item.name}
-                    </span>
+                    {/* Solo mostrar texto si está expandido (no en móvil) */}
+                    {isExpanded && (
+                      <span className="whitespace-nowrap">
+                        {item.name}
+                      </span>
+                    )}
                     
-                    {/* Tooltip para modo colapsado */}
-                    {!isExpanded && (
+                    {/* Tooltip solo en desktop cuando está colapsado */}
+                    {!isMobile && !isExpanded && (
                       <div className="absolute left-full ml-2 px-2 py-1 bg-popover text-popover-foreground text-xs rounded-md border shadow-md opacity-0 group-hover:opacity-100 transition-opacity duration-200 pointer-events-none whitespace-nowrap z-50">
                         {item.name}
                       </div>
@@ -156,29 +188,31 @@ export function Sidebar() {
 
       {/* Área inferior */}
       <div className="border-t border-border/60">
-        {/* Estado de conexión */}
-        <div className={cn(
-          "transition-opacity duration-300",
-          isExpanded ? "opacity-100" : "opacity-0"
-        )}>
-          {isExpanded && (
-            <div className="px-6 py-3 border-b border-border/60">
-              <div className="flex items-center justify-between">
-                <div className="flex items-center space-x-2 text-sm">
-                  <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                  <span className="text-muted-foreground text-xs whitespace-nowrap">Backend Conectado</span>
-                </div>
-                <button className="text-muted-foreground hover:text-foreground transition-colors">
-                  <HelpCircle className="h-4 w-4" />
-                </button>
+        {/* Estado de conexión - solo en desktop expandido */}
+        {!isMobile && isExpanded && (
+          <div className="px-6 py-3 border-b border-border/60">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center space-x-2 text-sm">
+                <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
+                <span className="text-muted-foreground text-xs whitespace-nowrap">Backend Conectado</span>
               </div>
+              <button className="text-muted-foreground hover:text-foreground transition-colors">
+                <HelpCircle className="h-4 w-4" />
+              </button>
             </div>
-          )}
-        </div>
+          </div>
+        )}
 
         {/* Usuario */}
         <div className="p-3" ref={userMenuRef}>
-          {!isExpanded ? (
+          {isMobile ? (
+            /* Avatar simple para móvil - sin funcionalidad */
+            <div className="flex items-center justify-center p-2">
+              <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
+                {user?.username?.charAt(0).toUpperCase() || 'U'}
+              </div>
+            </div>
+          ) : !isExpanded ? (
             /* Avatar simple para modo colapsado */
             <div className="relative group">
               <button
