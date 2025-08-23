@@ -16,7 +16,7 @@ export function PlatformSelectionModal({
 }: PlatformSelectionModalProps) {
   const handlePlatformSelect = (platform: PlatformType) => {
     onSelectPlatform(platform);
-    onClose();
+    // NO llamar onClose() aquí - queremos mantener el flujo abierto
   };
 
   return (

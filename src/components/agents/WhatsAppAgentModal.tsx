@@ -5,10 +5,12 @@ import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { WhatsAppIcon } from '@/components/ui/platform-icons';
-import { ArrowLeft } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent, CreateAgentInput } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
+import { Card, CardContent } from '@/components/ui/card';
+import { n8nApi } from '@/services/n8nApi';
 
 interface WhatsAppAgentModalProps {
   isOpen: boolean;
@@ -17,67 +19,161 @@ interface WhatsAppAgentModalProps {
   agent?: Agent | null;
 }
 
+type CreationStep = 'whatsapp-linking' | 'agent-config' | 'completed';
+
+interface WhatsAppSession {
+  sessionName: string;
+  qrCode: string;
+  isConnected: boolean;
+  timestamp: string;
+}
+
 export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppAgentModalProps) {
   const { createAgent, updateAgent, loading } = useAgentStore();
   const { toast } = useToast();
   
+  const [currentStep, setCurrentStep] = useState<CreationStep>('whatsapp-linking');
+  const [whatsappSession, setWhatsappSession] = useState<WhatsAppSession | null>(null);
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [connectionChecking, setConnectionChecking] = useState(false);
+  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
-    phoneNumber: '',
-    accessToken: '',
-    webhookVerifyToken: '',
-    systemPrompt: '',
-    welcomeMessage: '',
+    prompt: '',
   });
 
   const isEditing = !!agent;
 
+  // Reset modal state when opening
   useEffect(() => {
-    if (agent) {
-      setFormData({
-        name: agent.name,
-        description: agent.description,
-        phoneNumber: agent.settings.variables?.phoneNumber || '',
-        accessToken: agent.settings.apiKeys?.whatsapp || '',
-        webhookVerifyToken: agent.settings.variables?.webhookVerifyToken || '',
-        systemPrompt: agent.settings.prompts?.system || '',
-        welcomeMessage: agent.settings.prompts?.welcome || '',
-      });
-    } else {
-      setFormData({
-        name: '',
-        description: '',
-        phoneNumber: '',
-        accessToken: '',
-        webhookVerifyToken: '',
-        systemPrompt: '',
-        welcomeMessage: '',
-      });
+    if (isOpen && !isEditing) {
+      setCurrentStep('whatsapp-linking');
+      setWhatsappSession(null);
+      setFormData({ name: '', description: '', prompt: '' });
     }
-  }, [agent, isOpen]);
+  }, [isOpen, isEditing]);
+
+  // Crear sesión de WhatsApp
+  const createWhatsAppSession = async () => {
+    setIsConnecting(true);
+    
+    try {
+      const sessionName = `agent_${Date.now()}`;
+      
+      // Llamar al webhook de n8n para crear la sesión
+      const response = await n8nApi.createWhatsAppSession(sessionName);
+      
+      if (response.success && response.base64) {
+        console.log('QR received:', {
+          hasDataPrefix: response.base64.startsWith('data:'),
+          first50chars: response.base64.substring(0, 50),
+          length: response.base64.length
+        });
+        
+        setWhatsappSession({
+          sessionName: response.sessionName,
+          qrCode: response.base64,
+          isConnected: false,
+          timestamp: response.timestamp,
+        });
+        
+        // Iniciar verificación de estado de conexión
+        setConnectionChecking(true);
+        startConnectionPolling(response.sessionName);
+        
+      } else {
+        throw new Error(response.error || 'No se pudo generar el código QR');
+      }
+      
+    } catch (error) {
+      console.error('Error al crear sesión WhatsApp:', error);
+      toast({
+        title: 'Error',
+        description: error instanceof Error ? error.message : 'No se pudo crear la sesión de WhatsApp',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Función para verificar periódicamente el estado de conexión
+  const startConnectionPolling = (sessionName: string) => {
+    console.log('Starting connection polling for session:', sessionName);
+    
+    const interval = setInterval(async () => {
+      try {
+        console.log('Polling WhatsApp status...');
+        const status = await n8nApi.checkWhatsAppStatus(sessionName);
+        
+        console.log('Status check result:', status);
+        
+        if (status.success && (status.isConnected || status.connected)) {
+          console.log('WhatsApp connected! Stopping polling.');
+          setWhatsappSession(prev => prev ? { ...prev, isConnected: true } : null);
+          setConnectionChecking(false);
+          clearInterval(interval);
+          
+          toast({
+            title: 'WhatsApp conectado',
+            description: 'Tu cuenta de WhatsApp se ha vinculado exitosamente',
+          });
+          
+          // Avanzar al siguiente paso después de un breve delay
+          setTimeout(() => {
+            setCurrentStep('agent-config');
+          }, 1500);
+        } else {
+          console.log('WhatsApp not connected yet, continuing polling...');
+        }
+      } catch (error) {
+        console.error('Error verificando estado de WhatsApp:', error);
+        // Continuar verificando, no detener por un error temporal
+      }
+    }, 3000); // Verificar cada 3 segundos
+
+    // Detener verificación después de 5 minutos
+    setTimeout(() => {
+      console.log('Stopping polling due to timeout (5 minutes)');
+      clearInterval(interval);
+      setConnectionChecking(false);
+      if (whatsappSession && !whatsappSession.isConnected) {
+        toast({
+          title: 'Tiempo agotado',
+          description: 'El código QR ha expirado. Intenta nuevamente.',
+          variant: 'destructive',
+        });
+      }
+    }, 300000); // 5 minutos
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
+    if (!whatsappSession) {
+      toast({
+        title: 'Error',
+        description: 'No se ha vinculado WhatsApp',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     try {
       const agentData: CreateAgentInput = {
         name: formData.name,
         description: formData.description,
         platform: 'whatsapp',
-        workflowId: `whatsapp_${Date.now()}`, // Generar ID temporal
+        workflowId: whatsappSession.sessionName,
         settings: {
-          apiKeys: {
-            whatsapp: formData.accessToken,
-          },
+          apiKeys: {},
           prompts: {
-            system: formData.systemPrompt,
-            welcome: formData.welcomeMessage,
+            system: formData.prompt,
           },
           variables: {
-            phoneNumber: formData.phoneNumber,
-            webhookVerifyToken: formData.webhookVerifyToken,
-            platform: 'whatsapp',
+            sessionName: whatsappSession.sessionName,
+            timestamp: whatsappSession.timestamp,
           },
         },
       };
@@ -96,11 +192,16 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
         });
       }
 
-      onClose();
+      setCurrentStep('completed');
+      
+      // Cerrar modal después de un breve delay
+      setTimeout(() => {
+        onClose();
+      }, 2000);
     } catch (error) {
       toast({
         title: 'Error',
-        description: 'Ha ocurrido un error al procesar el agente de WhatsApp.',
+        description: 'No se pudo crear el agente',
         variant: 'destructive',
       });
     }
@@ -113,11 +214,192 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
     }));
   };
 
+  const renderStepContent = () => {
+    switch (currentStep) {
+      case 'whatsapp-linking':
+        return (
+          <div className="space-y-6">
+            <div className="text-center">
+              <h3 className="text-lg font-semibold mb-2">Vincula tu WhatsApp</h3>
+              <p className="text-muted-foreground">
+                Primero necesitas conectar tu cuenta de WhatsApp para crear el agente
+              </p>
+            </div>
+
+            {!whatsappSession ? (
+              <div className="text-center space-y-4">
+                <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+                  <Smartphone className="h-8 w-8 text-green-600" />
+                </div>
+                <Button 
+                  onClick={createWhatsAppSession} 
+                  disabled={isConnecting}
+                  className="w-full"
+                >
+                  {isConnecting ? (
+                    <>
+                      <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                      Generando código QR...
+                    </>
+                  ) : (
+                    'Generar código QR'
+                  )}
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                {!whatsappSession.isConnected ? (
+                  <>
+                    <Card>
+                      <CardContent className="p-6 text-center">
+                        <div className="mx-auto w-48 h-48 bg-white p-4 rounded-lg mb-4 border">
+                          {whatsappSession.qrCode ? (
+                            <img 
+                              src={whatsappSession.qrCode.startsWith('data:') 
+                                ? whatsappSession.qrCode 
+                                : `data:image/png;base64,${whatsappSession.qrCode}`
+                              }
+                              alt="Código QR de WhatsApp"
+                              className="w-full h-full object-contain"
+                            />
+                          ) : (
+                            <div className="w-full h-full bg-gray-200 rounded flex items-center justify-center">
+                              <QrCode className="h-20 w-20 text-gray-400" />
+                            </div>
+                          )}
+                        </div>
+                        <div className="space-y-2">
+                          <h4 className="font-semibold flex items-center justify-center gap-2">
+                            <QrCode className="h-4 w-4" />
+                            Escanea el código QR
+                          </h4>
+                          <p className="text-sm text-muted-foreground">
+                            Abre WhatsApp en tu teléfono y escanea este código QR
+                          </p>
+                          {connectionChecking && (
+                            <div className="flex items-center justify-center gap-2 text-sm text-muted-foreground mt-3">
+                              <Loader2 className="h-4 w-4 animate-spin" />
+                              Esperando conexión...
+                            </div>
+                          )}
+                        </div>
+                      </CardContent>
+                    </Card>
+                  </>
+                ) : (
+                  <Card>
+                    <CardContent className="p-6 text-center">
+                      <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
+                        <CheckCircle className="h-8 w-8 text-green-600" />
+                      </div>
+                      <h4 className="font-semibold text-green-600 mb-2">¡WhatsApp conectado!</h4>
+                      <p className="text-sm text-muted-foreground">
+                        Tu cuenta se ha vinculado exitosamente
+                      </p>
+                    </CardContent>
+                  </Card>
+                )}
+              </div>
+            )}
+          </div>
+        );
+
+      case 'agent-config':
+        return (
+          <form onSubmit={handleSubmit} className="space-y-6">
+            <div className="text-center mb-6">
+              <h3 className="text-lg font-semibold mb-2">Configura tu agente</h3>
+              <p className="text-muted-foreground">
+                Define el nombre y comportamiento de tu agente de WhatsApp
+              </p>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <Label htmlFor="name">Nombre del Agente</Label>
+                <Input
+                  id="name"
+                  value={formData.name}
+                  onChange={(e) => handleChange('name', e.target.value)}
+                  placeholder="Ej: Asistente de Ventas"
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="description">Descripción</Label>
+                <Textarea
+                  id="description"
+                  value={formData.description}
+                  onChange={(e) => handleChange('description', e.target.value)}
+                  placeholder="Describe qué hace este agente..."
+                  rows={3}
+                  required
+                />
+              </div>
+
+              <div>
+                <Label htmlFor="prompt">Prompt del Sistema</Label>
+                <Textarea
+                  id="prompt"
+                  value={formData.prompt}
+                  onChange={(e) => handleChange('prompt', e.target.value)}
+                  placeholder="Define cómo debe comportarse tu agente. Ej: Eres un asistente de ventas amigable que ayuda a los clientes..."
+                  rows={4}
+                  required
+                />
+              </div>
+            </div>
+
+            <div className="flex gap-3">
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setCurrentStep('whatsapp-linking')}
+                className="flex-1"
+              >
+                Atrás
+              </Button>
+              <Button 
+                type="submit" 
+                disabled={loading}
+                className="flex-1"
+              >
+                {loading ? (
+                  <>
+                    <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                    Creando...
+                  </>
+                ) : (
+                  'Crear Agente'
+                )}
+              </Button>
+            </div>
+          </form>
+        );
+
+      case 'completed':
+        return (
+          <div className="text-center space-y-6">
+            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
+              <CheckCircle className="h-8 w-8 text-green-600" />
+            </div>
+            <div>
+              <h3 className="text-lg font-semibold mb-2">¡Agente creado exitosamente!</h3>
+              <p className="text-muted-foreground">
+                Tu agente de WhatsApp está listo para usar
+              </p>
+            </div>
+          </div>
+        );
+    }
+  };
+
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-3">
             <Button
               variant="ghost"
               size="sm"
@@ -133,116 +415,9 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
           </div>
         </DialogHeader>
 
-        <form onSubmit={handleSubmit} className="space-y-6">
-          {/* Información básica */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Información básica</h3>
-            
-            <div>
-              <Label htmlFor="name">Nombre del Agente</Label>
-              <Input
-                id="name"
-                value={formData.name}
-                onChange={(e) => handleChange('name', e.target.value)}
-                placeholder="Ej: Agente de Atención WhatsApp"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="description">Descripción</Label>
-              <Textarea
-                id="description"
-                value={formData.description}
-                onChange={(e) => handleChange('description', e.target.value)}
-                placeholder="Describe qué hace este agente..."
-                rows={3}
-                required
-              />
-            </div>
-          </div>
-
-          {/* Configuración de WhatsApp */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold text-green-600">
-              Configuración de WhatsApp
-            </h3>
-            
-            <div>
-              <Label htmlFor="phoneNumber">Número de Teléfono</Label>
-              <Input
-                id="phoneNumber"
-                value={formData.phoneNumber}
-                onChange={(e) => handleChange('phoneNumber', e.target.value)}
-                placeholder="+1234567890"
-                required
-              />
-              <p className="text-sm text-muted-foreground mt-1">
-                Número de WhatsApp Business registrado
-              </p>
-            </div>
-
-            <div>
-              <Label htmlFor="accessToken">Token de Acceso</Label>
-              <Input
-                id="accessToken"
-                type="password"
-                value={formData.accessToken}
-                onChange={(e) => handleChange('accessToken', e.target.value)}
-                placeholder="Token de WhatsApp Business API"
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="webhookVerifyToken">Token de Verificación Webhook</Label>
-              <Input
-                id="webhookVerifyToken"
-                value={formData.webhookVerifyToken}
-                onChange={(e) => handleChange('webhookVerifyToken', e.target.value)}
-                placeholder="Token para verificar webhooks"
-                required
-              />
-            </div>
-          </div>
-
-          {/* Configuración de IA */}
-          <div className="space-y-4">
-            <h3 className="text-lg font-semibold">Personalidad del Agente</h3>
-            
-            <div>
-              <Label htmlFor="systemPrompt">Prompt del Sistema</Label>
-              <Textarea
-                id="systemPrompt"
-                value={formData.systemPrompt}
-                onChange={(e) => handleChange('systemPrompt', e.target.value)}
-                placeholder="Eres un asistente de atención al cliente para WhatsApp..."
-                rows={4}
-                required
-              />
-            </div>
-
-            <div>
-              <Label htmlFor="welcomeMessage">Mensaje de Bienvenida</Label>
-              <Textarea
-                id="welcomeMessage"
-                value={formData.welcomeMessage}
-                onChange={(e) => handleChange('welcomeMessage', e.target.value)}
-                placeholder="¡Hola! 👋 Soy tu asistente virtual. ¿En qué puedo ayudarte?"
-                rows={3}
-              />
-            </div>
-          </div>
-
-          <div className="flex justify-end gap-2 pt-4">
-            <Button type="button" variant="outline" onClick={onClose}>
-              Cancelar
-            </Button>
-            <Button type="submit" disabled={loading}>
-              {loading ? 'Guardando...' : isEditing ? 'Actualizar' : 'Crear'} Agente
-            </Button>
-          </div>
-        </form>
+        <div className="py-4">
+          {renderStepContent()}
+        </div>
       </DialogContent>
     </Dialog>
   );

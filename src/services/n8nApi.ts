@@ -1,14 +1,52 @@
 import axios from 'axios';
 import { Agent, AgentExecution, CreateAgentInput, UpdateAgentInput } from '@/types/agent';
 
+// Tipos para WhatsApp
+interface WhatsAppSessionRequest {
+  sessionName: string;
+}
+
+interface WhatsAppSessionResponse {
+  success: boolean;
+  sessionName: string;
+  base64?: string;
+  timestamp: string;
+  user: string;
+  error?: string;
+}
+
+interface WhatsAppStatusResponse {
+  success: boolean;
+  sessionName: string;
+  isConnected?: boolean;
+  connected?: boolean;  // Agregar compatibilidad con ambos nombres
+  status?: string;
+  timestamp: string;
+}
+
 // Configuración de la API de n8n
 const N8N_API_URL = import.meta.env.VITE_N8N_API_URL || 'http://localhost:5678/api/v1';
 const N8N_API_TOKEN = import.meta.env.VITE_N8N_API_TOKEN || '';
+const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook';
+
+console.log('n8n Config:', {
+  N8N_API_URL,
+  N8N_WEBHOOK_URL,
+  hasToken: !!N8N_API_TOKEN
+});
 
 const api = axios.create({
   baseURL: N8N_API_URL,
   headers: {
     'Authorization': `Bearer ${N8N_API_TOKEN}`,
+    'Content-Type': 'application/json',
+  },
+});
+
+// Cliente específico para webhooks (no requiere autenticación)
+const webhookApi = axios.create({
+  baseURL: N8N_WEBHOOK_URL,
+  headers: {
     'Content-Type': 'application/json',
   },
 });
@@ -86,6 +124,60 @@ export const n8nApi = {
     } catch (error) {
       console.error('Error obteniendo logs:', error);
       return [];
+    }
+  },
+
+  // WhatsApp - Crear sesión y obtener QR
+  async createWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+    try {
+      const url = '/create-whatsapp-session';
+      const payload = { sessionName };
+      
+      console.log('Calling n8n webhook:', {
+        baseURL: N8N_WEBHOOK_URL,
+        url,
+        fullURL: `${N8N_WEBHOOK_URL}${url}`,
+        payload
+      });
+      
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('n8n webhook response:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error creando sesión WhatsApp:', error);
+      if (error instanceof Error) {
+        throw new Error(`No se pudo crear la sesión de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo crear la sesión de WhatsApp');
+    }
+  },
+
+  // WhatsApp - Verificar estado de conexión
+  async checkWhatsAppStatus(sessionName: string): Promise<WhatsAppStatusResponse> {
+    try {
+      const url = '/check-whatsapp-status';
+      const payload = { sessionName };
+      
+      console.log('Checking WhatsApp status:', {
+        baseURL: N8N_WEBHOOK_URL,
+        url,
+        fullURL: `${N8N_WEBHOOK_URL}${url}`,
+        payload
+      });
+      
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('WhatsApp status response:', response.data);
+      
+      return response.data;
+    } catch (error) {
+      console.error('Error verificando estado WhatsApp:', error);
+      if (error instanceof Error) {
+        throw new Error(`No se pudo verificar el estado de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo verificar el estado de WhatsApp');
     }
   },
 };

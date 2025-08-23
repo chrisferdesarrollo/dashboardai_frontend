@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Agent, PlatformType } from '@/types/agent';
 import { PlatformSelectionModal } from './PlatformSelectionModal';
 import { WhatsAppAgentModal } from './WhatsAppAgentModal';
@@ -29,21 +29,21 @@ export function AgentCreationFlow({ isOpen, onClose, agent }: AgentCreationFlowP
     }
   }, [isOpen, agent]);
 
-  const handleClose = () => {
+  const handleClose = useCallback(() => {
     setCurrentStep('platform-selection');
     setSelectedPlatform(null);
     onClose();
-  };
+  }, [onClose]);
 
   const handlePlatformSelect = (platform: PlatformType) => {
     setSelectedPlatform(platform);
     setCurrentStep(platform === 'whatsapp' ? 'whatsapp-form' : 'telegram-form');
   };
 
-  const handleBackToPlatformSelection = () => {
+  const handleBackToPlatformSelection = useCallback(() => {
     setCurrentStep('platform-selection');
     setSelectedPlatform(null);
-  };
+  }, []);
 
   return (
     <>
