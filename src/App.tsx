@@ -1,36 +1,117 @@
+import { useEffect } from "react";
 import { Toaster } from "@/components/ui/toaster";
 import { Toaster as Sonner } from "@/components/ui/sonner";
 import { TooltipProvider } from "@/components/ui/tooltip";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { BrowserRouter, Routes, Route } from "react-router-dom";
+import { BrowserRouter, Routes, Route, Navigate } from "react-router-dom";
 import { DashboardLayout } from "@/components/layout/DashboardLayout";
+import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
+import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
+import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => (
-  <QueryClientProvider client={queryClient}>
-    <TooltipProvider>
-      <Toaster />
-      <Sonner />
-      <BrowserRouter>
-        <DashboardLayout>
+const App = () => {
+  const { refreshUser, isAuthenticated } = useAuthStore();
+
+  useEffect(() => {
+    // Verificar autenticación al cargar la app
+    const token = localStorage.getItem('token');
+    if (token && !isAuthenticated) {
+      refreshUser();
+    }
+  }, [refreshUser, isAuthenticated]);
+
+  return (
+    <QueryClientProvider client={queryClient}>
+      <TooltipProvider>
+        <Toaster />
+        <Sonner />
+        <BrowserRouter>
           <Routes>
-            <Route path="/" element={<Dashboard />} />
-            <Route path="/agents" element={<Agents />} />
-            <Route path="/executions" element={<div className="p-8 text-center text-muted-foreground">Ejecuciones - Próximamente</div>} />
-            <Route path="/workflows" element={<div className="p-8 text-center text-muted-foreground">Workflows - Próximamente</div>} />
-            <Route path="/analytics" element={<div className="p-8 text-center text-muted-foreground">Analíticas - Próximamente</div>} />
-            <Route path="/settings" element={<div className="p-8 text-center text-muted-foreground">Configuración - Próximamente</div>} />
-            {/* ADD ALL CUSTOM ROUTES ABOVE THE CATCH-ALL "*" ROUTE */}
+            {/* Ruta de autenticación */}
+            <Route path="/login" element={<AuthPage />} />
+            
+            {/* Rutas protegidas */}
+            <Route
+              path="/"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Dashboard />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agents"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Agents />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/executions"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <div className="p-8 text-center text-muted-foreground">
+                      Ejecuciones - Próximamente
+                    </div>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/workflows"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <div className="p-8 text-center text-muted-foreground">
+                      Workflows - Próximamente
+                    </div>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/analytics"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <div className="p-8 text-center text-muted-foreground">
+                      Analíticas - Próximamente
+                    </div>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/settings"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <div className="p-8 text-center text-muted-foreground">
+                      Configuración - Próximamente
+                    </div>
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            
+            {/* Redirigir rutas desconocidas */}
             <Route path="*" element={<NotFound />} />
           </Routes>
-        </DashboardLayout>
-      </BrowserRouter>
-    </TooltipProvider>
-  </QueryClientProvider>
-);
+        </BrowserRouter>
+      </TooltipProvider>
+    </QueryClientProvider>
+  );
+};
 
 export default App;
