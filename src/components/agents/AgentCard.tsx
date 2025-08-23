@@ -11,6 +11,7 @@ import {
   Clock,
   Activity
 } from 'lucide-react';
+import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -47,9 +48,24 @@ const statusConfig = {
   },
 };
 
+const platformConfig = {
+  whatsapp: {
+    label: 'WhatsApp',
+    icon: WhatsAppIcon,
+    className: '',
+  },
+  telegram: {
+    label: 'Telegram',
+    icon: TelegramIcon,
+    className: '',
+  },
+};
+
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
   const { toggleAgentStatus, executeAgent } = useAgentStore();
   const statusInfo = statusConfig[agent.status];
+  const platformInfo = platformConfig[agent.platform];
+  const PlatformIcon = platformInfo.icon;
 
   const handleToggleStatus = () => {
     toggleAgentStatus(agent.id);
@@ -63,14 +79,20 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
-          <div className="space-y-1">
-            <CardTitle className="text-lg leading-none hover:text-primary cursor-pointer transition-colors"
-                      onClick={() => onView(agent)}>
-              {agent.name}
-            </CardTitle>
+          <div className="space-y-1 flex-1">
+            <div className="flex items-center gap-2">
+              <PlatformIcon className={platformInfo.className} size={20} />
+              <CardTitle className="text-lg leading-none hover:text-primary cursor-pointer transition-colors"
+                        onClick={() => onView(agent)}>
+                {agent.name}
+              </CardTitle>
+            </div>
             <p className="text-sm text-muted-foreground line-clamp-2">
               {agent.description}
             </p>
+            <div className="flex items-center gap-1 text-xs text-muted-foreground">
+              <span>en {platformInfo.label}</span>
+            </div>
           </div>
           
           <div className="flex items-center space-x-2">

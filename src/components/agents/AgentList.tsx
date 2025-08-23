@@ -10,7 +10,7 @@ import {
   SelectValue,
 } from '@/components/ui/select';
 import { AgentCard } from './AgentCard';
-import { AgentModal } from './AgentModal';
+import { AgentCreationFlow } from './AgentCreationFlow';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 
@@ -148,7 +148,7 @@ export function AgentList() {
       )}
 
       {/* Modal de creación/edición */}
-      <AgentModal
+      <AgentCreationFlow
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         agent={editingAgent}

@@ -4,9 +4,11 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAgentStore } from '@/store/agentStore';
-import { Agent, CreateAgentInput } from '@/types/agent';
+import { Agent, CreateAgentInput, PlatformType } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
+import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 
 interface AgentModalProps {
   isOpen: boolean;
@@ -21,6 +23,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
   const [formData, setFormData] = useState({
     name: '',
     description: '',
+    platform: 'whatsapp' as PlatformType,
     workflowId: '',
     apiKeys: '',
     prompts: '',
@@ -34,6 +37,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
       setFormData({
         name: agent.name,
         description: agent.description,
+        platform: agent.platform,
         workflowId: agent.workflowId,
         apiKeys: JSON.stringify(agent.settings.apiKeys, null, 2),
         prompts: JSON.stringify(agent.settings.prompts, null, 2),
@@ -43,6 +47,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
       setFormData({
         name: '',
         description: '',
+        platform: 'whatsapp' as PlatformType,
         workflowId: '',
         apiKeys: '{}',
         prompts: '{}',
@@ -63,6 +68,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
       const agentData: CreateAgentInput = {
         name: formData.name,
         description: formData.description,
+        platform: formData.platform,
         workflowId: formData.workflowId,
         settings: {
           apiKeys,
@@ -95,7 +101,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
     }
   };
 
-  const handleChange = (field: string, value: string) => {
+  const handleChange = (field: string, value: string | PlatformType) => {
     setFormData(prev => ({
       ...prev,
       [field]: value,
@@ -135,6 +141,32 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
                 rows={3}
                 required
               />
+            </div>
+
+            <div>
+              <Label htmlFor="platform">Plataforma</Label>
+              <Select 
+                value={formData.platform} 
+                onValueChange={(value: PlatformType) => handleChange('platform', value)}
+              >
+                <SelectTrigger>
+                  <SelectValue placeholder="Selecciona una plataforma" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="whatsapp">
+                    <div className="flex items-center gap-2">
+                      <WhatsAppIcon size={16} />
+                      WhatsApp
+                    </div>
+                  </SelectItem>
+                  <SelectItem value="telegram">
+                    <div className="flex items-center gap-2">
+                      <TelegramIcon size={16} />
+                      Telegram
+                    </div>
+                  </SelectItem>
+                </SelectContent>
+              </Select>
             </div>
 
             <div>

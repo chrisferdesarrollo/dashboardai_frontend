@@ -1,8 +1,11 @@
 // Tipos de datos para los agentes de IA
+export type PlatformType = 'whatsapp' | 'telegram';
+
 export interface Agent {
   id: string;
   name: string;
   description: string;
+  platform: PlatformType; // Nueva propiedad para la plataforma
   status: 'active' | 'inactive' | 'error';
   workflowId: string; // ID del flujo en n8n
   lastExecution?: Date;
@@ -41,6 +44,7 @@ export interface ExecutionLog {
 export interface CreateAgentInput {
   name: string;
   description: string;
+  platform: PlatformType; // Nueva propiedad para la plataforma
   workflowId: string;
   settings: AgentSettings;
 }
