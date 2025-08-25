@@ -11,6 +11,7 @@ import { Agent, CreateAgentInput } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { n8nApi } from '@/services/n8nApi';
+import { agentService, CreateAgentRequest } from '@/services/agentApi';
 
 interface WhatsAppAgentModalProps {
   isOpen: boolean;
@@ -38,6 +39,7 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   const [connectionChecking, setConnectionChecking] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [qrExpired, setQrExpired] = useState(false);
+  const [isLoading, setIsLoading] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -228,50 +230,77 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
       return;
     }
 
-    try {
-      const agentData: CreateAgentInput = {
-        name: formData.name,
-        description: formData.description,
-        platform: 'whatsapp',
-        workflowId: whatsappSession.sessionName,
-        settings: {
-          apiKeys: {},
-          prompts: {
-            system: formData.prompt,
-          },
-          variables: {
-            sessionName: whatsappSession.sessionName,
-            timestamp: whatsappSession.timestamp,
-          },
-        },
-      };
-
-      if (isEditing && agent) {
-        await updateAgent({ ...agentData, id: agent.id });
-        toast({
-          title: 'Agente actualizado',
-          description: 'El agente de WhatsApp se ha actualizado correctamente.',
-        });
-      } else {
-        await createAgent(agentData);
-        toast({
-          title: 'Agente creado',
-          description: 'El agente de WhatsApp se ha creado correctamente.',
-        });
-      }
-
-      setCurrentStep('completed');
-      
-      // Cerrar modal después de un breve delay
-      setTimeout(() => {
-        onClose();
-      }, 2000);
-    } catch (error) {
+    if (!formData.name.trim() || !formData.prompt.trim()) {
       toast({
         title: 'Error',
-        description: 'No se pudo crear el agente',
+        description: 'Por favor completa todos los campos requeridos',
         variant: 'destructive',
       });
+      return;
+    }
+
+    setIsLoading(true);
+    
+    try {
+      console.log('Creating agent with data:', formData);
+      
+      // Preparar datos para enviar a la API
+      const agentData: CreateAgentRequest = {
+        name: formData.name.trim(),
+        description: formData.description.trim(),
+        platform: 'whatsapp',
+        prompt: formData.prompt.trim(),
+        workflowId: whatsappSession.sessionName,
+        platformConfig: JSON.stringify({
+          sessionName: whatsappSession.sessionName,
+          isConnected: true,
+          connectedAt: new Date().toISOString(),
+          timestamp: whatsappSession.timestamp
+        }),
+        // userId: 1 // TODO: Obtener del contexto de autenticación
+      };
+
+      // Llamar a la API para crear el agente
+      const response = await agentService.createAgent(agentData);
+      
+      if (response.success && response.agent) {
+        console.log('Agent created successfully:', response.agent);
+        
+        // Mostrar mensaje de éxito
+        toast({
+          title: 'Agente creado',
+          description: `¡Agente "${formData.name}" creado exitosamente!`,
+        });
+        
+        // Limpiar el formulario
+        setFormData({
+          name: '',
+          description: '',
+          prompt: ''
+        });
+        
+        // Avanzar al paso de completado
+        setCurrentStep('completed');
+        
+        // Cerrar el modal después de 2 segundos
+        setTimeout(() => {
+          onClose();
+        }, 2000);
+        
+      } else {
+        throw new Error(response.error || 'Error desconocido al crear el agente');
+      }
+      
+    } catch (error: unknown) {
+      console.error('Error creating agent:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear el agente. Inténtalo de nuevo.';
+      toast({
+        title: 'Error',
+        description: errorMessage,
+        variant: 'destructive',
+      });
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -459,10 +488,10 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
               </Button>
               <Button 
                 type="submit" 
-                disabled={loading}
+                disabled={isLoading}
                 className="flex-1"
               >
-                {loading ? (
+                {isLoading ? (
                   <>
                     <Loader2 className="mr-2 h-4 w-4 animate-spin" />
                     Creando...
