@@ -12,6 +12,7 @@ import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { n8nApi } from '@/services/n8nApi';
 import { agentService, CreateAgentRequest } from '@/services/agentApi';
+import { getUserIdFromToken } from '@/utils/auth';
 
 interface WhatsAppAgentModalProps {
   isOpen: boolean;
@@ -244,6 +245,24 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
     try {
       console.log('Creating agent with data:', formData);
       
+      // Intentar obtener el userId del token de autenticación
+      const userId = getUserIdFromToken();
+      
+      if (!userId) {
+        console.warn('No userId found in token, proceeding without it for testing');
+        // Para testing, permitimos crear agentes sin userId
+        // toast({
+        //   title: 'Error de autenticación',
+        //   description: 'No se pudo obtener la información del usuario. Por favor, inicia sesión nuevamente.',
+        //   variant: 'destructive',
+        // });
+        // return;
+      }
+      
+      // Para testing, usar userId = 1 si no hay token válido
+      const finalUserId = userId || 1;
+      console.log('Final userId to use:', finalUserId);
+      
       // Preparar datos para enviar a la API
       const agentData: CreateAgentRequest = {
         name: formData.name.trim(),
@@ -257,7 +276,7 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
           connectedAt: new Date().toISOString(),
           timestamp: whatsappSession.timestamp
         }),
-        // userId: 1 // TODO: Obtener del contexto de autenticación
+        userId: finalUserId
       };
 
       // Llamar a la API para crear el agente
