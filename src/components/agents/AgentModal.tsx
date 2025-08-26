@@ -7,6 +7,7 @@ import { Label } from '@/components/ui/label';
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent, CreateAgentInput, PlatformType } from '@/types/agent';
+import { CreateAgentRequest } from '@/services/agentApi';
 import { useToast } from '@/hooks/use-toast';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 
@@ -65,23 +66,26 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
       const prompts = JSON.parse(formData.prompts);
       const variables = JSON.parse(formData.variables);
 
-      const agentData: CreateAgentInput = {
+      // Convertir CreateAgentInput a CreateAgentRequest
+      const agentData: CreateAgentRequest = {
         name: formData.name,
         description: formData.description,
         platform: formData.platform,
+        prompt: prompts.system || prompts.user || 'Eres un asistente útil',
         workflowId: formData.workflowId,
-        settings: {
+        platformConfig: JSON.stringify({
           apiKeys,
           prompts,
           variables,
-        },
+        }),
       };
 
       if (isEditing && agent) {
-        await updateAgent({ ...agentData, id: agent.id });
+        // TODO: Implementar actualización
         toast({
-          title: 'Agente actualizado',
-          description: 'El agente se ha actualizado correctamente.',
+          title: 'Función en desarrollo',
+          description: 'La edición de agentes estará disponible pronto.',
+          variant: 'destructive',
         });
       } else {
         await createAgent(agentData);

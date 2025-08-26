@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { Agent, CreateAgentInput, UpdateAgentInput, AgentExecution } from '@/types/agent';
-import { mockData, n8nApi } from '@/services/n8nApi';
+import { agentService, mapAgentResponseToAgent, CreateAgentRequest } from '@/services/agentApi';
 
 interface AgentStore {
   // Estado
@@ -27,7 +27,7 @@ interface AgentStore {
 
   // Operaciones asíncronas
   fetchAgents: () => Promise<void>;
-  createAgent: (input: CreateAgentInput) => Promise<void>;
+  createAgent: (input: CreateAgentRequest) => Promise<void>;
   updateAgent: (input: UpdateAgentInput) => Promise<void>;
   deleteAgent: (id: string) => Promise<void>;
   toggleAgentStatus: (id: string) => Promise<void>;
@@ -63,11 +63,13 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   fetchAgents: async () => {
     set({ loading: true, error: null });
     try {
-      // En desarrollo, usar datos mock
-      // En producción, usar: const workflows = await n8nApi.getWorkflows();
-      await new Promise(resolve => setTimeout(resolve, 800)); // Simular carga
-      const agents = mockData.agents;
-      set({ agents, loading: false });
+      const response = await agentService.getAgents();
+      if (response.success && response.agents) {
+        const mappedAgents = response.agents.map(mapAgentResponseToAgent);
+        set({ agents: mappedAgents, loading: false });
+      } else {
+        set({ error: response.error || 'Error al cargar agentes', loading: false });
+      }
     } catch (error) {
       set({ error: 'Error al cargar agentes', loading: false });
       console.error('Error fetching agents:', error);
@@ -77,19 +79,14 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   createAgent: async (input) => {
     set({ loading: true, error: null });
     try {
-      // Simular creación
-      const newAgent: Agent = {
-        id: Date.now().toString(),
-        ...input,
-        status: 'inactive',
-        lastExecution: undefined,
-        totalExecutions: 0,
-        createdAt: new Date(),
-        updatedAt: new Date(),
-      };
-      
-      const agents = [...get().agents, newAgent];
-      set({ agents, loading: false });
+      const response = await agentService.createAgent(input);
+      if (response.success && response.agent) {
+        const mappedAgent = mapAgentResponseToAgent(response.agent);
+        const agents = [...get().agents, mappedAgent];
+        set({ agents, loading: false });
+      } else {
+        set({ error: response.error || 'Error al crear agente', loading: false });
+      }
     } catch (error) {
       set({ error: 'Error al crear agente', loading: false });
       console.error('Error creating agent:', error);

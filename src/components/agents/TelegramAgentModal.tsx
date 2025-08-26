@@ -8,6 +8,7 @@ import { TelegramIcon } from '@/components/ui/platform-icons';
 import { ArrowLeft } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent, CreateAgentInput } from '@/types/agent';
+import { CreateAgentRequest } from '@/services/agentApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface TelegramAgentModalProps {
@@ -61,12 +62,14 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
     e.preventDefault();
     
     try {
-      const agentData: CreateAgentInput = {
+      // Convertir CreateAgentInput a CreateAgentRequest
+      const agentData: CreateAgentRequest = {
         name: formData.name,
         description: formData.description,
         platform: 'telegram',
+        prompt: formData.systemPrompt,
         workflowId: `telegram_${Date.now()}`, // Generar ID temporal
-        settings: {
+        platformConfig: JSON.stringify({
           apiKeys: {
             telegram: formData.botToken,
           },
@@ -79,14 +82,15 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
             botUsername: formData.botUsername,
             platform: 'telegram',
           },
-        },
+        }),
       };
 
       if (isEditing && agent) {
-        await updateAgent({ ...agentData, id: agent.id });
+        // TODO: Implementar actualización
         toast({
-          title: 'Agente actualizado',
-          description: 'El agente de Telegram se ha actualizado correctamente.',
+          title: 'Función en desarrollo',
+          description: 'La edición de agentes estará disponible pronto.',
+          variant: 'destructive',
         });
       } else {
         await createAgent(agentData);

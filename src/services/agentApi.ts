@@ -28,7 +28,7 @@ agentApi.interceptors.request.use(
 export interface CreateAgentRequest {
   name: string;
   description: string;
-  platform: 'WHATSAPP' | 'TELEGRAM';
+  platform: 'whatsapp' | 'telegram';
   prompt: string;
   workflowId?: string;
   platformConfig?: string;
@@ -39,8 +39,8 @@ export interface AgentResponse {
   id: string;
   name: string;
   description: string;
-  platform: 'WHATSAPP' | 'TELEGRAM';
-  status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
+  platform: 'whatsapp' | 'telegram';
+  status: 'active' | 'inactive' | 'error';
   prompt: string;
   workflowId?: string;
   platformConfig?: string;
@@ -216,4 +216,34 @@ export const agentService = {
       };
     }
   }
+};
+
+// Función helper para convertir AgentResponse a Agent
+export const mapAgentResponseToAgent = (agentResponse: AgentResponse): import('@/types/agent').Agent => {
+  let platformConfig: any = {};
+  try {
+    platformConfig = agentResponse.platformConfig ? JSON.parse(agentResponse.platformConfig) : {};
+  } catch (e) {
+    console.warn('Error parsing platformConfig:', e);
+    platformConfig = {};
+  }
+
+  return {
+    id: agentResponse.id,
+    name: agentResponse.name,
+    description: agentResponse.description,
+    platform: agentResponse.platform,
+    status: agentResponse.status,
+    workflowId: agentResponse.workflowId || '',
+    lastExecution: agentResponse.lastExecutionAt ? new Date(agentResponse.lastExecutionAt) : undefined,
+    totalExecutions: agentResponse.totalExecutions,
+    settings: {
+      apiKeys: platformConfig.apiKeys || {},
+      prompts: { system: agentResponse.prompt },
+      variables: platformConfig,
+      webhookUrl: platformConfig.webhookUrl
+    },
+    createdAt: new Date(agentResponse.createdAt),
+    updatedAt: new Date(agentResponse.updatedAt || agentResponse.createdAt)
+  };
 };
