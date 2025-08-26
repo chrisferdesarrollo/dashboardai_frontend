@@ -1,11 +1,9 @@
 import axios from 'axios';
 import configService from './configService';
-import { n8nApi } from './n8nApi';
-import { Agent } from '@/types/agent';
 
 // Función para crear cliente API con configuración dinámica
-const createApiClient = async () => {
-  const config = await configService.getBackendConfig();
+const createApiClient = () => {
+  const config = configService.getBackendConfig();
   return axios.create({
     baseURL: config.apiUrl,
     headers: {
@@ -15,8 +13,8 @@ const createApiClient = async () => {
 };
 
 // Función para obtener cliente API actualizado
-const getApiClient = async () => {
-  const client = await createApiClient();
+const getApiClient = () => {
+  const client = createApiClient();
   
   // Interceptor para agregar token de autenticación si está disponible
   client.interceptors.request.use(
@@ -55,12 +53,11 @@ export interface CreateAgentResponse {
 export interface GetAgentsResponse {
   success: boolean;
   data?: AgentResponse[];
-  agents?: AgentResponse[]; // Compatibilidad con respuesta del backend
   error?: string;
 }
 
 export interface AgentResponse {
-  id: string; // UUID como string
+  id: number;
   name: string;
   description: string;
   platform: 'whatsapp' | 'telegram';
@@ -88,7 +85,7 @@ export const agentService = {
     try {
       console.log('Creating agent with data:', agentData);
       
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       const response = await agentApi.post('/agents', agentData);
       
       console.log('Agent creation response:', response.data);
@@ -122,25 +119,12 @@ export const agentService = {
    * Obtener todos los agentes
    */
   async getAgents(): Promise<GetAgentsResponse> {
-    console.log('🌐 AgentService.getAgents() iniciado');
     try {
-      console.log('⚙️ Obteniendo cliente API...');
-      const agentApi = await getApiClient();
-      console.log('📡 Haciendo petición GET /agents...');
+      const agentApi = getApiClient();
       const response = await agentApi.get('/agents');
-      console.log('📥 Respuesta HTTP recibida:', response.status, response.statusText);
-      console.log('📄 Datos de respuesta:', response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error('❌ Error fetching agents:', error);
-      if (axios.isAxiosError(error)) {
-        console.error('📊 Detalles del error HTTP:', {
-          status: error.response?.status,
-          statusText: error.response?.statusText,
-          data: error.response?.data,
-          url: error.config?.url
-        });
-      }
+      console.error('Error fetching agents:', error);
       return {
         success: false,
         error: 'Error al obtener los agentes'
@@ -153,7 +137,7 @@ export const agentService = {
    */
   async getAgentsByUser(userId: number): Promise<GetAgentsResponse> {
     try {
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       const response = await agentApi.get(`/agents/user/${userId}`);
       return response.data;
     } catch (error: unknown) {
@@ -170,7 +154,7 @@ export const agentService = {
    */
   async getAgentById(id: number): Promise<AgentResponse> {
     try {
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       const response = await agentApi.get(`/agents/${id}`);
       return response.data;
     } catch (error: unknown) {
@@ -184,7 +168,7 @@ export const agentService = {
    */
   async updateAgentStatus(id: number, status: string): Promise<AgentResponse> {
     try {
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       const response = await agentApi.put(`/agents/${id}/status`, { status });
       return response.data;
     } catch (error: unknown) {
@@ -194,79 +178,14 @@ export const agentService = {
   },
 
   /**
-   * Eliminar un agente y su sesión asociada
+   * Eliminar un agente
    */
-  async deleteAgent(id: string): Promise<void> {
-    console.log('🗑️ [DELETEAGENT] Iniciando eliminación completa del agente:', id);
+  async deleteAgent(id: number): Promise<void> {
     try {
-      const agentApi = await getApiClient();
-      
-      // 1. Primero obtener la información del agente para saber el tipo y configuración
-      console.log('📊 [DELETEAGENT] Obteniendo información del agente antes de eliminar...');
-      let agentInfo;
-      try {
-        const response = await agentApi.get(`/agents/${id}`);
-        agentInfo = response.data;
-        console.log('📄 [DELETEAGENT] Información del agente:', JSON.stringify(agentInfo, null, 2));
-        
-        // Extraer el agente de la respuesta si viene envuelto
-        if (agentInfo.success && agentInfo.agent) {
-          agentInfo = agentInfo.agent;
-          console.log('🔧 [DELETEAGENT] Agente extraído de la respuesta:', JSON.stringify(agentInfo, null, 2));
-        }
-      } catch (error) {
-        console.warn('⚠️ [DELETEAGENT] No se pudo obtener info del agente, continuando con eliminación:', error);
-      }
-
-      // 2. Si es un agente de WhatsApp, eliminar la sesión primero
-      if (agentInfo && agentInfo.platform === 'whatsapp') {
-        try {
-          console.log('📱 [DELETEAGENT] Eliminando sesión de WhatsApp...');
-          
-          // Intentar obtener el sessionName desde la configuración de la plataforma
-          let sessionName = `agent_${id}`; // Fallback por defecto
-          
-          if (agentInfo.platformConfig) {
-            try {
-              const platformConfig = typeof agentInfo.platformConfig === 'string' 
-                ? JSON.parse(agentInfo.platformConfig) 
-                : agentInfo.platformConfig;
-              
-              console.log('🔧 [DELETEAGENT] PlatformConfig parseado:', JSON.stringify(platformConfig, null, 2));
-              
-              if (platformConfig.sessionName) {
-                sessionName = platformConfig.sessionName;
-                console.log('📋 [DELETEAGENT] Usando sessionName de configuración:', sessionName);
-              } else {
-                console.warn('⚠️ [DELETEAGENT] No se encontró sessionName en platformConfig, usando fallback:', sessionName);
-              }
-            } catch (e) {
-              console.warn('⚠️ [DELETEAGENT] Error parseando platformConfig, usando fallback:', e);
-            }
-          } else {
-            console.warn('⚠️ [DELETEAGENT] No hay platformConfig, usando fallback:', sessionName);
-          }
-          
-          console.log('🔄 [DELETEAGENT] LLAMANDO n8nApi.deleteWhatsAppSession con sessionName:', sessionName);
-          const deleteResult = await n8nApi.deleteWhatsAppSession(sessionName);
-          console.log('✅ [DELETEAGENT] Sesión de WhatsApp eliminada. Resultado:', JSON.stringify(deleteResult, null, 2));
-          
-        } catch (error) {
-          console.error('❌ [DELETEAGENT] Error eliminando sesión de WhatsApp:', error);
-          // No detenemos el proceso si falla la eliminación de la sesión
-          console.warn('⚠️ [DELETEAGENT] Continuando con eliminación del agente a pesar del error en WhatsApp');
-        }
-      } else {
-        console.log('ℹ️ [DELETEAGENT] No es un agente de WhatsApp o no se pudo obtener info, saltando eliminación de sesión');
-      }
-
-      // 3. Eliminar el agente de la base de datos
-      console.log('🗄️ Eliminando agente de la base de datos...');
+      const agentApi = getApiClient();
       await agentApi.delete(`/agents/${id}`);
-      console.log('✅ Agente eliminado de la base de datos');
-      
     } catch (error: unknown) {
-      console.error('❌ Error deleting agent:', error);
+      console.error('Error deleting agent:', error);
       throw error;
     }
   },
@@ -276,7 +195,7 @@ export const agentService = {
    */
   async getAgentStats(): Promise<AgentStats> {
     try {
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       const response = await agentApi.get('/agents/stats');
       return response.data;
     } catch (error: unknown) {
@@ -290,7 +209,7 @@ export const agentService = {
    */
   async executeAgent(id: number): Promise<void> {
     try {
-      const agentApi = await getApiClient();
+      const agentApi = getApiClient();
       await agentApi.post(`/agents/${id}/execution`);
     } catch (error: unknown) {
       console.error('Error executing agent:', error);
@@ -302,7 +221,7 @@ export const agentService = {
 /**
  * Función para mapear AgentResponse a Agent (tipo del frontend)
  */
-export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
+export function mapAgentResponseToAgent(agentResponse: AgentResponse): any {
   let platformConfig: Record<string, unknown> = {};
   
   if (agentResponse.platform === 'whatsapp') {
@@ -316,7 +235,7 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
   }
 
   return {
-    id: agentResponse.id, // Ya es string (UUID)
+    id: agentResponse.id.toString(),
     name: agentResponse.name,
     description: agentResponse.description,
     platform: agentResponse.platform,
@@ -325,11 +244,10 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
     lastExecution: new Date(agentResponse.updatedAt),
     totalExecutions: 0, // Por ahora no tenemos este dato
     settings: {
-      apiKeys: {}, // Vacío por ahora
       prompts: {
         system: agentResponse.prompt,
       },
-      variables: platformConfig, // Usar platformConfig como variables
+      platformConfig,
     },
     createdAt: new Date(agentResponse.createdAt),
     updatedAt: new Date(agentResponse.updatedAt),

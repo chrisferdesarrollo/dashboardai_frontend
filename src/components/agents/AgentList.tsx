@@ -2,6 +2,7 @@ import { useState } from 'react';
 import { Search, Filter, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
+import { useToast } from '@/hooks/use-toast';
 import {
   Select,
   SelectContent,
@@ -11,10 +12,12 @@ import {
 } from '@/components/ui/select';
 import { AgentCard } from './AgentCard';
 import { AgentCreationFlow } from './AgentCreationFlow';
+import { DeleteAgentDialog } from './DeleteAgentDialog';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 
 export function AgentList() {
+  const { toast } = useToast();
   const {
     getFilteredAgents,
     searchTerm,
@@ -24,11 +27,14 @@ export function AgentList() {
     loading,
     fetchAgents,
     deleteAgent,
+    error,
   } = useAgentStore();
 
   const [isModalOpen, setIsModalOpen] = useState(false);
   const [editingAgent, setEditingAgent] = useState<Agent | null>(null);
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
+  const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const agents = getFilteredAgents();
 
@@ -43,9 +49,37 @@ export function AgentList() {
   };
 
   const handleDeleteAgent = (id: string) => {
-    if (confirm('¿Estás seguro de que quieres eliminar este agente?')) {
-      deleteAgent(id);
+    const agent = agents.find(a => a.id === id);
+    if (agent) {
+      setAgentToDelete(agent);
     }
+  };
+
+  const confirmDeleteAgent = async () => {
+    if (!agentToDelete) return;
+    
+    setIsDeleting(true);
+    try {
+      await deleteAgent(agentToDelete.id);
+      toast({
+        title: 'Agente eliminado',
+        description: `El agente "${agentToDelete.name}" ha sido eliminado exitosamente.`,
+      });
+      setAgentToDelete(null);
+    } catch (error) {
+      toast({
+        title: 'Error al eliminar',
+        description: 'No se pudo eliminar el agente. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDeleteAgent = () => {
+    setAgentToDelete(null);
+    setIsDeleting(false);
   };
 
   const handleViewAgent = (agent: Agent) => {
@@ -152,6 +186,15 @@ export function AgentList() {
         isOpen={isModalOpen}
         onClose={() => setIsModalOpen(false)}
         agent={editingAgent}
+      />
+
+      {/* Dialog de confirmación de eliminación */}
+      <DeleteAgentDialog
+        agent={agentToDelete}
+        isOpen={!!agentToDelete}
+        onClose={cancelDeleteAgent}
+        onConfirm={confirmDeleteAgent}
+        isDeleting={isDeleting}
       />
     </div>
   );

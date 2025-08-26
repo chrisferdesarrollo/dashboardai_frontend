@@ -1,5 +1,6 @@
 import axios from 'axios';
 import { Agent, AgentExecution, CreateAgentInput, UpdateAgentInput } from '@/types/agent';
+import configService from './configService';
 
 // Tipos para WhatsApp
 interface WhatsAppSessionRequest {
@@ -65,100 +66,105 @@ interface N8nExecutionData {
   };
 }
 
-// Configuración de la API de n8n
-const N8N_API_URL = import.meta.env.VITE_N8N_API_URL || 'http://localhost:5678/api/v1';
-const N8N_API_TOKEN = import.meta.env.VITE_N8N_API_TOKEN || '';
-const N8N_WEBHOOK_URL = import.meta.env.VITE_N8N_WEBHOOK_URL || 'http://localhost:5678/webhook';
+// Funciones para obtener configuración dinámica
+const getN8nConfig = async () => configService.getN8nConfig();
 
-console.log('n8n Config:', {
-  N8N_API_URL,
-  N8N_WEBHOOK_URL,
-  hasToken: !!N8N_API_TOKEN
-});
+// Crear instancias de axios que se actualizan dinámicamente
+const createApiClient = async () => {
+  const config = await getN8nConfig();
+  return axios.create({
+    baseURL: config.apiUrl || 'http://localhost:5678/api/v1',
+    headers: {
+      'Authorization': config.apiToken ? `Bearer ${config.apiToken}` : '',
+      'Content-Type': 'application/json',
+    },
+  });
+};
 
-const api = axios.create({
-  baseURL: N8N_API_URL,
-  headers: {
-    'Authorization': `Bearer ${N8N_API_TOKEN}`,
-    'Content-Type': 'application/json',
-  },
-});
+const createWebhookClient = async () => {
+  const config = await getN8nConfig();
+  return axios.create({
+    baseURL: config.webhookUrl || 'http://localhost:5678/webhook',
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
 
-// Cliente específico para webhooks (no requiere autenticación)
-const webhookApi = axios.create({
-  baseURL: N8N_WEBHOOK_URL,
-  headers: {
-    'Content-Type': 'application/json',
-  },
-});
-
-// Interceptor para manejo de errores
-api.interceptors.response.use(
-  (response) => response,
-  (error) => {
-    console.error('Error en API n8n:', error);
-    throw error;
-  }
-);
+// Instancias que se recrean en cada uso para obtener la configuración más reciente
+const getApiClient = () => createApiClient();
+const getWebhookClient = () => createWebhookClient();
 
 export const n8nApi = {
   // Gestión de workflows (agentes)
   async getWorkflows(): Promise<N8nWorkflow[]> {
+    const api = await getApiClient();
     const response = await api.get('/workflows');
     return response.data.data || [];
   },
 
   async getWorkflow(id: string): Promise<N8nWorkflow> {
+    const api = await getApiClient();
     const response = await api.get(`/workflows/${id}`);
     return response.data;
   },
 
   async createWorkflow(workflow: Partial<N8nWorkflow>): Promise<N8nWorkflow> {
+    const api = await getApiClient();
     const response = await api.post('/workflows', workflow);
     return response.data;
   },
 
   async updateWorkflow(id: string, workflow: Partial<N8nWorkflow>): Promise<N8nWorkflow> {
+    const api = await getApiClient();
     const response = await api.put(`/workflows/${id}`, workflow);
     return response.data;
   },
 
   async deleteWorkflow(id: string): Promise<void> {
+    const api = await getApiClient();
     await api.delete(`/workflows/${id}`);
   },
 
   async activateWorkflow(id: string): Promise<void> {
+    const api = await getApiClient();
     await api.post(`/workflows/${id}/activate`);
   },
 
   async deactivateWorkflow(id: string): Promise<void> {
+    const api = await getApiClient();
     await api.post(`/workflows/${id}/deactivate`);
   },
 
   // Ejecuciones
   async executeWorkflow(id: string, input?: Record<string, unknown>): Promise<N8nExecution> {
+    const api = await getApiClient();
     const response = await api.post(`/workflows/${id}/execute`, input);
     return response.data;
   },
 
   async getExecutions(workflowId?: string): Promise<N8nExecution[]> {
+    const api = await getApiClient();
     const params = workflowId ? { workflowId } : {};
     const response = await api.get('/executions', { params });
     return response.data.data || [];
   },
 
   async getExecution(id: string): Promise<N8nExecution> {
+    const api = await getApiClient();
     const response = await api.get(`/executions/${id}`);
     return response.data;
   },
 
   async deleteExecution(id: string): Promise<void> {
+    const api = await getApiClient();
     await api.delete(`/executions/${id}`);
   },
 
   // Logs en tiempo real (usar con WebSocket en el futuro)
   async getExecutionLogs(executionId: string): Promise<Record<string, unknown>[]> {
     try {
+      const api = await getApiClient();
       const response = await api.get(`/executions/${executionId}`);
       // Extraer logs de la respuesta de ejecución
       return response.data.data?.resultData?.runData || [];
@@ -173,11 +179,13 @@ export const n8nApi = {
     try {
       const url = '/create-whatsapp-session';
       const payload = { sessionName };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
       
       console.log('Calling n8n webhook:', {
-        baseURL: N8N_WEBHOOK_URL,
+        baseURL: config.webhookUrl,
         url,
-        fullURL: `${N8N_WEBHOOK_URL}${url}`,
+        fullURL: `${config.webhookUrl}${url}`,
         payload
       });
       
@@ -200,11 +208,13 @@ export const n8nApi = {
     try {
       const url = '/check-whatsapp-status';
       const payload = { sessionName };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
       
       console.log('Checking WhatsApp status:', {
-        baseURL: N8N_WEBHOOK_URL,
+        baseURL: config.webhookUrl,
         url,
-        fullURL: `${N8N_WEBHOOK_URL}${url}`,
+        fullURL: `${config.webhookUrl}${url}`,
         payload
       });
       
@@ -225,23 +235,49 @@ export const n8nApi = {
   // WhatsApp - Eliminar sesión
   async deleteWhatsAppSession(sessionName: string): Promise<WhatsAppDeleteResponse> {
     try {
+      console.log('🚨 [N8N-DELETE] Iniciando eliminación de sesión WhatsApp:', sessionName);
+      
       const url = '/delete-whatsapp-session';
       const payload = { sessionName };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
       
-      console.log('Deleting WhatsApp session:', {
-        baseURL: N8N_WEBHOOK_URL,
+      const fullURL = `${config.webhookUrl}${url}`;
+      
+      console.log('🔧 [N8N-DELETE] Configuración de eliminación:', {
+        sessionName,
+        baseURL: config.webhookUrl,
         url,
-        fullURL: `${N8N_WEBHOOK_URL}${url}`,
-        payload
+        fullURL,
+        payload: JSON.stringify(payload),
+        webhookApiBaseURL: webhookApi.defaults.baseURL
       });
       
+      console.log('📡 [N8N-DELETE] Enviando petición POST a:', fullURL);
       const response = await webhookApi.post(url, payload);
       
-      console.log('WhatsApp delete response:', response.data);
+      console.log('✅ [N8N-DELETE] Respuesta recibida:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: JSON.stringify(response.data, null, 2)
+      });
       
       return response.data;
     } catch (error) {
-      console.error('Error eliminando sesión WhatsApp:', error);
+      console.error('❌ [N8N-DELETE] Error eliminando sesión WhatsApp:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🚨 [N8N-DELETE] Detalles del error HTTP:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          fullURL: `${error.config?.baseURL}${error.config?.url}`,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
       if (error instanceof Error) {
         throw new Error(`No se pudo eliminar la sesión de WhatsApp: ${error.message}`);
       }
