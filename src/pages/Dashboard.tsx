@@ -42,6 +42,14 @@ export default function Dashboard() {
     error: { color: 'bg-destructive', icon: XCircle },
   };
 
+  // Función helper para obtener configuración de status de forma segura
+  const getStatusConfig = (status: string) => {
+    return statusConfig[status as keyof typeof statusConfig] || {
+      color: 'bg-muted',
+      icon: Clock
+    };
+  };
+
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -130,7 +138,7 @@ export default function Dashboard() {
                   inactive: { label: 'Inactivos', count: inactiveAgents },
                   error: { label: 'Con errores', count: errorAgents },
                 }).map(([status, { label, count }]) => {
-                  const config = statusConfig[status as keyof typeof statusConfig];
+                  const config = getStatusConfig(status);
                   const percentage = totalAgents > 0 ? (count / totalAgents) * 100 : 0;
                   
                   return (
@@ -194,7 +202,7 @@ export default function Dashboard() {
             ) : (
               <div className="space-y-4">
                 {recentAgents.map((agent: Agent) => {
-                  const config = statusConfig[agent.status];
+                  const config = getStatusConfig(agent.status);
                   return (
                     <div key={agent.id} className="flex items-center space-x-3">
                       <div className={`h-2 w-2 rounded-full ${config.color}`} />

@@ -48,6 +48,24 @@ const statusConfig = {
   },
 };
 
+// Función helper para obtener configuración de status de forma segura
+const getStatusConfig = (status: string) => {
+  return statusConfig[status as keyof typeof statusConfig] || {
+    label: 'Desconocido',
+    variant: 'secondary' as const,
+    className: 'bg-muted text-muted-foreground',
+  };
+};
+
+// Función helper para obtener configuración de plataforma de forma segura
+const getPlatformConfig = (platform: string) => {
+  return platformConfig[platform as keyof typeof platformConfig] || {
+    label: 'Desconocido',
+    icon: WhatsAppIcon,
+    className: '',
+  };
+};
+
 const platformConfig = {
   whatsapp: {
     label: 'WhatsApp',
@@ -63,8 +81,10 @@ const platformConfig = {
 
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
   const { toggleAgentStatus, executeAgent } = useAgentStore();
-  const statusInfo = statusConfig[agent.status];
-  const platformInfo = platformConfig[agent.platform];
+  const statusInfo = getStatusConfig(agent.status);
+  const platformInfo = getPlatformConfig(agent.platform);
+  
+  // La verificación ya no es necesaria gracias a las funciones helper
   const PlatformIcon = platformInfo.icon;
 
   const handleToggleStatus = () => {

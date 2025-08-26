@@ -13,7 +13,7 @@ const agentApi = axios.create({
 // Interceptor para agregar token de autenticación si está disponible
 agentApi.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token') || localStorage.getItem('accessToken');
+    const token = localStorage.getItem('token');
     if (token) {
       config.headers.Authorization = `Bearer ${token}`;
     }
@@ -28,7 +28,7 @@ agentApi.interceptors.request.use(
 export interface CreateAgentRequest {
   name: string;
   description: string;
-  platform: 'whatsapp' | 'telegram';
+  platform: 'WHATSAPP' | 'TELEGRAM';
   prompt: string;
   workflowId?: string;
   platformConfig?: string;
@@ -39,8 +39,8 @@ export interface AgentResponse {
   id: string;
   name: string;
   description: string;
-  platform: 'whatsapp' | 'telegram';
-  status: 'active' | 'inactive' | 'error';
+  platform: 'WHATSAPP' | 'TELEGRAM';
+  status: 'ACTIVE' | 'INACTIVE' | 'ERROR';
   prompt: string;
   workflowId?: string;
   platformConfig?: string;
@@ -83,17 +83,16 @@ export const agentService = {
       console.log('Agent creation response:', response.data);
       return response.data;
       
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error creating agent:', error);
       
-      if (error && typeof error === 'object' && 'response' in error) {
-        const axiosError = error as { response?: { data?: { error?: string; message?: string } } };
+      if (error.response) {
         // El servidor respondió con un error
         return {
           success: false,
-          error: axiosError.response?.data?.error || axiosError.response?.data?.message || 'Error del servidor'
+          error: error.response.data?.error || error.response.data?.message || 'Error del servidor'
         };
-      } else if (error && typeof error === 'object' && 'request' in error) {
+      } else if (error.request) {
         // La petición se hizo pero no hubo respuesta
         return {
           success: false,
@@ -101,10 +100,9 @@ export const agentService = {
         };
       } else {
         // Error en la configuración de la petición
-        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
         return {
           success: false,
-          error: 'Error en la petición: ' + errorMessage
+          error: 'Error en la petición: ' + error.message
         };
       }
     }
@@ -117,7 +115,7 @@ export const agentService = {
     try {
       const response = await agentApi.get('/agents');
       return response.data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching agents:', error);
       return {
         success: false,
@@ -133,7 +131,7 @@ export const agentService = {
     try {
       const response = await agentApi.get(`/agents/user/${userId}`);
       return response.data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching user agents:', error);
       return {
         success: false,
@@ -149,7 +147,7 @@ export const agentService = {
     try {
       const response = await agentApi.get(`/agents/${id}`);
       return response.data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching agent:', error);
       return {
         success: false,
@@ -161,11 +159,11 @@ export const agentService = {
   /**
    * Actualizar el estado de un agente
    */
-  async updateAgentStatus(id: string, status: 'active' | 'inactive' | 'error'): Promise<CreateAgentResponse> {
+  async updateAgentStatus(id: string, status: 'ACTIVE' | 'INACTIVE' | 'ERROR'): Promise<CreateAgentResponse> {
     try {
       const response = await agentApi.put(`/agents/${id}/status`, { status });
       return response.data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error updating agent status:', error);
       return {
         success: false,
@@ -181,7 +179,7 @@ export const agentService = {
     try {
       await agentApi.delete(`/agents/${id}`);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error deleting agent:', error);
       return {
         success: false,
@@ -197,7 +195,7 @@ export const agentService = {
     try {
       const response = await agentApi.get('/agents/stats');
       return response.data;
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error fetching agent stats:', error);
       return null;
     }
@@ -210,7 +208,7 @@ export const agentService = {
     try {
       await agentApi.post(`/agents/${id}/execution`);
       return { success: true };
-    } catch (error: unknown) {
+    } catch (error: any) {
       console.error('Error incrementing execution:', error);
       return {
         success: false,
