@@ -11,6 +11,7 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
+import Workflows from "./pages/Workflows";
 import Settings from "./pages/Settings";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -81,9 +82,7 @@ const App = () => {
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center text-muted-foreground">
-                      Workflows - Próximamente
-                    </div>
+                    <Workflows />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
