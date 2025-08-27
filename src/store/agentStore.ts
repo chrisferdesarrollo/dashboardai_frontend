@@ -27,11 +27,11 @@ interface AgentStore {
 
   // Operaciones asíncronas
   fetchAgents: () => Promise<void>;
-  createAgent: (input: CreateAgentRequest) => Promise<void>;
+  createAgent: (input: CreateAgentRequest) => Promise<Agent>;
   updateAgent: (input: UpdateAgentInput) => Promise<void>;
   deleteAgent: (id: string) => Promise<void>;
   toggleAgentStatus: (id: string) => Promise<void>;
-  executeAgent: (id: string, input?: any) => Promise<void>;
+  executeAgent: (id: string, input?: unknown) => Promise<void>;
   fetchExecutions: (agentId?: string) => Promise<void>;
 
   // Getters computados
@@ -93,12 +93,17 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         const mappedAgent = mapAgentResponseToAgent(response.data);
         const agents = [...get().agents, mappedAgent];
         set({ agents, loading: false });
+        return mappedAgent; // Devolver el agente creado
       } else {
-        set({ error: response.error || 'Error al crear agente', loading: false });
+        const errorMessage = response.error || 'Error al crear agente';
+        set({ error: errorMessage, loading: false });
+        throw new Error(errorMessage); // Lanzar error para que el modal lo capture
       }
     } catch (error) {
-      set({ error: 'Error al crear agente', loading: false });
+      const errorMessage = error instanceof Error ? error.message : 'Error al crear agente';
+      set({ error: errorMessage, loading: false });
       console.error('Error creating agent:', error);
+      throw error; // Re-lanzar el error
     }
   },
 
@@ -201,7 +206,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   getFilteredAgents: () => {
     const { agents, searchTerm, statusFilter, sortBy, sortOrder } = get();
     
-    let filtered = agents.filter(agent => {
+    const filtered = agents.filter(agent => {
       const matchesSearch = agent.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
                            agent.description.toLowerCase().includes(searchTerm.toLowerCase());
       const matchesStatus = statusFilter === 'all' || agent.status === statusFilter;
@@ -211,15 +216,15 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
     // Ordenamiento
     filtered.sort((a, b) => {
-      let aValue: any = a[sortBy as keyof Agent];
-      let bValue: any = b[sortBy as keyof Agent];
+      let aValue = a[sortBy as keyof Agent] as string | number | Date;
+      let bValue = b[sortBy as keyof Agent] as string | number | Date;
       
       if (sortBy === 'lastExecution') {
         aValue = aValue ? new Date(aValue).getTime() : 0;
         bValue = bValue ? new Date(bValue).getTime() : 0;
       }
       
-      if (typeof aValue === 'string') {
+      if (typeof aValue === 'string' && typeof bValue === 'string') {
         aValue = aValue.toLowerCase();
         bValue = bValue.toLowerCase();
       }

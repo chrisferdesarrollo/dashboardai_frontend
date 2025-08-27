@@ -7,11 +7,11 @@ import { Label } from '@/components/ui/label';
 import { WhatsAppIcon } from '@/components/ui/platform-icons';
 import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
-import { Agent, CreateAgentInput } from '@/types/agent';
+import { Agent } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
 import { Card, CardContent } from '@/components/ui/card';
 import { n8nApi } from '@/services/n8nApi';
-import { agentService, CreateAgentRequest } from '@/services/agentApi';
+import { CreateAgentRequest } from '@/services/agentApi';
 
 interface WhatsAppAgentModalProps {
   isOpen: boolean;
@@ -260,36 +260,31 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
         // userId: 1 // TODO: Obtener del contexto de autenticación
       };
 
-      // Llamar a la API para crear el agente
-      const response = await agentService.createAgent(agentData);
+      // Usar el store para crear el agente (esto actualiza automáticamente la lista)
+      await createAgent(agentData);
       
-      if (response.success && response.agent) {
-        console.log('Agent created successfully:', response.agent);
-        
-        // Mostrar mensaje de éxito
-        toast({
-          title: 'Agente creado',
-          description: `¡Agente "${formData.name}" creado exitosamente!`,
-        });
-        
-        // Limpiar el formulario
-        setFormData({
-          name: '',
-          description: '',
-          prompt: ''
-        });
-        
-        // Avanzar al paso de completado
-        setCurrentStep('completed');
-        
-        // Cerrar el modal después de 2 segundos
-        setTimeout(() => {
-          onClose();
-        }, 2000);
-        
-      } else {
-        throw new Error(response.error || 'Error desconocido al crear el agente');
-      }
+      console.log('Agent created successfully via store');
+      
+      // Mostrar mensaje de éxito
+      toast({
+        title: 'Agente creado',
+        description: `¡Agente "${formData.name}" creado exitosamente!`,
+      });
+      
+      // Limpiar el formulario
+      setFormData({
+        name: '',
+        description: '',
+        prompt: ''
+      });
+      
+      // Avanzar al paso de completado
+      setCurrentStep('completed');
+      
+      // Cerrar el modal después de 2 segundos
+      setTimeout(() => {
+        onClose();
+      }, 2000);
       
     } catch (error: unknown) {
       console.error('Error creating agent:', error);

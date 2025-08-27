@@ -41,6 +41,9 @@ export interface CreateAgentRequest {
   description: string;
   platform: 'whatsapp' | 'telegram';
   prompt: string;
+  workflowId?: string;
+  platformConfig?: string;
+  userId?: number;
   status?: 'active' | 'inactive' | 'error';
   phoneNumber?: string;
   botToken?: string;
@@ -210,8 +213,8 @@ export const agentService = {
         console.log('📄 [DELETEAGENT] Información del agente:', JSON.stringify(agentInfo, null, 2));
         
         // Extraer el agente de la respuesta si viene envuelto
-        if (agentInfo.success && agentInfo.agent) {
-          agentInfo = agentInfo.agent;
+        if (agentInfo.success && agentInfo.data) {
+          agentInfo = agentInfo.data;
           console.log('🔧 [DELETEAGENT] Agente extraído de la respuesta:', JSON.stringify(agentInfo, null, 2));
         }
       } catch (error) {

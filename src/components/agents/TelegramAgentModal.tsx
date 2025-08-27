@@ -98,9 +98,8 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
           title: 'Agente creado',
           description: 'El agente de Telegram se ha creado correctamente.',
         });
+        onClose();
       }
-
-      onClose();
     } catch (error) {
       toast({
         title: 'Error',
