@@ -9,6 +9,7 @@ import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone } from 'lucide-reac
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
 import { n8nApi } from '@/services/n8nApi';
 import { CreateAgentRequest } from '@/services/agentApi';
@@ -32,6 +33,7 @@ interface WhatsAppSession {
 export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppAgentModalProps) {
   const { createAgent, updateAgent, loading } = useAgentStore();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [currentStep, setCurrentStep] = useState<CreationStep>('whatsapp-linking');
   const [whatsappSession, setWhatsappSession] = useState<WhatsAppSession | null>(null);
@@ -257,7 +259,7 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
           connectedAt: new Date().toISOString(),
           timestamp: whatsappSession.timestamp
         }),
-        // userId: 1 // TODO: Obtener del contexto de autenticación
+        userId: user?.id // Obtener del contexto de autenticación
       };
 
       // Usar el store para crear el agente (esto actualiza automáticamente la lista)

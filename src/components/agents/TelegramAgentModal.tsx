@@ -10,6 +10,7 @@ import { useAgentStore } from '@/store/agentStore';
 import { Agent, CreateAgentInput } from '@/types/agent';
 import { CreateAgentRequest } from '@/services/agentApi';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 
 interface TelegramAgentModalProps {
   isOpen: boolean;
@@ -21,6 +22,7 @@ interface TelegramAgentModalProps {
 export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramAgentModalProps) {
   const { createAgent, updateAgent, loading } = useAgentStore();
   const { toast } = useToast();
+  const { user } = useAuth();
   
   const [formData, setFormData] = useState({
     name: '',
@@ -83,6 +85,7 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
             platform: 'telegram',
           },
         }),
+        userId: user?.id // Obtener del contexto de autenticación
       };
 
       if (isEditing && agent) {
