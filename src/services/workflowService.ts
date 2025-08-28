@@ -260,4 +260,41 @@ export const workflowService = {
       };
     }
   },
+
+  /**
+   * Obtener workflows por usuario (utiliza el endpoint general)
+   */
+  async getWorkflowsByUser(userId: number): Promise<WorkflowListApiResponse> {
+    try {
+      console.log('Fetching workflows for user:', userId);
+      
+      const apiClient = await getApiClient();
+      const response = await apiClient.get('/workflows');
+      
+      console.log('Workflows response:', response.data);
+      return response.data;
+      
+    } catch (error: unknown) {
+      console.error('Error fetching workflows:', error);
+      
+      if (error && typeof error === 'object' && 'response' in error) {
+        const errorResponse = error as { response: { data?: { error?: string; message?: string } } };
+        return {
+          success: false,
+          error: errorResponse.response.data?.error || errorResponse.response.data?.message || 'Error del servidor'
+        };
+      } else if (error && typeof error === 'object' && 'request' in error) {
+        return {
+          success: false,
+          error: 'No se pudo conectar con el servidor'
+        };
+      } else {
+        const errorMessage = error instanceof Error ? error.message : 'Error desconocido';
+        return {
+          success: false,
+          error: 'Error en la petición: ' + errorMessage
+        };
+      }
+    }
+  },
 };

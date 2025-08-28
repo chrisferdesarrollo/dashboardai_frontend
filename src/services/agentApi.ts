@@ -41,7 +41,9 @@ export interface CreateAgentRequest {
   description: string;
   platform: 'whatsapp' | 'telegram';
   prompt: string;
-  workflowId?: string;
+  workflowId?: string; // Para compatibilidad hacia atrás
+  workflowIds?: string[]; // Nuevos campos para múltiples workflows
+  primaryWorkflowId?: string;
   platformConfig?: string;
   userId?: number;
   status?: 'active' | 'inactive' | 'error';
