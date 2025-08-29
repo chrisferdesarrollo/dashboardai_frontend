@@ -17,23 +17,8 @@ import {
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useState, useEffect, useRef } from 'react';
-
-// Hook simple para detectar móvil
-const useIsMobile = () => {
-  const [isMobile, setIsMobile] = useState(false);
-
-  useEffect(() => {
-    const checkMobile = () => {
-      setIsMobile(window.innerWidth < 768);
-    };
-    
-    checkMobile();
-    window.addEventListener('resize', checkMobile);
-    return () => window.removeEventListener('resize', checkMobile);
-  }, []);
-
-  return isMobile;
-};
+import { useMobile } from '@/hooks/use-mobile';
+import { useSidebarContext } from '@/hooks/useSidebarContext';
 
 const navigation = [
   {
@@ -68,14 +53,15 @@ const navigation = [
 
 export function Sidebar() {
   const { user, logout } = useAuthStore();
+  const { isMobileExpanded, setIsMobileExpanded } = useSidebarContext();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
-  const isMobile = useIsMobile();
+  const isMobile = useMobile();
 
-  // El sidebar se expande con hover solo en desktop, en móvil permanece colapsado
-  const isExpanded = !isMobile && isHovered;
+  // El sidebar se expande con hover solo en desktop, en móvil con estado separado
+  const isExpanded = isMobile ? isMobileExpanded : isHovered;
 
   // Cerrar menú de usuario al hacer click fuera
   useEffect(() => {
@@ -112,17 +98,18 @@ export function Sidebar() {
   };
 
   return (
-    <div 
-      ref={sidebarRef}
-      onMouseEnter={handleMouseEnter}
-      onMouseLeave={handleMouseLeave}
-      className={cn(
-        "flex flex-col bg-background border-r border-border/60 transition-all duration-300 ease-in-out relative",
-        "h-[calc(100vh-4rem)]", // Resta la altura del header (4rem = 64px)
-        // Mostrar siempre en desktop con hover, en móvil simplemente colapsado por defecto
-        isExpanded ? "w-64" : "w-16"
-      )}
-    >
+    <>
+      <div 
+        ref={sidebarRef}
+        onMouseEnter={handleMouseEnter}
+        onMouseLeave={handleMouseLeave}
+        className={cn(
+          "fixed left-0 top-16 z-40 flex flex-col bg-background border-r border-border/60 transition-all duration-300 ease-in-out shadow-lg",
+          "h-[calc(100vh-4rem)]", // Resta la altura del header (4rem = 64px)
+          // Mostrar siempre en desktop con hover, en móvil simplemente colapsado por defecto
+          isExpanded ? "w-64" : "w-16"
+        )}
+      >
       {/* Navegación */}
       <nav className={`flex-1 py-6 px-3 ${(!isMobile && isExpanded) ? 'sidebar-scroll' : 'scrollbar-hide'}`}>
         <div className="space-y-6">
@@ -317,6 +304,15 @@ export function Sidebar() {
           )}
         </div>
       </div>
-    </div>
+      </div>
+      
+      {/* Overlay para móviles cuando el sidebar está expandido */}
+      {isMobile && isExpanded && (
+        <div 
+          className="fixed inset-0 top-16 bg-black/20 z-30"
+          onClick={() => setIsMobileExpanded(false)}
+        />
+      )}
+    </>
   );
 }

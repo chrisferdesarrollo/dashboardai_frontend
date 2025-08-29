@@ -1,6 +1,7 @@
 import { ReactNode } from 'react';
 import { Sidebar } from './Sidebar';
 import { Header } from './Header';
+import { SidebarProvider } from '@/contexts/SidebarContext';
 
 interface DashboardLayoutProps {
   children: ReactNode;
@@ -8,17 +9,19 @@ interface DashboardLayoutProps {
 
 export function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
-    <div className="min-h-screen bg-background flex flex-col">
-      {/* Header arriba de todo */}
-      <Header />
-      
-      {/* Contenedor para sidebar y contenido principal */}
-      <div className="flex flex-1">
+    <SidebarProvider>
+      <div className="min-h-screen bg-background relative">
+        {/* Header arriba de todo */}
+        <Header />
+        
+        {/* Sidebar superpuesto */}
         <Sidebar />
-        <main className="flex-1 p-6">
+        
+        {/* Contenido principal que ocupa todo el ancho menos el sidebar contraído */}
+        <main className="pt-24 p-6 ml-16">
           {children}
         </main>
       </div>
-    </div>
+    </SidebarProvider>
   );
 }
