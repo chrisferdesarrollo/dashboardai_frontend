@@ -8,8 +8,9 @@ import { Separator } from '@/components/ui/separator';
 import { Badge } from '@/components/ui/badge';
 import { Alert, AlertDescription } from '@/components/ui/alert';
 import { useToast } from '@/hooks/use-toast';
-import { Settings as SettingsIcon, Webhook, Server, Key, Save, TestTube } from 'lucide-react';
+import { Settings as SettingsIcon, Webhook, Server, Key, Save, TestTube, Zap } from 'lucide-react';
 import configService from '@/services/configService';
+import N8nConnectionTest from '@/components/settings/N8nConnectionTest';
 
 interface N8nConfig {
   webhookUrl: string;
@@ -262,6 +263,22 @@ export default function Settings() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Test de conexión n8n VPS */}
+      <Card>
+        <CardHeader>
+          <CardTitle className="flex items-center gap-2">
+            <Zap className="h-5 w-5" />
+            Test de Conexión n8n VPS
+          </CardTitle>
+          <CardDescription>
+            Prueba la conexión con tu instancia de n8n en el VPS de Hostinger
+          </CardDescription>
+        </CardHeader>
+        <CardContent>
+          <N8nConnectionTest />
+        </CardContent>
+      </Card>
 
       {/* Información de ayuda */}
       <Card>

@@ -96,6 +96,65 @@ const getApiClient = () => createApiClient();
 const getWebhookClient = () => createWebhookClient();
 
 export const n8nApi = {
+  // Test connection to n8n VPS
+  async testConnection(): Promise<{ success: boolean; data?: any; error?: string }> {
+    try {
+      const config = await getN8nConfig();
+      const testUrl = `${config.webhookUrl}/test-connection`;
+      
+      console.log('🔍 Testing connection to n8n VPS:', testUrl);
+      
+      const response = await fetch(testUrl, {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json',
+        },
+        body: JSON.stringify({
+          message: 'Test connection from Dashboard',
+          timestamp: new Date().toISOString(),
+          source: 'dashboard-frontend'
+        })
+      });
+
+      if (!response.ok) {
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+      }
+
+      const data = await response.json();
+      console.log('✅ Connection test successful:', data);
+      return { success: true, data };
+      
+    } catch (error) {
+      console.error('❌ Connection test failed:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error de conexión desconocido' 
+      };
+    }
+  },
+
+  // Obtener workflows desde n8n API
+  async getN8nWorkflows(): Promise<{ success: boolean; data?: any[]; error?: string }> {
+    try {
+      const config = await getN8nConfig();
+      const apiClient = await getApiClient();
+      
+      console.log('🔍 Fetching workflows from n8n API:', config.apiUrl);
+      
+      const response = await apiClient.get('/workflows');
+      
+      console.log('✅ Workflows fetched successfully:', response.data);
+      return { success: true, data: response.data.data || [] };
+      
+    } catch (error) {
+      console.error('❌ Error fetching workflows:', error);
+      return { 
+        success: false, 
+        error: error instanceof Error ? error.message : 'Error al obtener workflows' 
+      };
+    }
+  },
   // Gestión de workflows (agentes)
   async getWorkflows(): Promise<N8nWorkflow[]> {
     const api = await getApiClient();
