@@ -49,6 +49,55 @@ export interface CreateAgentRequest {
   status?: 'active' | 'inactive' | 'error';
   phoneNumber?: string;
   botToken?: string;
+  customConfig?: {
+    responseDelay?: number;
+    maxResponseLength?: number;
+    useTypingIndicator?: boolean;
+    autoReply?: boolean;
+    apiKeys?: {
+      openai?: string;
+      anthropic?: string;
+      custom?: string;
+    };
+    dataSources?: {
+      knowledgeBase?: string;
+      database?: string;
+      webhook?: string;
+    };
+    personality?: {
+      tone?: string;
+      formality?: string;
+      language?: string;
+    };
+    businessHours?: {
+      enabled?: boolean;
+      start?: string;
+      end?: string;
+      timezone?: string;
+      outsideHoursMessage?: string;
+    };
+    fallbackBehavior?: {
+      enabled?: boolean;
+      message?: string;
+      transferToHuman?: boolean;
+      retryAttempts?: number;
+    };
+    escalationRules?: {
+      keywords?: string[];
+      conditions?: string[];
+      autoTransferAfter?: number;
+      workingHours?: boolean;
+    };
+    leadCapture?: {
+      enabled?: boolean;
+      requiredFields?: string[];
+      qualification?: {
+        budget?: boolean;
+        timeline?: boolean;
+        decision_maker?: boolean;
+      };
+    };
+  };
 }
 
 export interface CreateAgentResponse {
