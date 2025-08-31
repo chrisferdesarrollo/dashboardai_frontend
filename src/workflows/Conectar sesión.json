@@ -1,0 +1,340 @@
+{
+  "name": "Conectar Sesión WhatsApp Existente",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "connect-whatsapp-session",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "aab20037-af1e-445b-8161-eec0ec08dcc3",
+      "name": "Webhook - Conectar Sesión",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -880,
+        96
+      ],
+      "webhookId": "connect-whatsapp-session"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.body.sessionName }}",
+              "type": "string"
+            },
+            {
+              "id": "user-assign",
+              "name": "user",
+              "value": "desarrolladorchristian",
+              "type": "string"
+            },
+            {
+              "id": "timestamp-assign",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -656,
+        96
+      ],
+      "id": "941d7f87-d75c-449b-a1a7-b42e204aa209",
+      "name": "Procesar Datos Conexión"
+    },
+    {
+      "parameters": {
+        "operation": "instance-fetchInstances",
+        "instanceName": "={{ $('Procesar Datos Conexión').item.json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -432,
+        96
+      ],
+      "id": "b9c7b4fb-ee86-4b0d-a6f9-6a8ffd5ca82f",
+      "name": "Verificar Instancia Existe",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "instance-exists-condition",
+              "leftValue": "={{ $json.data }}",
+              "rightValue": "",
+              "operator": {
+                "type": "object",
+                "operation": "notEmpty"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        96
+      ],
+      "id": "d3605115-a24f-4488-b71d-d479abd82b8d",
+      "name": "Instancia Existe?"
+    },
+    {
+      "parameters": {
+        "operation": "instance-connect",
+        "instanceName": "={{ $('Procesar Datos Conexión').item.json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        16,
+        0
+      ],
+      "id": "2e98a605-68f5-417d-8efc-0da30b23a675",
+      "name": "Conectar Instancia Existente",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "connection-success-condition",
+              "leftValue": "={{ $json.data.base64 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "exists"
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        240,
+        0
+      ],
+      "id": "d3605115-a24f-4488-b71d-d479abd82b9d",
+      "name": "Conexión Exitosa?"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"sessionName\": \"{{ $('Procesar Datos Conexión').item.json.sessionName }}\",\n  \"base64\": \"{{ $json.data.base64 }}\",\n  \"status\": \"connecting\",\n  \"message\": \"Sesión conectada exitosamente\",\n  \"timestamp\": \"{{ $('Procesar Datos Conexión').item.json.timestamp }}\",\n  \"user\": \"{{ $('Procesar Datos Conexión').item.json.user }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        -96
+      ],
+      "id": "26d45b20-d8d6-4ad9-889b-fd63492363b4",
+      "name": "Conexión Exitosa"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"No se pudo conectar la sesión\",\n  \"sessionName\": \"{{ $('Procesar Datos Conexión').item.json.sessionName }}\",\n  \"timestamp\": \"{{ $('Procesar Datos Conexión').item.json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 500
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        464,
+        96
+      ],
+      "id": "102b37a0-103c-4150-b12f-74b12f6d8177",
+      "name": "Error Conexión"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"La sesión especificada no existe\",\n  \"sessionName\": \"{{ $('Procesar Datos Conexión').item.json.sessionName }}\",\n  \"message\": \"Debe crear la sesión primero antes de conectarla\",\n  \"timestamp\": \"{{ $('Procesar Datos Conexión').item.json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        192
+      ],
+      "id": "102b37a0-103c-4150-b12f-74b12f6d8178",
+      "name": "Sesión No Existe"
+    },
+    {
+      "parameters": {
+        "operation": "instance-connectionState",
+        "instanceName": "={{ $('Procesar Datos Conexión').item.json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        464,
+        288
+      ],
+      "id": "2e98a605-68f5-417d-8efc-0da30b23a676",
+      "name": "Verificar Estado Conexión",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"sessionName\": \"{{ $('Procesar Datos Conexión').item.json.sessionName }}\",\n  \"status\": \"{{ $json.data.state }}\",\n  \"message\": \"Sesión ya conectada\",\n  \"timestamp\": \"{{ $('Procesar Datos Conexión').item.json.timestamp }}\",\n  \"user\": \"{{ $('Procesar Datos Conexión').item.json.user }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        688,
+        288
+      ],
+      "id": "26d45b20-d8d6-4ad9-889b-fd63492363b5",
+      "name": "Ya Conectada"
+    }
+  ],
+  "connections": {
+    "Webhook - Conectar Sesión": {
+      "main": [
+        [
+          {
+            "node": "Procesar Datos Conexión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Datos Conexión": {
+      "main": [
+        [
+          {
+            "node": "Verificar Instancia Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Instancia Existe": {
+      "main": [
+        [
+          {
+            "node": "Instancia Existe?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Instancia Existe?": {
+      "main": [
+        [
+          {
+            "node": "Conectar Instancia Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Sesión No Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conectar Instancia Existente": {
+      "main": [
+        [
+          {
+            "node": "Conexión Exitosa?",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Conexión Exitosa?": {
+      "main": [
+        [
+          {
+            "node": "Conexión Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Error Conexión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "dd89564c-c065-485b-a585-1edd92d68822",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+  },
+  "id": "2DhmsTxcu1DOqIJr",
+  "tags": []
+}

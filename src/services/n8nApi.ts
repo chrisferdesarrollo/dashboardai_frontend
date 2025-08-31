@@ -375,6 +375,59 @@ export const n8nApi = {
       throw new Error('No se pudo eliminar la sesión de WhatsApp');
     }
   },
+
+  // WhatsApp - Desconectar sesión (logout)
+  async disconnectWhatsAppSession(sessionName: string): Promise<WhatsAppDeleteResponse> {
+    try {
+      console.log('🔌 [N8N-DISCONNECT] Iniciando desconexión de sesión WhatsApp:', sessionName);
+      
+      const url = '/delete-whatsapp-session'; // Usar el mismo webhook que hace logout-instance
+      const payload = { sessionName };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
+      
+      const fullURL = `${config.webhookUrl}${url}`;
+      
+      console.log('🔧 [N8N-DISCONNECT] Configuración de desconexión:', {
+        sessionName,
+        baseURL: config.webhookUrl,
+        url,
+        fullURL,
+        payload: JSON.stringify(payload),
+        webhookApiBaseURL: webhookApi.defaults.baseURL
+      });
+      
+      console.log('📡 [N8N-DISCONNECT] Enviando petición POST a:', fullURL);
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('✅ [N8N-DISCONNECT] Respuesta recibida:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: JSON.stringify(response.data, null, 2)
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [N8N-DISCONNECT] Error desconectando sesión WhatsApp:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🚨 [N8N-DISCONNECT] Detalles del error HTTP:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          fullURL: `${error.config?.baseURL}${error.config?.url}`,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`No se pudo desconectar la sesión de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo desconectar la sesión de WhatsApp');
+    }
+  },
 };
 
 // Simulación de datos para desarrollo (remover en producción)

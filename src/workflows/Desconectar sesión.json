@@ -1,0 +1,165 @@
+{
+  "name": "Desconectar sesión",
+  "nodes": [
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.body.sessionName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        0
+      ],
+      "id": "2df4a5b6-1ac4-4c22-b9ca-58087b72bed1",
+      "name": "Extraer Nombre Sesión"
+    },
+    {
+      "parameters": {
+        "operation": "logout-instance",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        448,
+        0
+      ],
+      "id": "395dfd41-34af-417d-bffe-12abfcaa7841",
+      "name": "Cerrar Sesión WhatsApp",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión eliminada correctamente\",\n  \"sessionName\": \"{{ $('Extraer Nombre Sesión').item.json.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        672,
+        0
+      ],
+      "id": "3334320e-f371-4fb8-bb02-d8ecf74d529c",
+      "name": "Respuesta Exitosa"
+    },
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delete-whatsapp-session",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "8e847b03-0be6-453c-a26b-26b469440610",
+      "name": "Webhook - Desconectar Sesión",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        0
+      ],
+      "webhookId": "delete-whatsapp-session"
+    }
+  ],
+  "pinData": {
+    "Webhook - Desconectar Sesión": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.hrxtio.easypanel.host",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "content-length": "37",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "origin": "http://localhost:3000",
+            "priority": "u=1, i",
+            "referer": "http://localhost:3000/",
+            "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "sec-gpc": "1",
+            "x-forwarded-for": "181.63.178.52",
+            "x-forwarded-host": "n8n-n8n.hrxtio.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "d1110a44cccc",
+            "x-real-ip": "181.63.178.52"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "sessionName": "agent_1755974876654"
+          },
+          "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/delete-whatsapp-session",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Extraer Nombre Sesión": {
+      "main": [
+        [
+          {
+            "node": "Cerrar Sesión WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cerrar Sesión WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Webhook - Desconectar Sesión": {
+      "main": [
+        [
+          {
+            "node": "Extraer Nombre Sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "0114303e-cf72-48d2-a68b-9496281d1725",
+  "meta": {
+    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+  },
+  "id": "wvmi3Fm4BlinvM7h",
+  "tags": []
+}

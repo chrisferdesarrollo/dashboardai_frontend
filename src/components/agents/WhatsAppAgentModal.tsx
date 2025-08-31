@@ -1,32 +1,18 @@
-import { useState, useEffect, useCallback } from 'react';
+import { useState, useEffect } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { WhatsAppIcon } from '@/components/ui/platform-icons';
-import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone, Plus, Search, Star } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { Card, CardContent } from '@/components/ui/card';
-import { Badge } from '@/components/ui/badge';
-import { Checkbox } from '@/components/ui/checkbox';
-import { ScrollArea } from '@/components/ui/scroll-area';
 import { n8nApi } from '@/services/n8nApi';
 import { CreateAgentRequest } from '@/services/agentApi';
-import { workflowService, WorkflowResponse } from '@/services/workflowService';
-import { Workflow } from '@/types/workflow';
-
-// Tipos para la selección de workflows
-interface WorkflowSelection {
-  id: string;
-  name: string;
-  description?: string;
-  isPrimary: boolean;
-  executionOrder: number;
-}
 
 interface WhatsAppAgentModalProps {
   isOpen: boolean;
@@ -35,7 +21,7 @@ interface WhatsAppAgentModalProps {
   agent?: Agent | null;
 }
 
-type CreationStep = 'whatsapp-linking' | 'workflow-selection' | 'business-config' | 'agent-config' | 'completed';
+type CreationStep = 'whatsapp-linking' | 'business-config' | 'agent-config' | 'completed';
 
 interface WhatsAppSession {
   sessionName: string;
@@ -64,13 +50,6 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [qrExpired, setQrExpired] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
-  
-  // Estados para selección de workflows
-  const [availableWorkflows, setAvailableWorkflows] = useState<WorkflowResponse[]>([]);
-  const [selectedWorkflows, setSelectedWorkflows] = useState<WorkflowSelection[]>([]);
-  const [showWorkflowSelector, setShowWorkflowSelector] = useState(false);
-  const [workflowSearchTerm, setWorkflowSearchTerm] = useState('');
-  const [loadingWorkflows, setLoadingWorkflows] = useState(false);
   
   const [formData, setFormData] = useState({
     name: '',
@@ -254,95 +233,11 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     onBack();
   };
 
-  // Función para cargar workflows disponibles
-  const loadAvailableWorkflows = useCallback(async () => {
-    if (!user?.id) return;
-    
-    setLoadingWorkflows(true);
-    try {
-      const response = await workflowService.getWorkflowsByUser(user.id);
-      if (response.success) {
-        setAvailableWorkflows(response.data || []);
-      }
-    } catch (error) {
-      console.error('Error loading workflows:', error);
-      toast({
-        title: 'Error',
-        description: 'No se pudieron cargar los workflows',
-        variant: 'destructive',
-      });
-    } finally {
-      setLoadingWorkflows(false);
-    }
-  }, [user?.id, toast]);
-
-  // Funciones para manejar la selección de workflows
-  const handleWorkflowSelection = (workflow: WorkflowResponse, isSelected: boolean) => {
-    if (isSelected) {
-      // Agregar workflow
-      const newSelection: WorkflowSelection = {
-        id: workflow.id,
-        name: workflow.name,
-        description: workflow.description,
-        isPrimary: selectedWorkflows.length === 0, // El primero es principal por defecto
-        executionOrder: selectedWorkflows.length + 1
-      };
-      setSelectedWorkflows(prev => [...prev, newSelection]);
-    } else {
-      // Remover workflow
-      setSelectedWorkflows(prev => {
-        const filtered = prev.filter(w => w.id !== workflow.id);
-        // Reajustar orden
-        return filtered.map((w, index) => ({
-          ...w,
-          executionOrder: index + 1,
-          isPrimary: index === 0 // El primero siempre es principal
-        }));
-      });
-    }
-  };
-
-  const setPrimaryWorkflow = (workflowId: string) => {
-    setSelectedWorkflows(prev => 
-      prev.map(w => ({
-        ...w,
-        isPrimary: w.id === workflowId
-      }))
-    );
-  };
-
-  const moveWorkflow = (workflowId: string, direction: 'up' | 'down') => {
-    setSelectedWorkflows(prev => {
-      const index = prev.findIndex(w => w.id === workflowId);
-      if (index === -1) return prev;
-      
-      const newIndex = direction === 'up' ? index - 1 : index + 1;
-      if (newIndex < 0 || newIndex >= prev.length) return prev;
-      
-      const newArray = [...prev];
-      [newArray[index], newArray[newIndex]] = [newArray[newIndex], newArray[index]];
-      
-      // Reajustar orden
-      return newArray.map((w, i) => ({
-        ...w,
-        executionOrder: i + 1
-      }));
-    });
-  };
-
-  // Filtrar workflows disponibles
-  const filteredWorkflows = availableWorkflows.filter(workflow =>
-    workflow.name.toLowerCase().includes(workflowSearchTerm.toLowerCase()) ||
-    workflow.description?.toLowerCase().includes(workflowSearchTerm.toLowerCase())
-  );
-
   // Reset modal state when opening
   useEffect(() => {
     if (isOpen && !isEditing) {
       setCurrentStep('whatsapp-linking');
       setWhatsappSession(null);
-      setSelectedWorkflows([]);
-      setWorkflowSearchTerm('');
       setFormData({ 
         name: '', 
         description: '', 
@@ -409,9 +304,8 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           }
         }
       });
-      loadAvailableWorkflows(); // Cargar workflows al abrir el modal
     }
-  }, [isOpen, isEditing, loadAvailableWorkflows]);
+  }, [isOpen, isEditing]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -494,7 +388,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           
           // Avanzar al siguiente paso después de un breve delay
           setTimeout(() => {
-            setCurrentStep('workflow-selection');
+            setCurrentStep('business-config');
           }, 1500);
         } else {
           console.log('WhatsApp not connected yet, continuing polling...');
@@ -547,19 +441,10 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
       return;
     }
 
-    if (selectedWorkflows.length === 0) {
-      toast({
-        title: 'Error',
-        description: 'Selecciona al menos un workflow',
-        variant: 'destructive',
-      });
-      return;
-    }
-
     setIsLoading(true);
     
     try {
-      console.log('Creating agent with workflows:', selectedWorkflows);
+      console.log('Creating WhatsApp agent');
       
       // Generar prompt inteligente basado en la configuración de negocio
       const enhancedPrompt = generateBusinessPrompt(formData);
@@ -571,14 +456,11 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
         platform: 'whatsapp',
         prompt: enhancedPrompt,
         workflowId: whatsappSession.sessionName, // Para compatibilidad
-        workflowIds: selectedWorkflows.map(w => w.id),
-        primaryWorkflowId: selectedWorkflows.find(w => w.isPrimary)?.id,
         platformConfig: JSON.stringify({
           sessionName: whatsappSession.sessionName,
           isConnected: true,
           connectedAt: new Date().toISOString(),
           timestamp: whatsappSession.timestamp,
-          workflows: selectedWorkflows,
           businessType: formData.businessType,
           conversationalGoal: formData.conversationalGoal,
           targetAudience: formData.targetAudience,
@@ -596,7 +478,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
       // Mostrar mensaje de éxito
       toast({
         title: 'Agente creado',
-        description: `¡Agente "${formData.name}" creado con ${selectedWorkflows.length} workflow(s)!`,
+        description: `¡Agente "${formData.name}" creado exitosamente!`,
       });
       
       // Limpiar el formulario
@@ -814,160 +696,6 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           </div>
         );
 
-      case 'workflow-selection':
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold mb-2">Selecciona Workflows</h3>
-              <p className="text-muted-foreground">
-                Elige los workflows que procesarán los mensajes de WhatsApp
-              </p>
-            </div>
-
-            <div className="space-y-4">
-              {/* Buscador */}
-              <div className="relative">
-                <Search className="absolute left-3 top-3 h-4 w-4 text-muted-foreground" />
-                <Input
-                  placeholder="Buscar workflows..."
-                  value={workflowSearchTerm}
-                  onChange={(e) => setWorkflowSearchTerm(e.target.value)}
-                  className="pl-10"
-                />
-              </div>
-
-              {/* Lista de workflows */}
-              <ScrollArea className="h-64 border rounded-lg">
-                <div className="p-4 space-y-2">
-                  {loadingWorkflows ? (
-                    <div className="text-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin mx-auto mb-2" />
-                      <p className="text-muted-foreground">Cargando workflows...</p>
-                    </div>
-                  ) : filteredWorkflows.length === 0 ? (
-                    <div className="text-center py-8">
-                      <p className="text-muted-foreground">
-                        {workflowSearchTerm ? 'No se encontraron workflows' : 'No tienes workflows guardados'}
-                      </p>
-                    </div>
-                  ) : (
-                    filteredWorkflows.map((workflow) => {
-                      const isSelected = selectedWorkflows.some(w => w.id === workflow.id);
-                      return (
-                        <div
-                          key={workflow.id}
-                          className="flex items-center space-x-3 p-3 border rounded-lg hover:bg-muted/50"
-                        >
-                          <Checkbox
-                            id={workflow.id}
-                            checked={isSelected}
-                            onCheckedChange={(checked) => 
-                              handleWorkflowSelection(workflow, checked as boolean)
-                            }
-                          />
-                          <div className="flex-1">
-                            <label
-                              htmlFor={workflow.id}
-                              className="text-sm font-medium cursor-pointer"
-                            >
-                              {workflow.name}
-                            </label>
-                            {workflow.description && (
-                              <p className="text-sm text-muted-foreground">
-                                {workflow.description}
-                              </p>
-                            )}
-                            <div className="flex gap-2 mt-1">
-                              <Badge variant="outline" className="text-xs">
-                                {workflow.active ? 'Activo' : 'Inactivo'}
-                              </Badge>
-                            </div>
-                          </div>
-                        </div>
-                      );
-                    })
-                  )}
-                </div>
-              </ScrollArea>
-
-              {/* Workflows seleccionados */}
-              {selectedWorkflows.length > 0 && (
-                <div className="bg-muted p-4 rounded-lg">
-                  <h4 className="font-medium mb-2">Workflows Seleccionados ({selectedWorkflows.length})</h4>
-                  <div className="space-y-2">
-                    {selectedWorkflows
-                      .sort((a, b) => a.executionOrder - b.executionOrder)
-                      .map((workflow, index) => (
-                        <div
-                          key={workflow.id}
-                          className="flex items-center justify-between p-2 bg-background rounded border"
-                        >
-                          <div className="flex items-center gap-2">
-                            <span className="text-sm font-medium bg-primary text-primary-foreground px-2 py-1 rounded">
-                              {workflow.executionOrder}
-                            </span>
-                            <div>
-                              <p className="font-medium text-sm">{workflow.name}</p>
-                              {workflow.description && (
-                                <p className="text-xs text-muted-foreground">{workflow.description}</p>
-                              )}
-                            </div>
-                            {workflow.isPrimary && (
-                              <Badge variant="default" className="ml-2">
-                                <Star className="h-3 w-3 mr-1" />
-                                Principal
-                              </Badge>
-                            )}
-                          </div>
-                          <div className="flex gap-1">
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveWorkflow(workflow.id, 'up')}
-                              disabled={index === 0}
-                            >
-                              ↑
-                            </Button>
-                            <Button
-                              type="button"
-                              variant="ghost"
-                              size="sm"
-                              onClick={() => moveWorkflow(workflow.id, 'down')}
-                              disabled={index === selectedWorkflows.length - 1}
-                            >
-                              ↓
-                            </Button>
-                          </div>
-                        </div>
-                      ))}
-                  </div>
-                </div>
-              )}
-            </div>
-
-            {/* Botones */}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => setCurrentStep('whatsapp-linking')}
-                className="flex-1"
-              >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                onClick={() => setCurrentStep('business-config')}
-                disabled={selectedWorkflows.length === 0}
-                className="flex-1"
-              >
-                Continuar
-              </Button>
-            </div>
-          </div>
-        );
-
       case 'business-config':
         return (
           <div className="space-y-6">
@@ -1141,7 +869,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setCurrentStep('workflow-selection')}
+                onClick={() => setCurrentStep('whatsapp-linking')}
                 className="flex-1"
               >
                 Atrás

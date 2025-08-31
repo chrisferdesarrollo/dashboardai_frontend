@@ -149,14 +149,37 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   toggleAgentStatus: async (id) => {
     set({ loading: true, error: null });
     try {
-      const agents = get().agents.map(agent => 
-        agent.id === id 
+      const agent = get().agents.find(a => a.id === id);
+      if (!agent) {
+        throw new Error('Agente no encontrado');
+      }
+      
+      const newStatus = agent.status === 'active' ? 'inactive' : 'active';
+      
+      // Llamar a la API para actualizar el estado en la base de datos
+      await agentService.updateAgentStatus(id, newStatus);
+      
+      // Si el agente se está desactivando y es de WhatsApp, desconectar la sesión
+      if (newStatus === 'inactive' && agent.platform === 'whatsapp') {
+        try {
+          console.log('🔌 Desconectando sesión de WhatsApp para agente:', agent.name);
+          await agentService.disconnectWhatsAppSession(id);
+          console.log('✅ Sesión de WhatsApp desconectada exitosamente');
+        } catch (error) {
+          console.warn('⚠️ Error desconectando sesión de WhatsApp:', error);
+          // No fallar la operación completa si solo falla la desconexión
+        }
+      }
+      
+      // Actualizar el estado local después de la llamada exitosa a la API
+      const agents = get().agents.map(a => 
+        a.id === id 
           ? { 
-              ...agent, 
-              status: (agent.status === 'active' ? 'inactive' : 'active') as 'active' | 'inactive',
+              ...a, 
+              status: newStatus as 'active' | 'inactive',
               updatedAt: new Date()
             }
-          : agent
+          : a
       );
       set({ agents, loading: false });
     } catch (error) {
