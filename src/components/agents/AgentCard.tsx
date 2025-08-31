@@ -1,3 +1,4 @@
+import { useState } from 'react';
 import { Agent } from '@/types/agent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -19,6 +20,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from '@/components/ui/dropdown-menu';
+import { WhatsAppReconnectModal } from './WhatsAppReconnectModal';
 import { useAgentStore } from '@/store/agentStore';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -81,6 +83,7 @@ const platformConfig = {
 
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
   const { toggleAgentStatus, executeAgent } = useAgentStore();
+  const [showReconnectModal, setShowReconnectModal] = useState(false);
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
   
@@ -88,6 +91,17 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
   const PlatformIcon = platformInfo.icon;
 
   const handleToggleStatus = () => {
+    // Si es un agente de WhatsApp inactivo, mostrar modal de reconexión
+    if (agent.platform === 'whatsapp' && agent.status === 'inactive') {
+      setShowReconnectModal(true);
+    } else {
+      // Para otros casos, usar la funcionalidad normal
+      toggleAgentStatus(agent.id);
+    }
+  };
+
+  const handleReconnectSuccess = () => {
+    // Actualizar el estado del agente después de reconectar
     toggleAgentStatus(agent.id);
   };
 
@@ -211,6 +225,14 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
           </Button>
         </div>
       </CardContent>
+      
+      {/* Modal de reconexión de WhatsApp */}
+      <WhatsAppReconnectModal
+        isOpen={showReconnectModal}
+        onClose={() => setShowReconnectModal(false)}
+        agent={agent}
+        onReconnectSuccess={handleReconnectSuccess}
+      />
     </Card>
   );
 }

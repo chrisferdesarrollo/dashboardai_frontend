@@ -13,6 +13,8 @@ interface WhatsAppSessionResponse {
   base64?: string;
   timestamp: string;
   user: string;
+  status?: string;
+  message?: string;
   error?: string;
 }
 
@@ -280,6 +282,77 @@ export const n8nApi = {
     }
   },
 
+  // WhatsApp - Conectar sesión existente (para reconexión)
+  async connectWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+    try {
+      console.log('🔌 [N8N-CONNECT] Iniciando conexión de sesión WhatsApp existente:', sessionName);
+      
+      const url = '/connect-whatsapp-session';
+      const payload = { sessionName };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
+      
+      const fullURL = `${config.webhookUrl}${url}`;
+      
+      console.log('🔧 [N8N-CONNECT] Configuración de conexión:', {
+        sessionName,
+        baseURL: config.webhookUrl,
+        url,
+        fullURL,
+        payload: JSON.stringify(payload),
+        webhookApiBaseURL: webhookApi.defaults.baseURL
+      });
+      
+      console.log('📡 [N8N-CONNECT] Enviando petición POST a:', fullURL);
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('✅ [N8N-CONNECT] Respuesta recibida:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: JSON.stringify(response.data, null, 2)
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [N8N-CONNECT] Error conectando sesión WhatsApp:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🚨 [N8N-CONNECT] Detalles del error HTTP:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          fullURL: `${error.config?.baseURL}${error.config?.url}`,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
+      // Simulación para desarrollo si hay error de red
+      if (error instanceof Error && error.message.includes('Network Error')) {
+        console.warn('🚧 Modo desarrollo: Simulando respuesta de conexión WhatsApp');
+        
+        // QR code simulado para reconexión
+        const mockQrBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAIoAAACKCAYAAABdotmlAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAwOC8yOC8yNJqMGD0AAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAAAKElEQVR42u3BAQEAAACAkP6v7ggKAAAAAAAAAAAAAAAAAAAAAAAAAAAAgGcDQAABAAJgywOYPAAAAABJRU5ErkJggg==';
+        
+        return {
+          success: true,
+          sessionName,
+          base64: mockQrBase64,
+          timestamp: new Date().toISOString(),
+          user: 'development_user',
+          status: 'connecting',
+          message: 'Sesión conectada exitosamente (modo desarrollo)'
+        };
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`No se pudo conectar la sesión de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo conectar la sesión de WhatsApp');
+    }
+  },
+
   // WhatsApp - Verificar estado de conexión
   async checkWhatsAppStatus(sessionName: string): Promise<WhatsAppStatusResponse> {
     try {
@@ -373,6 +446,82 @@ export const n8nApi = {
         throw new Error(`No se pudo eliminar la sesión de WhatsApp: ${error.message}`);
       }
       throw new Error('No se pudo eliminar la sesión de WhatsApp');
+    }
+  },
+
+  // WhatsApp - Reconectar sesión existente (buscar sesión activa y obtener QR)
+  async reconnectExistingWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+    try {
+      console.log('🔄 [N8N-RECONNECT] Iniciando reconexión de sesión WhatsApp existente:', sessionName);
+      
+      // Usar el webhook de conectar existente pero con un parámetro que indique que es reconexión
+      const url = '/connect-whatsapp-session';
+      const payload = { 
+        sessionName,
+        mode: 'reconnect' // Indicar que es una reconexión, no creación
+      };
+      const webhookApi = await getWebhookClient();
+      const config = await getN8nConfig();
+      
+      const fullURL = `${config.webhookUrl}${url}`;
+      
+      console.log('🔧 [N8N-RECONNECT] Configuración de reconexión:', {
+        sessionName,
+        mode: 'reconnect',
+        baseURL: config.webhookUrl,
+        url,
+        fullURL,
+        payload: JSON.stringify(payload),
+        webhookApiBaseURL: webhookApi.defaults.baseURL
+      });
+      
+      console.log('📡 [N8N-RECONNECT] Enviando petición POST a:', fullURL);
+      const response = await webhookApi.post(url, payload);
+      
+      console.log('✅ [N8N-RECONNECT] Respuesta recibida:', {
+        status: response.status,
+        statusText: response.statusText,
+        data: JSON.stringify(response.data, null, 2)
+      });
+      
+      return response.data;
+    } catch (error) {
+      console.error('❌ [N8N-RECONNECT] Error reconectando sesión WhatsApp:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🚨 [N8N-RECONNECT] Detalles del error HTTP:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          fullURL: `${error.config?.baseURL}${error.config?.url}`,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
+      
+      // Simulación para desarrollo si hay error de red
+      if (error instanceof Error && error.message.includes('Network Error')) {
+        console.warn('🚧 Modo desarrollo: Simulando respuesta de reconexión WhatsApp');
+        
+        // QR code simulado para reconexión
+        const mockQrBase64 = 'iVBORw0KGgoAAAANSUhEUgAAAIoAAACKCAYAAABdotmlAAAABHNCSVQICAgIfAhkiAAAAAlwSFlzAAALEgAACxIB0t1+/AAAABZ0RVh0Q3JlYXRpb24gVGltZQAwOC8yOC8yNJqMGD0AAAAcdEVYdFNvZnR3YXJlAEFkb2JlIEZpcmV3b3JrcyBDUzVxteM2AAAAKElEQVR42u3BAQEAAACAkP6v7ggKAAAAAAAAAAAAAAAAAAAAAAAAAAAAgGcDQAABAAJgywOYPAAAAABJRU5ErkJggg==';
+        
+        return {
+          success: true,
+          sessionName,
+          base64: `data:image/png;base64,${mockQrBase64}`,
+          timestamp: new Date().toISOString(),
+          user: 'development_user',
+          status: 'reconnecting',
+          message: 'Sesión reconectada exitosamente (modo desarrollo)'
+        };
+      }
+      
+      if (error instanceof Error) {
+        throw new Error(`No se pudo reconectar la sesión de WhatsApp: ${error.message}`);
+      }
+      throw new Error('No se pudo reconectar la sesión de WhatsApp');
     }
   },
 

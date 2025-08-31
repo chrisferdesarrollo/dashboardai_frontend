@@ -1,6 +1,17 @@
 // Tipos de datos para los agentes de IA
 export type PlatformType = 'whatsapp' | 'telegram';
 
+export interface WhatsAppPlatformConfig {
+  sessionName: string;
+  isConnected: boolean;
+  connectedAt: string;
+  timestamp: string;
+  businessType?: string;
+  conversationalGoal?: string;
+  targetAudience?: string;
+  businessInfo?: string;
+}
+
 export interface Agent {
   id: string;
   name: string;
@@ -11,6 +22,7 @@ export interface Agent {
   lastExecution?: Date;
   totalExecutions: number;
   settings: AgentSettings;
+  platformConfig?: string | WhatsAppPlatformConfig; // Configuración específica de la plataforma
   createdAt: Date;
   updatedAt: Date;
 }

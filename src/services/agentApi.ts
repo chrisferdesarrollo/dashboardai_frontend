@@ -1,7 +1,7 @@
 import axios from 'axios';
 import configService from './configService';
 import { n8nApi } from './n8nApi';
-import { Agent } from '@/types/agent';
+import { Agent, WhatsAppPlatformConfig } from '@/types/agent';
 
 // Función para crear cliente API con configuración dinámica
 const createApiClient = async () => {
@@ -120,6 +120,9 @@ export interface AgentResponse {
   platform: 'whatsapp' | 'telegram';
   status: 'active' | 'inactive' | 'error';
   prompt: string;
+  sessionName?: string; // 🔧 RENOMBRADO: sessionName en lugar de workflowId
+  platformConfig?: string | object; // 🔧 AÑADIDO: platformConfig del backend (puede ser JSON string u objeto)
+  totalExecutions?: number; // 🔧 AÑADIDO: total de ejecuciones
   phoneNumber?: string;
   botToken?: string;
   userId: number;
@@ -412,6 +415,13 @@ export const agentService = {
  * Función para mapear AgentResponse a Agent (tipo del frontend)
  */
 export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
+  console.log('🔄 [MAPPING] Mapeando AgentResponse a Agent:', {
+    id: agentResponse.id,
+    name: agentResponse.name,
+    sessionName: agentResponse.sessionName,
+    platformConfig: agentResponse.platformConfig
+  });
+
   let platformConfig: Record<string, unknown> = {};
   
   if (agentResponse.platform === 'whatsapp') {
@@ -424,15 +434,31 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
     };
   }
 
-  return {
+  // 🔧 PARSED PLATFORM CONFIG: Procesar platformConfig del backend si existe
+  let parsedPlatformConfig: string | WhatsAppPlatformConfig | null = null;
+  if (agentResponse.platformConfig) {
+    try {
+      parsedPlatformConfig = typeof agentResponse.platformConfig === 'string' 
+        ? JSON.parse(agentResponse.platformConfig) 
+        : agentResponse.platformConfig;
+      console.log('🔄 [MAPPING] platformConfig parseado del backend:', parsedPlatformConfig);
+    } catch (error) {
+      console.warn('⚠️ [MAPPING] Error parsing platformConfig from backend:', error);
+    }
+  }
+
+  const mappedAgent: Agent = {
     id: agentResponse.id, // Ya es string (UUID)
     name: agentResponse.name,
     description: agentResponse.description,
     platform: agentResponse.platform,
     status: agentResponse.status,
-    workflowId: `wf_${agentResponse.id}`,
+    // 🎯 FIX CRÍTICO: Usar sessionName del backend, NO generar uno fake
+    workflowId: agentResponse.sessionName || `wf_${agentResponse.id}`, // Fallback solo si no existe
+    // 🎯 FIX CRÍTICO: Incluir platformConfig del backend
+    platformConfig: parsedPlatformConfig,
     lastExecution: new Date(agentResponse.updatedAt),
-    totalExecutions: 0, // Por ahora no tenemos este dato
+    totalExecutions: agentResponse.totalExecutions || 0,
     settings: {
       apiKeys: {}, // Vacío por ahora
       prompts: {
@@ -443,6 +469,15 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
     createdAt: new Date(agentResponse.createdAt),
     updatedAt: new Date(agentResponse.updatedAt),
   };
+
+  console.log('✅ [MAPPING] Agent mapeado:', {
+    id: mappedAgent.id,
+    name: mappedAgent.name,
+    workflowId: mappedAgent.workflowId,
+    platformConfig: mappedAgent.platformConfig
+  });
+
+  return mappedAgent;
 }
 
 export default agentService;
