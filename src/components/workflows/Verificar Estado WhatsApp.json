@@ -1,0 +1,280 @@
+{
+  "name": "Verificar Estado WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "check-whatsapp-status",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "5a9003e9-622f-410a-a008-b39c9ca35e85",
+      "name": "Webhook - Verificar Estado",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -832,
+        -32
+      ],
+      "webhookId": "check-whatsapp-status"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.body.sessionName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -624,
+        -32
+      ],
+      "id": "63242d3a-ccef-467d-bb17-84e99d18568c",
+      "name": "Extraer Nombre Sesión"
+    },
+    {
+      "parameters": {
+        "operation": "fetch-instances",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -416,
+        -32
+      ],
+      "id": "c25d7dba-4d79-4666-b585-04e085fe9d9e",
+      "name": "Obtener Estado Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "instance-exists-condition",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -208,
+        -32
+      ],
+      "id": "d327ca48-673a-4cfc-bc68-7de935e7fefd",
+      "name": "Verificar Instancia Existe"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "connected-assign",
+              "name": "connected",
+              "value": "={{ $json.data[0].connectionStatus === 'open' }}",
+              "type": "boolean"
+            },
+            {
+              "id": "status-assign",
+              "name": "status",
+              "value": "={{ $json.instance.connectionStatus }}",
+              "type": "string"
+            },
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $('Extraer Nombre Sesión').item.json.sessionName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        16,
+        -112
+      ],
+      "id": "46cff5b8-3439-48be-9bbd-4c165761dc63",
+      "name": "Procesar Estado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"connected\": {{ $json.connected }},\n  \"status\": \"{{ $json.status }}\",\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        240,
+        -112
+      ],
+      "id": "22523588-a418-4c59-be12-3b1920023814",
+      "name": "Respuesta Estado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"connected\": false,\n  \"status\": \"not_found\",\n  \"sessionName\": \"{{ $('Extraer Nombre Sesión').item.json.sessionName }}\",\n  \"error\": \"Instancia no encontrada\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        16,
+        48
+      ],
+      "id": "8c82ade1-46f7-4f5e-941a-52442256231c",
+      "name": "Respuesta No Encontrada"
+    }
+  ],
+  "pinData": {
+    "Webhook - Verificar Estado": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.hrxtio.easypanel.host",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "content-length": "45",
+            "accept": "*/*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "origin": "http://localhost:8080",
+            "priority": "u=1, i",
+            "referer": "http://localhost:8080/",
+            "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "sec-gpc": "1",
+            "x-forwarded-for": "181.63.178.43",
+            "x-forwarded-host": "n8n-n8n.hrxtio.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "d1110a44cccc",
+            "x-real-ip": "181.63.178.43"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "sessionName": "session-1755617478291-58915"
+          },
+          "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/check-whatsapp-status",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook - Verificar Estado": {
+      "main": [
+        [
+          {
+            "node": "Extraer Nombre Sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Nombre Sesión": {
+      "main": [
+        [
+          {
+            "node": "Obtener Estado Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Estado Instancia": {
+      "main": [
+        [
+          {
+            "node": "Verificar Instancia Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Verificar Instancia Existe": {
+      "main": [
+        [
+          {
+            "node": "Procesar Estado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta No Encontrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Estado": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "574072ac-a713-4e49-8d02-f9d0031ef717",
+  "meta": {
+    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+  },
+  "id": "RwE8yzknMN6i81nm",
+  "tags": []
+}

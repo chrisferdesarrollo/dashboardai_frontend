@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Badge } from '@/components/ui/badge';
@@ -34,6 +34,12 @@ export function WhatsAppReconnectModal({
   const [connectionChecking, setConnectionChecking] = useState(false);
   const [qrExpired, setQrExpired] = useState(false);
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
+  
+  // Estado para mostrar progreso de conexión
+  const [connectionProgress, setConnectionProgress] = useState<{
+    step: 'generating' | 'waiting' | 'verifying' | 'connected' | 'failed';
+    message: string;
+  }>({ step: 'waiting', message: 'Listo para generar QR' });
 
   // Función para obtener el sessionName del agente
   const getSessionName = (agent: Agent): string => {
@@ -177,9 +183,9 @@ export function WhatsAppReconnectModal({
     
     try {
       const sessionName = getSessionName(agent);
-      console.log('🔄 [RECONNECT] Reconectando sesión existente:', sessionName);
+      console.log('🔄 [RECONNECT] Conectando sesión existente:', sessionName);
       
-      // Usar la nueva función que busca y reconecta una sesión existente
+      // Usar la función específica para reconexión que genera QR de sesión existente
       const response = await n8nApi.reconnectExistingWhatsAppSession(sessionName);
       
       console.log('📥 [RECONNECT] Respuesta recibida:', {
@@ -208,16 +214,32 @@ export function WhatsAppReconnectModal({
           isConnected: false,
           timestamp: response.timestamp
         });
+        // Iniciar verificación de estado de conexión
+        setConnectionChecking(true);
+        
+        // DESPUÉS de generar el QR, activar el workflow de verificación en n8n
+        console.log('🚀 [RECONNECT] Activando workflow de verificación en n8n...');
+        setTimeout(async () => {
+          try {
+            // Hacer una primera llamada para "despertar" el workflow de verificación
+            await n8nApi.checkWhatsAppStatus(sessionName);
+            console.log('✅ [RECONNECT] Workflow de verificación activado en n8n');
+          } catch (error) {
+            console.warn('⚠️ [RECONNECT] Error activando workflow de verificación:', error);
+          }
+        }, 1000); // Activar después de 1 segundo de generar el QR
         
         toast({
           title: 'QR Generado',
           description: 'Escanea el código QR con tu WhatsApp para reconectar la sesión existente.',
         });
       } else {
+        setConnectionProgress({ step: 'failed', message: 'Error generando el código QR' });
         throw new Error('No se pudo generar el código QR para la reconexión');
       }
     } catch (error) {
       console.error('Error reconectando sesión:', error);
+      setConnectionProgress({ step: 'failed', message: 'Error reconectando sesión' });
       toast({
         title: 'Error',
         description: 'No se pudo reconectar la sesión de WhatsApp. Intenta nuevamente.',
@@ -228,71 +250,109 @@ export function WhatsAppReconnectModal({
     }
   };
 
-  // Polling automático cuando se muestra el QR
+  // Callbacks estables
+  const handleSuccess = useCallback(() => {
+    onReconnectSuccess();
+    onClose();
+  }, [onReconnectSuccess, onClose]);
+
+  // Polling automático cuando se muestra el QR - Simplificado para evitar dependencias circulares
   useEffect(() => {
-    if (whatsappSession && !whatsappSession.isConnected && !pollingInterval) {
-      console.log('🔄 [RECONNECT] Iniciando polling de conexión...');
-      
-      // Función para verificar conexión dentro del useEffect
-      const checkConnectionInterval = async () => {
-        if (!whatsappSession || !agent) return;
-        
-        setConnectionChecking(true);
-        
-        try {
-          const status = await n8nApi.checkWhatsAppStatus(whatsappSession.sessionName);
-          
-          if (status.success && (status.isConnected || status.connected)) {
-            console.log('✅ [RECONNECT] WhatsApp conectado exitosamente');
-            
-            // Actualizar estado de la sesión
-            setWhatsappSession(prev => prev ? {
-              ...prev,
-              isConnected: true
-            } : null);
-            
-            // Limpiar polling
-            if (pollingInterval) {
-              clearInterval(pollingInterval);
-              setPollingInterval(null);
-            }
-            
-            // Toast de éxito
-            toast({
-              title: 'WhatsApp Reconectado',
-              description: `¡Tu cuenta de WhatsApp ha sido reconectada exitosamente al agente "${agent.name}"!`,
-            });
-            
-            // Llamar callback de éxito después de un breve delay
-            setTimeout(() => {
-              onReconnectSuccess();
-              onClose();
-            }, 1500);
-          }
-        } catch (error) {
-          console.error('Error verificando estado de WhatsApp:', error);
-        } finally {
-          setConnectionChecking(false);
-        }
-      };
-      
-      const interval = setInterval(checkConnectionInterval, 3000);
-      setPollingInterval(interval);
-      
-      // Timeout de 5 minutos para expirar el QR
-      const timeout = setTimeout(() => {
-        console.log('⏰ [RECONNECT] QR expirado por timeout');
-        setQrExpired(true);
-        clearInterval(interval);
-        setPollingInterval(null);
-      }, 300000); // 5 minutos
-      
-      return () => {
-        clearInterval(interval);
-        clearTimeout(timeout);
-      };
+    if (!whatsappSession || whatsappSession.isConnected || qrExpired || pollingInterval) {
+      return;
     }
-  }, [whatsappSession, pollingInterval, agent, toast, onReconnectSuccess, onClose]);
+    
+    console.log('🔄 [RECONNECT] Iniciando polling de conexión para sesión:', whatsappSession.sessionName);
+    
+    // Función de polling con timing inteligente
+    let pollCount = 0;
+    const pollConnection = async () => {
+      try {
+        pollCount++;
+        console.log(`🔍 [RECONNECT] Verificando estado de WhatsApp (intento ${pollCount})...`);
+        const status = await n8nApi.checkWhatsAppStatus(whatsappSession.sessionName);
+        
+        console.log('📋 [RECONNECT] Respuesta del status:', status);
+        
+        // Solo considerar como conectado si el estado es realmente 'open' o 'connected'
+        const isConnected = status.success && (
+          (status.isConnected || status.connected) && 
+          (status.status === 'open' || status.status === 'connected')
+        );
+        
+        if (isConnected) {
+          console.log('✅ [RECONNECT] ¡WhatsApp conectado exitosamente!');
+          
+          // Actualizar estado local
+          setWhatsappSession(prev => prev ? { ...prev, isConnected: true } : null);
+          setConnectionChecking(false);
+          
+          // Limpiar polling
+          if (pollingInterval) {
+            clearInterval(pollingInterval);
+            setPollingInterval(null);
+          }
+          
+          // Toast de éxito
+          toast({
+            title: '✅ WhatsApp Reconectado',
+            description: `¡Tu cuenta de WhatsApp ha sido reconectada exitosamente al agente "${agent?.name}"!`,
+            duration: 5000,
+          });
+          
+          // Llamar callback de éxito después de un breve delay
+          setTimeout(() => {
+            handleSuccess();
+          }, 2000);
+          
+        } else {
+          console.log(`🔍 [RECONNECT] WhatsApp aún no conectado (${status.status}). Continuando polling...`);
+          // Solo continuar polling sin actualizar mensajes complejos
+        }
+        
+      } catch (error) {
+        console.error('❌ [RECONNECT] Error verificando estado de WhatsApp:', error);
+        // Continuar polling sin detener por errores temporales
+      }
+    };
+    
+    // Empezar polling después de 5 segundos para dar tiempo al usuario
+    console.log('⏰ [RECONNECT] Esperando 5 segundos antes de iniciar verificación...');
+    
+    const initialDelay = setTimeout(() => {
+      // Iniciar polling cada 5 segundos (más espaciado)
+      setConnectionChecking(true);
+      const pollingIntervalId = setInterval(pollConnection, 5000);
+      setPollingInterval(pollingIntervalId);
+    }, 1000); // Esperar 5 segundos
+    
+    // Timeout de 5 minutos para expirar el QR
+    const qrTimeout = setTimeout(() => {
+      console.log('⏰ [RECONNECT] QR expirado por timeout');
+      setQrExpired(true);
+      
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+      setConnectionChecking(false);
+      
+      toast({
+        title: '⏰ Código QR Expirado',
+        description: 'El código QR ha expirado. Genera uno nuevo para continuar.',
+        variant: 'destructive',
+      });
+    }, 300000); // 5 minutos
+    
+    return () => {
+      clearTimeout(initialDelay);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+      }
+      clearTimeout(qrTimeout);
+      setConnectionChecking(false);
+    };
+  }, [whatsappSession, qrExpired, pollingInterval, agent?.name, handleSuccess, toast]);
 
   // Cleanup al cerrar modal
   useEffect(() => {
@@ -368,9 +428,7 @@ export function WhatsAppReconnectModal({
           {isConnecting && (
             <div className="text-center space-y-4">
               <Loader2 className="h-8 w-8 animate-spin mx-auto text-primary" />
-              <p className="text-sm text-muted-foreground">
-                Generando código QR...
-              </p>
+              <p className="text-sm font-medium">Generando código QR...</p>
             </div>
           )}
 
@@ -404,18 +462,39 @@ export function WhatsAppReconnectModal({
                   </div>
                 </div>
                 
-                <div className="flex items-center justify-center gap-2">
-                  {connectionChecking ? (
-                    <>
-                      <Loader2 className="h-4 w-4 animate-spin text-blue-500" />
-                      <span className="text-sm text-blue-600">Verificando conexión...</span>
-                    </>
-                  ) : (
-                    <>
-                      <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
-                      <span className="text-sm text-muted-foreground">Esperando escaneo...</span>
-                    </>
-                  )}
+                {/* Estado simple de espera */}
+                <div className="border rounded-lg p-3 mb-4 bg-blue-50 border-blue-200">
+                  <div className="flex items-center justify-center gap-2">
+                    <div className="h-2 w-2 bg-blue-500 rounded-full animate-pulse" />
+                    <span className="text-sm text-blue-600">Esperando escaneo del QR...</span>
+                  </div>
+                </div>
+              </div>
+            </div>
+          )}
+
+          {/* Conexión Exitosa */}
+          {whatsappSession && whatsappSession.isConnected && (
+            <div className="text-center space-y-4">
+              <div className="bg-green-50 border border-green-200 rounded-lg p-4">
+                <div className="flex items-center justify-center mb-3">
+                  <div className="h-12 w-12 bg-green-500 rounded-full flex items-center justify-center">
+                    <svg className="h-6 w-6 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                      <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                    </svg>
+                  </div>
+                </div>
+                <h4 className="font-medium text-green-900 mb-2">¡WhatsApp Conectado!</h4>
+                <p className="text-sm text-green-700 mb-4">
+                  Tu cuenta de WhatsApp ha sido reconectada exitosamente al agente "{agent?.name}".
+                </p>
+                <div className="bg-white rounded-lg p-3 border border-green-200">
+                  <p className="text-xs text-muted-foreground">
+                    Sesión: {whatsappSession.sessionName}
+                  </p>
+                  <p className="text-xs text-muted-foreground">
+                    Estado: Conectado y listo para usar
+                  </p>
                 </div>
               </div>
             </div>
@@ -462,10 +541,25 @@ export function WhatsAppReconnectModal({
               variant="outline" 
               onClick={onClose}
               className="flex-1"
-              disabled={isConnecting}
+              disabled={isConnecting && !whatsappSession?.isConnected}
             >
-              {whatsappSession?.isConnected ? 'Cerrar' : 'Cancelar'}
+              {whatsappSession?.isConnected ? 'Cerrar' : 
+               connectionProgress.step === 'verifying' ? 'Cancelar' : 
+               'Cancelar'}
             </Button>
+            
+            {whatsappSession && whatsappSession.isConnected && (
+              <Button 
+                onClick={onClose}
+                className="flex-1"
+                variant="default"
+              >
+                <svg className="h-4 w-4 mr-2" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M5 13l4 4L19 7" />
+                </svg>
+                Finalizar
+              </Button>
+            )}
             
             {whatsappSession && !whatsappSession.isConnected && !qrExpired && (
               <Button 
@@ -473,6 +567,7 @@ export function WhatsAppReconnectModal({
                 variant="ghost"
                 size="sm"
                 disabled={isConnecting}
+                title="Regenerar código QR"
               >
                 <RefreshCw className="h-4 w-4" />
               </Button>
