@@ -12,7 +12,8 @@ import {
   User,
   LogOut,
   Bell,
-  HelpCircle
+  HelpCircle,
+  MessageSquare
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -31,7 +32,7 @@ const navigation = [
   {
     name: 'Automatización',
     items: [
-      { name: 'Workflows', href: '/workflows', icon: Zap },
+      { name: 'Conversaciones', href: '/conversations', icon: MessageSquare },
       { name: 'Ejecuciones', href: '/executions', icon: Activity },
     ]
   },

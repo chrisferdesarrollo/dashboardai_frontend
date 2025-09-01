@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
 import Workflows from "./pages/Workflows";
+import Conversations from "./pages/Conversations";
 import Settings from "./pages/Settings";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -83,6 +84,16 @@ const App = () => {
                 <ProtectedRoute>
                   <DashboardLayout>
                     <Workflows />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/conversations"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Conversations />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
