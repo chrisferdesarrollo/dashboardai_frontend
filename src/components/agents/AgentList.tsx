@@ -13,6 +13,7 @@ import {
 import { AgentCard } from './AgentCard';
 import { AgentCreationFlow } from './AgentCreationFlow';
 import { DeleteAgentDialog } from './DeleteAgentDialog';
+import { AgentDetailModal } from './AgentDetailModal';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 
@@ -35,6 +36,7 @@ export function AgentList() {
   const [selectedAgent, setSelectedAgent] = useState<Agent | null>(null);
   const [agentToDelete, setAgentToDelete] = useState<Agent | null>(null);
   const [isDeleting, setIsDeleting] = useState(false);
+  const [showDetailModal, setShowDetailModal] = useState(false);
 
   const agents = getFilteredAgents();
 
@@ -84,8 +86,7 @@ export function AgentList() {
 
   const handleViewAgent = (agent: Agent) => {
     setSelectedAgent(agent);
-    // Aquí podrías abrir un modal de detalles o navegar a una página de detalles
-    console.log('Ver detalles de:', agent.name);
+    setShowDetailModal(true);
   };
 
   return (
@@ -195,6 +196,16 @@ export function AgentList() {
         onClose={cancelDeleteAgent}
         onConfirm={confirmDeleteAgent}
         isDeleting={isDeleting}
+      />
+
+      {/* Modal de detalles del agente */}
+      <AgentDetailModal
+        isOpen={showDetailModal}
+        onClose={() => {
+          setShowDetailModal(false);
+          setSelectedAgent(null);
+        }}
+        agent={selectedAgent}
       />
     </div>
   );

@@ -18,6 +18,8 @@ export interface Agent {
   description: string;
   platform: PlatformType; // Nueva propiedad para la plataforma
   status: 'active' | 'inactive' | 'error';
+  prompt: string; // ✅ Agregado: Prompt del agente almacenado en BD
+  sessionName?: string; // ✅ Agregado: Session name para WhatsApp
   workflowId: string; // ID del flujo en n8n
   lastExecution?: Date;
   totalExecutions: number;
@@ -30,7 +32,7 @@ export interface Agent {
 export interface AgentSettings {
   apiKeys: Record<string, string>;
   prompts: Record<string, string>;
-  variables: Record<string, any>;
+  variables: Record<string, unknown>;
   webhookUrl?: string;
 }
 
@@ -40,8 +42,8 @@ export interface AgentExecution {
   status: 'running' | 'success' | 'error';
   startTime: Date;
   endTime?: Date;
-  input?: any;
-  output?: any;
+  input?: Record<string, unknown>;
+  output?: Record<string, unknown>;
   logs: ExecutionLog[];
 }
 

@@ -82,7 +82,7 @@ const platformConfig = {
 };
 
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
-  const { toggleAgentStatus, executeAgent } = useAgentStore();
+  const { toggleAgentStatus } = useAgentStore();
   const [showReconnectModal, setShowReconnectModal] = useState(false);
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
@@ -103,10 +103,6 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
   const handleReconnectSuccess = () => {
     // Actualizar el estado del agente después de reconectar
     toggleAgentStatus(agent.id);
-  };
-
-  const handleExecute = () => {
-    executeAgent(agent.id);
   };
 
   return (
@@ -214,14 +210,22 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
           </Button>
           
           <Button
-            variant="default"
+            variant={agent.status === 'active' ? 'destructive' : 'default'}
             size="sm"
-            onClick={handleExecute}
-            disabled={agent.status !== 'active'}
-            className="flex items-center space-x-1"
+            onClick={handleToggleStatus}
+            className="flex items-center space-x-1 min-w-[100px]"
           >
-            <Play className="h-3 w-3" />
-            <span>Ejecutar</span>
+            {agent.status === 'active' ? (
+              <>
+                <Square className="h-3 w-3" />
+                <span>Desactivar</span>
+              </>
+            ) : (
+              <>
+                <Play className="h-3 w-3" />
+                <span>Activar</span>
+              </>
+            )}
           </Button>
         </div>
       </CardContent>

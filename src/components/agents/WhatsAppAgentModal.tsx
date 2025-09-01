@@ -455,7 +455,8 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
         description: formData.description.trim(),
         platform: 'whatsapp',
         prompt: enhancedPrompt,
-        workflowId: whatsappSession.sessionName, // 🎯 IMPORTANTE: Guardar sessionName real de Evolution API aquí
+        sessionName: whatsappSession.sessionName, // ✅ IMPORTANTE: Enviar sessionName en el campo correcto para BD
+        workflowId: whatsappSession.sessionName, // 🎯 MANTENER: Guardar sessionName también en workflowId para compatibilidad
         platformConfig: JSON.stringify({
           sessionName: whatsappSession.sessionName,
           isConnected: true,

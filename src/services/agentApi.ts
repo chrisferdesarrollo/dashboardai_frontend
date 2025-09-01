@@ -41,6 +41,7 @@ export interface CreateAgentRequest {
   description: string;
   platform: 'whatsapp' | 'telegram';
   prompt: string;
+  sessionName?: string; // ✅ AGREGADO: Campo para sessionName que se guardará en BD
   workflowId?: string; // Para compatibilidad hacia atrás
   workflowIds?: string[]; // Nuevos campos para múltiples workflows
   primaryWorkflowId?: string;
@@ -123,6 +124,7 @@ export interface AgentResponse {
   sessionName?: string; // 🔧 RENOMBRADO: sessionName en lugar de workflowId
   platformConfig?: string | object; // 🔧 AÑADIDO: platformConfig del backend (puede ser JSON string u objeto)
   totalExecutions?: number; // 🔧 AÑADIDO: total de ejecuciones
+  lastExecutionAt?: string; // 🔧 AÑADIDO: fecha de última ejecución
   phoneNumber?: string;
   botToken?: string;
   userId: number;
@@ -415,10 +417,14 @@ export const agentService = {
  * Función para mapear AgentResponse a Agent (tipo del frontend)
  */
 export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
+  console.log('🔄 [MAPPING] Iniciando mapeo de AgentResponse a Agent');
+  console.log('🔄 [MAPPING] AgentResponse completo recibido:', agentResponse);
+  console.log('🔄 [MAPPING] Campo prompt del backend:', agentResponse.prompt);
   console.log('🔄 [MAPPING] Mapeando AgentResponse a Agent:', {
     id: agentResponse.id,
     name: agentResponse.name,
     sessionName: agentResponse.sessionName,
+    prompt: agentResponse.prompt,
     platformConfig: agentResponse.platformConfig
   });
 
@@ -453,11 +459,15 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
     description: agentResponse.description,
     platform: agentResponse.platform,
     status: agentResponse.status,
+    // 🎯 FIX CRÍTICO: Agregar prompt directamente del backend
+    prompt: agentResponse.prompt,
+    // 🎯 FIX CRÍTICO: Agregar sessionName directamente del backend  
+    sessionName: agentResponse.sessionName,
     // 🎯 FIX CRÍTICO: Usar sessionName del backend, NO generar uno fake
     workflowId: agentResponse.sessionName || `wf_${agentResponse.id}`, // Fallback solo si no existe
     // 🎯 FIX CRÍTICO: Incluir platformConfig del backend
     platformConfig: parsedPlatformConfig,
-    lastExecution: new Date(agentResponse.updatedAt),
+    lastExecution: agentResponse.lastExecutionAt ? new Date(agentResponse.lastExecutionAt) : new Date(agentResponse.updatedAt),
     totalExecutions: agentResponse.totalExecutions || 0,
     settings: {
       apiKeys: {}, // Vacío por ahora
@@ -470,9 +480,11 @@ export function mapAgentResponseToAgent(agentResponse: AgentResponse): Agent {
     updatedAt: new Date(agentResponse.updatedAt),
   };
 
-  console.log('✅ [MAPPING] Agent mapeado:', {
+  console.log('✅ [MAPPING] Agent mapeado completado:', {
     id: mappedAgent.id,
     name: mappedAgent.name,
+    prompt: mappedAgent.prompt,
+    sessionName: mappedAgent.sessionName,
     workflowId: mappedAgent.workflowId,
     platformConfig: mappedAgent.platformConfig
   });
