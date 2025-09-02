@@ -1,0 +1,196 @@
+{
+  "name": "Eliminar Sesión WhatsApp",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "delete-whatsapp-session",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "f56c9ffa-2320-4aa3-b5e8-5e5fbe83d52c",
+      "name": "Webhook - Eliminar Sesión",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        0,
+        16
+      ],
+      "webhookId": "delete-whatsapp-session"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.body.sessionName }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        224,
+        16
+      ],
+      "id": "7610a71a-3f04-4829-bdc3-53fb5ad40f21",
+      "name": "Extraer Nombre Sesión"
+    },
+    {
+      "parameters": {
+        "operation": "logout-instance",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        448,
+        16
+      ],
+      "id": "e432e3e1-19cc-4b1b-af78-53fbaf624c4c",
+      "name": "Cerrar Sesión WhatsApp",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete-instance",
+        "instanceName": "={{ $('Extraer Nombre Sesión').item.json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        672,
+        16
+      ],
+      "id": "cdd3ad63-c7a5-42cb-a7fc-1edc517ab0d4",
+      "name": "Eliminar Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión eliminada correctamente\",\n  \"sessionName\": \"{{ $('Extraer Nombre Sesión').item.json.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        896,
+        16
+      ],
+      "id": "966e6115-b1d2-4656-bd95-89a3a52c06aa",
+      "name": "Respuesta Exitosa"
+    }
+  ],
+  "pinData": {
+    "Webhook - Eliminar Sesión": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.hrxtio.easypanel.host",
+            "user-agent": "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/139.0.0.0 Safari/537.36",
+            "content-length": "37",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, deflate, br, zstd",
+            "accept-language": "en-US,en;q=0.9",
+            "content-type": "application/json",
+            "origin": "http://localhost:3000",
+            "priority": "u=1, i",
+            "referer": "http://localhost:3000/",
+            "sec-ch-ua": "\"Not;A=Brand\";v=\"99\", \"Brave\";v=\"139\", \"Chromium\";v=\"139\"",
+            "sec-ch-ua-mobile": "?0",
+            "sec-ch-ua-platform": "\"Windows\"",
+            "sec-fetch-dest": "empty",
+            "sec-fetch-mode": "cors",
+            "sec-fetch-site": "cross-site",
+            "sec-gpc": "1",
+            "x-forwarded-for": "181.63.178.52",
+            "x-forwarded-host": "n8n-n8n.hrxtio.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "d1110a44cccc",
+            "x-real-ip": "181.63.178.52"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "sessionName": "agent_1755974876654"
+          },
+          "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/delete-whatsapp-session",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "Webhook - Eliminar Sesión": {
+      "main": [
+        [
+          {
+            "node": "Extraer Nombre Sesión",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Nombre Sesión": {
+      "main": [
+        [
+          {
+            "node": "Cerrar Sesión WhatsApp",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Cerrar Sesión WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "Eliminar Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eliminar Instancia": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "fe4873a5-7814-4b3b-82b1-bad84a05f269",
+  "meta": {
+    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+  },
+  "id": "PulVEssXtcuN9j4O",
+  "tags": []
+}

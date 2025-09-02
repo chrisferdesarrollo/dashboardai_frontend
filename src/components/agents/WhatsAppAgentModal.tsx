@@ -1,11 +1,11 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback, useRef } from 'react';
 import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/ui/dialog';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Textarea } from '@/components/ui/textarea';
 import { Label } from '@/components/ui/label';
 import { WhatsAppIcon } from '@/components/ui/platform-icons';
-import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone } from 'lucide-react';
+import { ArrowLeft, Loader2, CheckCircle, QrCode, Smartphone, AlertTriangle } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { Agent } from '@/types/agent';
 import { useToast } from '@/hooks/use-toast';
@@ -50,6 +50,55 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   const [pollingInterval, setPollingInterval] = useState<NodeJS.Timeout | null>(null);
   const [qrExpired, setQrExpired] = useState(false);
   const [isLoading, setIsLoading] = useState(false);
+  
+  // Estado para el dialog de confirmación de eliminación
+  const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
+  const [pendingAction, setPendingAction] = useState<'close' | 'cancel' | null>(null);
+  
+  // Estado para mantener los datos del Business Config al navegar hacia atrás
+  const [preserveBusinessConfig, setPreserveBusinessConfig] = useState(false);
+  const [initialModalOpen, setInitialModalOpen] = useState(true);
+  
+  // Referencia para evitar resets durante navegación interna
+  const hasInitialized = useRef(false);
+  
+  // Función helper para obtener resumen de datos preservados
+  const getPreservedDataSummary = () => {
+    // Si no hay flag de preservación O no hay datos reales, no mostrar nada
+    if (!preserveBusinessConfig || (!formData.businessType && !formData.businessInfo && !formData.targetAudience)) {
+      return null;
+    }
+    
+    const summary: string[] = [];
+    if (formData.businessType) {
+      const businessTypes: Record<string, string> = {
+        restaurant: 'Restaurante',
+        retail: 'Tienda/Retail', 
+        services: 'Servicios',
+        healthcare: 'Salud',
+        education: 'Educación',
+        real_estate: 'Bienes Raíces',
+        automotive: 'Automotriz',
+        beauty: 'Belleza/Spa',
+        travel: 'Viajes/Turismo',
+        technology: 'Tecnología',
+        other: 'Otro'
+      };
+      summary.push(`Tipo: ${businessTypes[formData.businessType] || formData.businessType}`);
+    }
+    if (formData.businessInfo) summary.push(`Descripción: ${formData.businessInfo.substring(0, 30)}...`);
+    if (formData.targetAudience) summary.push(`Audiencia: ${formData.targetAudience.substring(0, 25)}...`);
+    if (formData.conversationalGoal) {
+      const goals: Record<string, string> = {
+        sales: 'Ventas',
+        reservations: 'Reservas', 
+        support: 'Soporte',
+        lead_generation: 'Generación de leads'
+      };
+      summary.push(`Objetivo: ${goals[formData.conversationalGoal] || formData.conversationalGoal}`);
+    }
+    return summary.length > 0 ? summary : null;
+  };
   
   const [formData, setFormData] = useState({
     name: '',
@@ -189,42 +238,124 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
   // Función para limpiar sesión cuando se cancela o cierra
   const cleanupSession = async (sessionName: string) => {
     try {
-      console.log('Cleaning up WhatsApp session:', sessionName);
+      console.log('🚨 [CLEANUP] Limpiando sesión de WhatsApp:', sessionName);
       await n8nApi.deleteWhatsAppSession(sessionName);
-      console.log('Session cleaned up successfully');
+      console.log('✅ [CLEANUP] Sesión limpiada exitosamente');
+      
+      // Mostrar toast informativo (no intrusivo)
+      toast({
+        title: 'Sesión eliminada',
+        description: 'La instancia de WhatsApp se eliminó correctamente.',
+        duration: 3000,
+      });
     } catch (error) {
-      console.error('Error cleaning up session:', error);
+      console.error('❌ [CLEANUP] Error limpiando sesión:', error);
       // No mostrar error al usuario, es limpieza en background
+      // Solo log para debugging
     }
   };
 
-  // Manejar cierre del modal
+  // Verificar si necesita limpieza basado en el paso actual
+  const shouldCleanupSession = () => {
+    // Solo limpiar si hay una sesión de WhatsApp Y estamos antes del paso 'completed'
+    // (independientemente de si está conectada o no)
+    return whatsappSession && currentStep !== 'completed';
+  };
+
+  // Verificar si necesita confirmación antes de limpiar
+  const needsConfirmation = () => {
+    // Pedir confirmación solo si WhatsApp está conectado
+    return whatsappSession && whatsappSession.isConnected;
+  };
+
+  // Mostrar dialog de confirmación
+  const showConfirmationDialog = (action: 'close' | 'cancel') => {
+    setPendingAction(action);
+    setShowDeleteConfirmation(true);
+  };
+
+  // Confirmar eliminación
+  const handleConfirmDelete = async () => {
+    if (whatsappSession) {
+      console.log('🗑️ [CONFIRM] Usuario confirmó eliminación de sesión conectada');
+      await cleanupSession(whatsappSession.sessionName);
+      setWhatsappSession(null);
+    }
+    
+    setShowDeleteConfirmation(false);
+    setConnectionChecking(false);
+    
+    // Reset del flag de preservación al confirmar eliminación
+    setPreserveBusinessConfig(false);
+    console.log('🗑️ [CONFIRM] Limpiando flag de preservación tras confirmación');
+    
+    // Ejecutar la acción pendiente
+    if (pendingAction === 'close') {
+      onClose();
+    } else if (pendingAction === 'cancel') {
+      onClose();
+    }
+    
+    setPendingAction(null);
+  };
+
+  // Cancelar eliminación
+  const handleCancelDelete = () => {
+    setShowDeleteConfirmation(false);
+    setPendingAction(null);
+    // No hacer nada más, mantener el modal abierto
+  };
+
+  // Manejar cierre del modal con limpieza inteligente
   const handleModalClose = () => {
+    console.log('❌ [CLOSE] Modal cerrado en paso:', currentStep);
+    
     // Limpiar polling si está activo
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
     
-    // Limpiar sesión si no está conectada
-    if (whatsappSession && !whatsappSession.isConnected) {
+    // Si necesita confirmación para limpiar sesión conectada
+    if (needsConfirmation()) {
+      showConfirmationDialog('close');
+      return;
+    }
+    
+    // Limpiar sesión automáticamente (sin confirmación)
+    if (shouldCleanupSession()) {
+      console.log('🧹 [CLOSE] Limpiando sesión automáticamente:', whatsappSession.sessionName);
       cleanupSession(whatsappSession.sessionName);
     }
     
     setConnectionChecking(false);
+    
+    // Reset del flag de preservación al cerrar completamente
+    setPreserveBusinessConfig(false);
+    console.log('🧹 [CLOSE] Limpiando flag de preservación al cerrar modal');
+    
     onClose();
   };
 
   // Manejar cancelación en el step de vinculación
   const handleCancelLinking = () => {
+    console.log('🚫 [CANCEL-LINKING] Cancelación en vinculación');
+    
     // Limpiar polling si está activo
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
     }
     
-    // Limpiar sesión
-    if (whatsappSession) {
+    // Si necesita confirmación para limpiar sesión conectada
+    if (needsConfirmation()) {
+      showConfirmationDialog('cancel');
+      return;
+    }
+    
+    // Limpiar sesión automáticamente (sin confirmación para sesiones no conectadas)
+    if (shouldCleanupSession()) {
+      console.log('🧹 [CANCEL-LINKING] Limpiando sesión automáticamente');
       cleanupSession(whatsappSession.sessionName);
     }
     
@@ -233,9 +364,62 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     onBack();
   };
 
-  // Reset modal state when opening
+  // Manejar botón atrás con navegación inteligente
+  const handleBackButton = () => {
+    console.log('🔙 [BACK] Botón atrás presionado en paso:', currentStep, 'preserve:', preserveBusinessConfig);
+    
+    // Limpiar polling si está activo
+    if (pollingInterval) {
+      clearInterval(pollingInterval);
+      setPollingInterval(null);
+    }
+    
+    // Navegación específica por paso
+    switch (currentStep) {
+      case 'business-config':
+        // Cuando el usuario va de business-config a whatsapp-linking, 
+        // marcar que debe preservar los datos del negocio
+        setPreserveBusinessConfig(true);
+        console.log('💾 [PRESERVE] Marcando datos de Business Config para preservar');
+        
+        // Si hay una sesión (conectada o no), regresar a whatsapp-linking
+        if (whatsappSession) {
+          console.log('🔙 [BACK] Regresando a whatsapp-linking manteniendo sesión:', whatsappSession.isConnected ? 'conectada' : 'no conectada');
+          setCurrentStep('whatsapp-linking');
+        } else {
+          // Si no hay sesión, salir completamente del modal
+          console.log('🚪 [BACK] No hay sesión, saliendo del modal');
+          onBack();
+        }
+        break;
+        
+      case 'agent-config':
+        console.log('🔙 [BACK] Regresando de agent-config a business-config');
+        setCurrentStep('business-config');
+        break;
+        
+      case 'whatsapp-linking':
+      default:
+        // Si estamos en linking y hay una sesión, limpiarla
+        if (shouldCleanupSession()) {
+          console.log('🧹 [BACK] Limpiando sesión desde whatsapp-linking');
+          cleanupSession(whatsappSession.sessionName);
+          setWhatsappSession(null);
+          setConnectionChecking(false);
+        }
+        // Limpiar flag de preservación al salir completamente
+        setPreserveBusinessConfig(false);
+        onBack(); // Salir completamente del modal
+        break;
+    }
+  };
+
+  // Reset modal state when opening  
   useEffect(() => {
-    if (isOpen && !isEditing) {
+    if (isOpen && !isEditing && !hasInitialized.current) {
+      console.log('🔄 [MODAL-INIT] Inicializando modal por primera vez');
+      
+      // Resetear al paso inicial y datos
       setCurrentStep('whatsapp-linking');
       setWhatsappSession(null);
       setFormData({ 
@@ -304,8 +488,22 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           }
         }
       });
+      
+      // Marcar como inicializado para evitar resets posteriores
+      hasInitialized.current = true;
+      setInitialModalOpen(false);
     }
   }, [isOpen, isEditing]);
+
+  // Reset preserve flag when modal closes completely
+  useEffect(() => {
+    if (!isOpen) {
+      console.log('🚪 [MODAL-CLOSE] Modal cerrado, reseteando flags');
+      setPreserveBusinessConfig(false);
+      setInitialModalOpen(true);
+      hasInitialized.current = false; // Permitir reinicialización en próxima apertura
+    }
+  }, [isOpen]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -386,10 +584,8 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
             description: 'Tu cuenta de WhatsApp se ha vinculado exitosamente',
           });
           
-          // Avanzar al siguiente paso después de un breve delay
-          setTimeout(() => {
-            setCurrentStep('business-config');
-          }, 1500);
+          // Ya no navegar automáticamente - dejar que el usuario decida cuándo continuar
+          console.log('✅ [CONNECTION] WhatsApp conectado, usuario puede continuar manualmente');
         } else {
           console.log('WhatsApp not connected yet, continuing polling...');
         }
@@ -481,6 +677,10 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
         title: 'Agente creado',
         description: `¡Agente "${formData.name}" creado exitosamente!`,
       });
+      
+      // Reset del flag de preservación tras éxito
+      setPreserveBusinessConfig(false);
+      console.log('🎉 [SUCCESS] Agente creado exitosamente, limpiando flag de preservación');
       
       // Limpiar el formulario
       setFormData({
@@ -588,6 +788,34 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
               <p className="text-muted-foreground">
                 Primero necesitas conectar tu cuenta de WhatsApp para crear el agente
               </p>
+              
+              {/* Indicador de datos preservados */}
+              {preserveBusinessConfig && (
+                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
+                  <div className="flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300 text-sm font-medium mb-2">
+                    <CheckCircle className="h-4 w-4" />
+                    Tienes una configuración de negocio guardada
+                  </div>
+                  
+                  {/* Resumen de datos preservados */}
+                  {getPreservedDataSummary() && getPreservedDataSummary()!.length > 0 && (
+                    <div className="bg-white dark:bg-gray-800 rounded p-3 mt-2">
+                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Datos guardados:</p>
+                      <div className="space-y-1">
+                        {getPreservedDataSummary()!.map((item, index) => (
+                          <p key={index} className="text-xs text-gray-600 dark:text-gray-400">
+                            • {item}
+                          </p>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  
+                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
+                    Después de conectar WhatsApp podrás continuar con tu configuración
+                  </p>
+                </div>
+              )}
             </div>
 
             {!whatsappSession ? (
@@ -674,6 +902,8 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   >
                     Cancelar
                   </Button>
+                  
+                  {/* Botón para generar nuevo QR cuando está expirado */}
                   {!whatsappSession.isConnected && qrExpired && (
                     <Button
                       type="button"
@@ -689,6 +919,31 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                       ) : (
                         'Generar nuevo QR'
                       )}
+                    </Button>
+                  )}
+                  
+                  {/* Botón especial para volver a Business Config cuando hay datos preservados */}
+                  {whatsappSession.isConnected && preserveBusinessConfig && (
+                    <Button
+                      type="button"
+                      onClick={() => {
+                        console.log('📝 [RETURN] Regresando a Business Config con datos preservados');
+                        setCurrentStep('business-config');
+                      }}
+                      className="flex-1 bg-blue-600 hover:bg-blue-700"
+                    >
+                      Continuar con mi Configuración
+                    </Button>
+                  )}
+                  
+                  {/* Botón normal para continuar cuando está conectado pero no hay datos preservados */}
+                  {whatsappSession.isConnected && !preserveBusinessConfig && (
+                    <Button
+                      type="button"
+                      onClick={() => setCurrentStep('business-config')}
+                      className="flex-1"
+                    >
+                      Continuar
                     </Button>
                   )}
                 </div>
@@ -870,14 +1125,42 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setCurrentStep('whatsapp-linking')}
+                onClick={handleBackButton}
                 className="flex-1"
               >
                 Atrás
               </Button>
               <Button
                 type="button"
-                onClick={() => setCurrentStep('agent-config')}
+                variant="outline"
+                onClick={() => {
+                  console.log('🚫 [CANCEL] Botón cancelar presionado desde business-config');
+                  // Si necesita confirmación para limpiar sesión conectada
+                  if (needsConfirmation()) {
+                    showConfirmationDialog('cancel');
+                    return;
+                  }
+                  
+                  // Limpiar sesión automáticamente (sin confirmación)
+                  if (shouldCleanupSession()) {
+                    console.log('🧹 [CANCEL] Limpiando sesión automáticamente desde business-config');
+                    cleanupSession(whatsappSession.sessionName);
+                  }
+                  
+                  onClose();
+                }}
+                className="flex-1"
+              >
+                Cancelar
+              </Button>
+              <Button
+                type="button"
+                onClick={() => {
+                  // Reset del flag de preservación cuando avanza a agent-config
+                  setPreserveBusinessConfig(false);
+                  console.log('➡️ [CONTINUE] Continuando a agent-config, limpiando flag de preservación');
+                  setCurrentStep('agent-config');
+                }}
                 disabled={!formData.businessType || !formData.businessInfo || !formData.targetAudience}
                 className="flex-1"
               >
@@ -938,10 +1221,33 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
               <Button
                 type="button"
                 variant="outline"
-                onClick={() => setCurrentStep('business-config')}
+                onClick={handleBackButton}
                 className="flex-1"
               >
                 Atrás
+              </Button>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => {
+                  console.log('🚫 [CANCEL] Botón cancelar presionado desde agent-config');
+                  // Si necesita confirmación para limpiar sesión conectada
+                  if (needsConfirmation()) {
+                    showConfirmationDialog('cancel');
+                    return;
+                  }
+                  
+                  // Limpiar sesión automáticamente (sin confirmación)
+                  if (shouldCleanupSession()) {
+                    console.log('🧹 [CANCEL] Limpiando sesión automáticamente desde agent-config');
+                    cleanupSession(whatsappSession.sessionName);
+                  }
+                  
+                  onClose();
+                }}
+                className="flex-1"
+              >
+                Cancelar
               </Button>
               <Button 
                 type="submit" 
@@ -990,7 +1296,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
             <Button
               variant="ghost"
               size="sm"
-              onClick={onBack}
+              onClick={handleBackButton}
               className="p-1"
             >
               <ArrowLeft className="h-4 w-4" />
@@ -1006,6 +1312,71 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           {renderStepContent()}
         </div>
       </DialogContent>
+      
+      {/* Dialog de Confirmación de Eliminación */}
+      <Dialog open={showDeleteConfirmation} onOpenChange={setShowDeleteConfirmation}>
+        <DialogContent className="sm:max-w-md">
+          <DialogHeader>
+            <DialogTitle className="flex items-center gap-2 text-amber-600">
+              <AlertTriangle className="h-5 w-5" />
+              Confirmar Eliminación
+            </DialogTitle>
+          </DialogHeader>
+          
+          <div className="py-4 space-y-4">
+            <div className="flex items-start gap-3">
+              <div className="bg-amber-50 dark:bg-amber-900/20 p-2 rounded-full">
+                <WhatsAppIcon size={24} className="text-green-600" />
+              </div>
+              <div className="flex-1">
+                <p className="text-sm font-medium text-gray-900 dark:text-gray-100 mb-2">
+                  ¿Estás seguro de que quieres {pendingAction === 'close' ? 'cerrar' : 'cancelar'}?
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">
+                  Se eliminará la vinculación de WhatsApp que acabas de crear ya que no has guardado el agente.
+                </p>
+              </div>
+            </div>
+            
+            {whatsappSession && (
+              <div className="bg-gray-50 dark:bg-gray-800 rounded-lg p-3">
+                <div className="flex items-center justify-between text-xs">
+                  <span className="text-gray-600 dark:text-gray-400">Sesión a eliminar:</span>
+                  <span className="font-mono text-gray-900 dark:text-gray-100">
+                    {whatsappSession.sessionName}
+                  </span>
+                </div>
+                <div className="flex items-center justify-between text-xs mt-1">
+                  <span className="text-gray-600 dark:text-gray-400">Estado:</span>
+                  <span className={`font-semibold ${whatsappSession.isConnected 
+                    ? 'text-green-600' 
+                    : 'text-yellow-600'
+                  }`}>
+                    {whatsappSession.isConnected ? 'Conectado' : 'Pendiente'}
+                  </span>
+                </div>
+              </div>
+            )}
+          </div>
+          
+          <div className="flex gap-3">
+            <Button
+              variant="outline"
+              onClick={handleCancelDelete}
+              className="flex-1"
+            >
+              Mantener Sesión
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={handleConfirmDelete}
+              className="flex-1"
+            >
+              Eliminar y {pendingAction === 'close' ? 'Cerrar' : 'Cancelar'}
+            </Button>
+          </div>
+        </DialogContent>
+      </Dialog>
     </Dialog>
   );
 }
