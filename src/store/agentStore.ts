@@ -1,6 +1,7 @@
 import { create } from 'zustand';
 import { Agent, CreateAgentInput, UpdateAgentInput, AgentExecution } from '@/types/agent';
 import { agentService, mapAgentResponseToAgent, CreateAgentRequest } from '@/services/agentApi';
+import { n8nApi } from '@/services/n8nApi';
 
 interface AgentStore {
   // Estado
@@ -163,7 +164,8 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
       if (newStatus === 'inactive' && agent.platform === 'whatsapp') {
         try {
           console.log('🔌 Desconectando sesión de WhatsApp para agente:', agent.name);
-          await agentService.disconnectWhatsAppSession(id);
+          // Usar directamente la función disconnectWhatsAppSession de n8nApi (línea 446)
+          await n8nApi.disconnectWhatsAppSession(agent.sessionName || agent.name);
           console.log('✅ Sesión de WhatsApp desconectada exitosamente');
         } catch (error) {
           console.warn('⚠️ Error desconectando sesión de WhatsApp:', error);

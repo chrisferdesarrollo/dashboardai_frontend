@@ -11,7 +11,6 @@ import { ThemeProvider } from "@/components/theme-provider";
 import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
-import Workflows from "./pages/Workflows";
 import Conversations from "./pages/Conversations";
 import Settings from "./pages/Settings";
 import AuthPage from "./pages/Auth";
@@ -74,16 +73,6 @@ const App = () => {
                     <div className="p-8 text-center text-muted-foreground">
                       Ejecuciones - Próximamente
                     </div>
-                  </DashboardLayout>
-                </ProtectedRoute>
-              }
-            />
-            <Route
-              path="/workflows"
-              element={
-                <ProtectedRoute>
-                  <DashboardLayout>
-                    <Workflows />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
