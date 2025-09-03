@@ -58,15 +58,27 @@ class ConfigService {
    */
   async getConfig(): Promise<AppConfig> {
     try {
-      const response = await fetch(`${this.getBackendUrl()}/configuration/n8n/config`, {
+      console.log('🔍 ConfigService.getConfig() - Intentando cargar configuración desde backend');
+      console.log('🔍 Backend URL:', this.getBackendUrl());
+      console.log('🔍 Auth token presente:', !!this.getAuthToken());
+      
+      const response = await fetch(`${this.getBackendUrl()}/configuration/n8n`, {
         headers: this.getAuthHeaders(),
       });
 
+      console.log('🔍 Response status:', response.status, response.statusText);
+
       if (!response.ok) {
-        throw new Error(`HTTP ${response.status}`);
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
       }
 
       const n8nConfig = await response.json();
+      
+      console.log('✅ Configuración obtenida desde backend:', {
+        webhookUrl: n8nConfig.webhookUrl ? '✅ Presente' : '❌ Ausente',
+        apiUrl: n8nConfig.apiUrl ? '✅ Presente' : '❌ Ausente',
+        apiToken: n8nConfig.apiToken ? '✅ Presente' : '❌ Ausente'
+      });
       
       return {
         n8n: {
@@ -79,8 +91,16 @@ class ConfigService {
         },
       };
     } catch (error) {
-      console.warn('Error loading config from backend, using fallback:', error);
-      return this.getFallbackConfig();
+      console.warn('⚠️ Error loading config from backend, using fallback:', error);
+      const fallbackConfig = this.getFallbackConfig();
+      console.log('🔄 Using fallback config:', {
+        n8n: {
+          webhookUrl: fallbackConfig.n8n.webhookUrl ? '✅ Presente' : '❌ Ausente',
+          apiUrl: fallbackConfig.n8n.apiUrl ? '✅ Presente' : '❌ Ausente',
+          apiToken: fallbackConfig.n8n.apiToken ? '✅ Presente' : '❌ Ausente'
+        }
+      });
+      return fallbackConfig;
     }
   }
 
@@ -88,12 +108,15 @@ class ConfigService {
    * Configuración de respaldo si no se puede conectar al backend
    */
   private getFallbackConfig(): AppConfig {
+    console.log('🔄 ConfigService.getFallbackConfig() - Generando configuración de respaldo');
+    
     const savedConfig = localStorage.getItem(this.CONFIG_KEY);
     
+    // Configuración por defecto con valores hardcodeados como último recurso
     const defaultConfig: AppConfig = {
       n8n: {
-        webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || '',
-        apiUrl: import.meta.env.VITE_N8N_API_URL || '',
+        webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n-n8n.hrxtio.easypanel.host/webhook',
+        apiUrl: import.meta.env.VITE_N8N_API_URL || 'https://n8n-n8n.hrxtio.easypanel.host/api/v1',
         apiToken: localStorage.getItem(this.N8N_TOKEN_KEY) || import.meta.env.VITE_N8N_API_TOKEN || '',
       },
       backend: {
@@ -101,12 +124,20 @@ class ConfigService {
       },
     };
 
+    console.log('🔄 Default config from env vars:', {
+      VITE_N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'No configurada',
+      VITE_N8N_API_URL: import.meta.env.VITE_N8N_API_URL || 'No configurada',
+      VITE_N8N_API_TOKEN: import.meta.env.VITE_N8N_API_TOKEN ? 'Configurada' : 'No configurada',
+      backendUrl: this.getBackendUrl()
+    });
+
     if (savedConfig) {
       try {
         const parsed = JSON.parse(savedConfig);
+        console.log('📦 Merging with saved config from localStorage');
         return this.mergeConfigs(defaultConfig, parsed);
       } catch (error) {
-        console.error('Error parsing saved config:', error);
+        console.error('❌ Error parsing saved config:', error);
         return defaultConfig;
       }
     }

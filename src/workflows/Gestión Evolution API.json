@@ -1,0 +1,1425 @@
+{
+  "name": "Gestión Evolution API",
+  "nodes": [
+    {
+      "parameters": {
+        "httpMethod": "POST",
+        "path": "evolution-api",
+        "responseMode": "responseNode",
+        "options": {}
+      },
+      "id": "7f5788da-06f4-4167-b4cd-bacea08e9537",
+      "name": "🎯 API Principal WhatsApp",
+      "type": "n8n-nodes-base.webhook",
+      "typeVersion": 1,
+      "position": [
+        -768,
+        424
+      ],
+      "webhookId": "whatsapp-api"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.body.sessionName || $json.body.data?.sessionName }}",
+              "type": "string"
+            },
+            {
+              "id": "user-assign",
+              "name": "user",
+              "value": "desarrolladorchristian",
+              "type": "string"
+            },
+            {
+              "id": "timestamp-assign",
+              "name": "timestamp",
+              "value": "={{ $now }}",
+              "type": "string"
+            },
+            {
+              "id": "raw-data-assign",
+              "name": "rawData",
+              "value": "={{ $json.body }}",
+              "type": "object"
+            },
+            {
+              "id": "1a6907a4-a3ab-4bb2-a2d9-da3cfc9c2bbf",
+              "name": "OperationType",
+              "value": "={{ $json.body.operationType }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -544,
+        424
+      ],
+      "id": "27785dee-53f3-4071-b2fd-7f5615ad15c9",
+      "name": "📥 Procesar Input"
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.OperationType }}",
+                    "rightValue": "create",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "932406af-2061-4c73-bfbe-19c7b3602710"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "create"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.operationType }}",
+                    "rightValue": "connect",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "d7961caf-e01d-4e31-a134-bb579b2fe93f"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "connect"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "925edd01-25f9-45e4-ad2a-3b8c67678ead",
+                    "leftValue": "={{ $json.rawData.data.messageType }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals",
+                      "name": "filter.operator.equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "messages"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.operationType }}",
+                    "rightValue": "status",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "39864d12-fd4f-4cfe-9a50-211643466d95"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "status"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.operationType }}",
+                    "rightValue": "disconnect",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "6cddf872-269c-4c9e-a327-68c1d63f0328"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "disconnet"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.operationType }}",
+                    "rightValue": "delete",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "0929ea9b-1e22-4b92-a9f7-bbd784fcc358"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "delete"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "none"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -320,
+        360
+      ],
+      "id": "26c690bc-efcf-4deb-93fd-456695e70afd",
+      "name": "🔀 Router de Acciones"
+    },
+    {
+      "parameters": {
+        "instanceName": "={{ $json.sessionName }}",
+        "options_Create_instance": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -224
+      ],
+      "id": "93555790-90be-4fc2-95c4-c86ecd87e895",
+      "name": "🏗️ Crear Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "instance-settings",
+        "instanceName": "={{ $json.data.instance.instanceName }}",
+        "rejectCall": true,
+        "groupsIgnore": true,
+        "readMessages": true
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        128,
+        -224
+      ],
+      "id": "4f908a2a-17a7-41f4-995c-11af57dda302",
+      "name": "⚙️ Configurar Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "events-api",
+        "instanceName": "={{ $json.data.settings.instanceName }}",
+        "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
+        "webhookEvents": [
+          "MESSAGES_UPSERT"
+        ]
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        352,
+        -224
+      ],
+      "id": "4825f489-e557-45fb-8a5b-70850cac2a56",
+      "name": "🔗 Configurar Webhook",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "instance-connect",
+        "instanceName": "={{ $('⚙️ Configurar Instancia').item.json.data.settings.instanceName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        576,
+        -224
+      ],
+      "id": "f1bffbaf-aad6-486b-bdc3-6e951b23d47f",
+      "name": "🔌 Conectar Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "qr-exists",
+              "leftValue": "={{ $json.data?.base64 }}",
+              "rightValue": "",
+              "operator": {
+                "type": "string",
+                "operation": "notEmpty",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        800,
+        -224
+      ],
+      "id": "36750517-c09a-49ba-9677-599ff00b1cc1",
+      "name": "📱 Validar QR"
+    },
+    {
+      "parameters": {
+        "operation": "instance-connect",
+        "instanceName": "={{ $json.rawData.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        -32
+      ],
+      "id": "1adb52ba-b762-44cd-8da5-ab97ad57d424",
+      "name": "🔄 Conectar Existente",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "fetch-instances",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        616
+      ],
+      "id": "21d22c76-f299-4266-b157-11763c2f87cc",
+      "name": "📊 Obtener Estado",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "logout-instance",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        808
+      ],
+      "id": "627c7f8b-f074-46cc-8ea9-d43346914089",
+      "name": "🔌❌ Desconectar",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "delete-instance",
+        "instanceName": "={{ $json.sessionName }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -96,
+        1000
+      ],
+      "id": "867bd7e7-2baf-438f-9878-db06ba15dccd",
+      "name": "🗑️ Eliminar Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.data.messageType }}",
+                    "rightValue": "conversation",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    },
+                    "id": "bebde257-4040-4bd4-8781-a14275a9988c"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "text"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ $json.rawData.data.messageType }}",
+                    "rightValue": "audioMessage",
+                    "operator": {
+                      "type": "string",
+                      "operation": "equals"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "audio"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -96,
+        232
+      ],
+      "id": "55c453b4-4e4d-4016-a9a9-e018b9ca4619",
+      "name": "📝 Tipo de Mensaje"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text-content",
+              "name": "messageText",
+              "value": "={{ $('📥 Procesar Input').item.json.rawData.data.message.conversation }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        136
+      ],
+      "id": "0a6979d9-4bec-4751-bf8d-d79ffff3ca4f",
+      "name": "📄 Extraer Texto"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $json.instance }}",
+        "messageId": "={{ $json.messageId }}"
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        128,
+        328
+      ],
+      "id": "8003b033-dc51-45e4-8c81-759c83a88e5c",
+      "name": "🎵 Obtener Audio",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "mimeType": "audio/mp3"
+        }
+      },
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        328
+      ],
+      "id": "215484d7-d6b6-4ac5-868f-6a95b24938f2",
+      "name": "🔄 Convertir Audio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        576,
+        328
+      ],
+      "id": "ae3c7b34-c706-40b0-9914-85b9332ced5c",
+      "name": "🎤 Transcribir Audio",
+      "credentials": {
+        "openAiApi": {
+          "id": "3rgyY1ch5GFd39mm",
+          "name": "TobyKeyOpenIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "transcribed-text",
+              "name": "messageText",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        800,
+        328
+      ],
+      "id": "e98edeb0-3fdc-4dc6-a4c7-c397dd173b25",
+      "name": "📝 Extraer Transcripción"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"instance\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"sessionName\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"remoteJid\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.key.remoteJid }}\",\n  \"messageId\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.instanceId }}\",\n  \"pushName\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.pushName }}\",\n  \"messageText\": \"{{ $input.all().find(item => item.json.messageText)?.json.messageText || 'Sin mensaje' }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1024,
+        232
+      ],
+      "id": "0801709b-9d3c-4ade-aa90-4f14308d172f",
+      "name": "🤖 Preparar IA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT prompt FROM agents WHERE session_name = $1 AND status = 'active' LIMIT 1;",
+        "options": {
+          "queryReplacement": "=Parameter 1: ={{ $json.sessionName }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1248,
+        232
+      ],
+      "id": "21c84eeb-97a6-4aa3-ad7e-ddd0a8bb835d",
+      "name": "🧠 Obtener Prompt",
+      "credentials": {
+        "postgres": {
+          "id": "jiNb1FxtP36jdv0e",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('🤖 Preparar IA').item.json.messageText }}",
+        "options": {
+          "systemMessage": "={{ $json.prompt || 'Eres un asistente útil' }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        1472,
+        232
+      ],
+      "id": "04e2f3a3-70d3-4094-ad58-7f2ce2fbac13",
+      "name": "🤖 Agente IA"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        1544,
+        456
+      ],
+      "id": "4f0ba671-fb73-4b72-bd56-5a11fd9ed6b8",
+      "name": "🧠 OpenAI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "3rgyY1ch5GFd39mm",
+          "name": "TobyKeyOpenIA"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "resource": "messages-api",
+        "instanceName": "={{ $('🤖 Preparar IA').item.json.instance }}",
+        "remoteJid": "={{ $('🤖 Preparar IA').item.json.remoteJid }}",
+        "messageText": "={{ $json.output }}",
+        "options_message": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        1824,
+        136
+      ],
+      "id": "f96a2f69-4633-4b78-8472-ff50c5e6a8b5",
+      "name": "📤 Enviar Respuesta",
+      "credentials": {
+        "evolutionApi": {
+          "id": "bgjm0UrybKIg4h20",
+          "name": "Evolution account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "INSERT INTO conversation_logs (session_name, user_message, ai_response, user_name, timestamp, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP);",
+        "options": {
+          "queryReplacement": "=Parameter 1: ={{ $('🤖 Preparar IA').item.json.sessionName }}\nParameter 2: ={{ $('🤖 Preparar IA').item.json.messageText }}\nParameter 3: ={{ $('🤖 Agente IA').item.json.output }}\nParameter 4: ={{ $('🤖 Preparar IA').item.json.pushName }}\nParameter 5: ={{ $('📥 Procesar Input').item.json.timestamp }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        1824,
+        328
+      ],
+      "id": "a53f6def-35f2-4705-b44b-c7d95fa49443",
+      "name": "📊 Registrar Log",
+      "credentials": {
+        "postgres": {
+          "id": "jiNb1FxtP36jdv0e",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"action\": \"{{ $('📥 Procesar Input').item.json.action }}\",\n  \"sessionName\": \"{{ $('📥 Procesar Input').item.json.sessionName }}\",\n  \"error\": \"{{ $json.error || 'Error en la operación' }}\",\n  \"timestamp\": \"{{ $('📥 Procesar Input').item.json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        -128
+      ],
+      "id": "7d18b834-0ab8-4445-81b0-033b1f6a2379",
+      "name": "❌ Respuesta Error"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Acción no válida o no especificada\",\n  \"validActions\": [\"create\", \"connect\", \"status\", \"disconnect\", \"delete\"],\n  \"timestamp\": \"{{ $('📥 Procesar Input').item.json.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 400
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -768,
+        1224
+      ],
+      "id": "6f0fbeb2-8bae-4652-bebb-4c10ca29f5d8",
+      "name": "⚠️ Acción Inválida"
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 API Unificada WhatsApp\n\n### Endpoints Soportados:\n- **create**: Crear nueva sesión\n- **connect**: Conectar sesión existente\n- **status**: Verificar estado de sesión\n- **disconnect**: Desconectar sesión\n- **delete**: Eliminar sesión\n- **message**: Procesar mensajes (automático)\n",
+        "height": 304,
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -784,
+        -224
+      ],
+      "id": "3bdaa771-8bdb-4f0c-b2a7-d30c1ac0784b",
+      "name": "📚 Documentación"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "instance-exists-condition",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        128,
+        616
+      ],
+      "id": "4450be1b-9eec-421c-9e93-135818467c33",
+      "name": "Verificar Instancia Existe"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "raw-status-assign",
+              "name": "rawStatus",
+              "value": "={{ $json.instance ? $json.instance.connectionStatus : ($json.data && $json.data[0] ? $json.data[0].connectionStatus : 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.data[0].name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        352,
+        520
+      ],
+      "id": "3e6afa7d-dd2e-4ebe-b8fb-43fb81993027",
+      "name": "Extraer Estado Raw"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "connected-assign",
+              "name": "connected",
+              "value": "={{ $json.rawStatus === 'open' }}",
+              "type": "boolean"
+            },
+            {
+              "id": "status-assign",
+              "name": "status",
+              "value": "={{ $json.rawStatus }}",
+              "type": "string"
+            },
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.sessionName }}",
+              "type": "string"
+            },
+            {
+              "id": "connection-details-assign",
+              "name": "connectionDetails",
+              "value": "={{ \n  $json.rawStatus === 'open' ? 'Conectado y funcionando' :\n  $json.rawStatus === 'close' ? 'Desconectado' :\n  $json.rawStatus === 'connecting' ? 'Conectando...' :\n  $json.rawStatus === 'connection' ? 'Estableciendo conexión' :\n  'Estado desconocido: ' + $json.rawStatus\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        576,
+        520
+      ],
+      "id": "0e7d05b5-8fca-4c9d-b762-2e82b1634ae0",
+      "name": "Procesar Estado Mejorado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"connected\": {{ $json.connected }},\n  \"status\": \"{{ $json.status }}\",\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"connectionDetails\": \"{{ $json.connectionDetails }}\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        800,
+        520
+      ],
+      "id": "2faedd23-8919-45dc-8c8b-571d0ca032e6",
+      "name": "Respuesta Estado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"connected\": false,\n  \"status\": \"not_found\",\n  \"sessionName\": \"{{ $('📊 Obtener Estado').item.json.data[0].name }}\",\n  \"error\": \"Instancia no encontrada\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        712
+      ],
+      "id": "02722207-de98-4cc6-beef-2773bacfb83c",
+      "name": "Respuesta No Encontrada"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión desconectada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        808
+      ],
+      "id": "116b60b4-cfeb-4f1f-8854-5878fd956271",
+      "name": "Respuesta Exitosa1"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "connection-data-assign",
+              "name": "connectionData",
+              "value": "={{ $json }}",
+              "type": "object"
+            },
+            {
+              "id": "session-name-pass",
+              "name": "sessionName",
+              "value": "={{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}",
+              "type": "string"
+            },
+            {
+              "id": "timestamp-pass",
+              "name": "timestamp",
+              "value": "={{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        128,
+        -32
+      ],
+      "id": "fed240c3-b57b-4325-88e9-9eaf2ae442f0",
+      "name": "Preparar Activación Mensajería"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"base64\": \"{{ $json.connectionData.data.base64 }}\",\n  \"status\": \"connected\",\n  \"message\": \"Instancia conectada correctamente\",\n  \"timestamp\": \"{{ $json.timestamp }}\",\n  \"messagingActivated\": true\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        352,
+        -32
+      ],
+      "id": "a24c8f5a-6216-4900-a449-c682ea15cdfe",
+      "name": "Conexión Exitosa con Mensajería"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión eliminada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        128,
+        1000
+      ],
+      "id": "a07f666c-2552-4729-9d5f-8d145953d912",
+      "name": "Respuesta Exitosa"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Instancia creada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n   \"base64\": \"{{ $json.data.base64 }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        1024,
+        -320
+      ],
+      "id": "4235efa3-b871-48e8-9037-6a86d81caae6",
+      "name": "Respuesta Exitosa2"
+    }
+  ],
+  "pinData": {
+    "🎯 API Principal WhatsApp": [
+      {
+        "json": {
+          "headers": {
+            "host": "n8n-n8n.hrxtio.easypanel.host",
+            "user-agent": "axios/1.10.0",
+            "content-length": "647",
+            "accept": "application/json, text/plain, */*",
+            "accept-encoding": "gzip, compress, deflate, br",
+            "content-type": "application/json",
+            "x-forwarded-for": "172.18.0.1",
+            "x-forwarded-host": "n8n-n8n.hrxtio.easypanel.host",
+            "x-forwarded-port": "443",
+            "x-forwarded-proto": "https",
+            "x-forwarded-server": "d1110a44cccc",
+            "x-real-ip": "172.18.0.1"
+          },
+          "params": {},
+          "query": {},
+          "body": {
+            "event": "messages.upsert",
+            "instance": "agent_1756938447018",
+            "data": {
+              "key": {
+                "remoteJid": "573105471106@s.whatsapp.net",
+                "fromMe": true,
+                "id": "D10DA820AB43EED3A51CE254B03AD0F7"
+              },
+              "pushName": "Christian",
+              "status": "SERVER_ACK",
+              "message": {
+                "conversation": "Hola"
+              },
+              "messageType": "conversation",
+              "messageTimestamp": 1756938821,
+              "instanceId": "3a1048bc-d22a-42ca-b56e-d0a2245222bb",
+              "source": "android"
+            },
+            "destination": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
+            "date_time": "2025-09-03T19:33:41.930Z",
+            "sender": "573105471106@s.whatsapp.net",
+            "server_url": "https://n8n-evolution-api.hrxtio.easypanel.host",
+            "apikey": "157E6C1A-736E-43B9-90E4-119042F00CE4"
+          },
+          "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
+          "executionMode": "production"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "🎯 API Principal WhatsApp": {
+      "main": [
+        [
+          {
+            "node": "📥 Procesar Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📥 Procesar Input": {
+      "main": [
+        [
+          {
+            "node": "🔀 Router de Acciones",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔀 Router de Acciones": {
+      "main": [
+        [
+          {
+            "node": "🏗️ Crear Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔄 Conectar Existente",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📝 Tipo de Mensaje",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "📊 Obtener Estado",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🔌❌ Desconectar",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🗑️ Eliminar Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🏗️ Crear Instancia": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Configurar Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "⚙️ Configurar Instancia": {
+      "main": [
+        [
+          {
+            "node": "🔗 Configurar Webhook",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔗 Configurar Webhook": {
+      "main": [
+        [
+          {
+            "node": "🔌 Conectar Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔌 Conectar Instancia": {
+      "main": [
+        [
+          {
+            "node": "📱 Validar QR",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📱 Validar QR": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa2",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "❌ Respuesta Error",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Conectar Existente": {
+      "main": [
+        [
+          {
+            "node": "Preparar Activación Mensajería",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Obtener Estado": {
+      "main": [
+        [
+          {
+            "node": "Verificar Instancia Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔌❌ Desconectar": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗑️ Eliminar Instancia": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Tipo de Mensaje": {
+      "main": [
+        [
+          {
+            "node": "📄 Extraer Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎵 Obtener Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📄 Extraer Texto": {
+      "main": [
+        [
+          {
+            "node": "🤖 Preparar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎵 Obtener Audio": {
+      "main": [
+        [
+          {
+            "node": "🔄 Convertir Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 Convertir Audio": {
+      "main": [
+        [
+          {
+            "node": "🎤 Transcribir Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🎤 Transcribir Audio": {
+      "main": [
+        [
+          {
+            "node": "📝 Extraer Transcripción",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📝 Extraer Transcripción": {
+      "main": [
+        [
+          {
+            "node": "🤖 Preparar IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Preparar IA": {
+      "main": [
+        [
+          {
+            "node": "🧠 Obtener Prompt",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 Obtener Prompt": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agente IA": {
+      "main": [
+        [
+          {
+            "node": "📤 Enviar Respuesta",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "📊 Registrar Log",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 OpenAI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🤖 Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📤 Enviar Respuesta": {
+      "main": [
+        []
+      ]
+    },
+    "Verificar Instancia Existe": {
+      "main": [
+        [
+          {
+            "node": "Extraer Estado Raw",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Respuesta No Encontrada",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Procesar Estado Mejorado": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Extraer Estado Raw": {
+      "main": [
+        [
+          {
+            "node": "Procesar Estado Mejorado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Preparar Activación Mensajería": {
+      "main": [
+        [
+          {
+            "node": "Conexión Exitosa con Mensajería",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": true,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "160a5fed-95fc-4fed-a2d0-b3e48fa19f48",
+  "meta": {
+    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+  },
+  "id": "mejlrWWB09erJUEh",
+  "tags": []
+}

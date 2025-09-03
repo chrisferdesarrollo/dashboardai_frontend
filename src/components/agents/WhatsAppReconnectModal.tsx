@@ -45,106 +45,48 @@ export function WhatsAppReconnectModal({
   const getSessionName = (agent: Agent): string => {
     if (!agent) return '';
     
-    console.log('🔍 [RECONNECT] === INICIANDO BÚSQUEDA DE SESSIONNAME ===');
-    console.log('🔍 [RECONNECT] Agent ID:', agent.id);
-    console.log('🔍 [RECONNECT] Agent name:', agent.name);
-    console.log('🔍 [RECONNECT] Agent platform:', agent.platform);
-    console.log('🔍 [RECONNECT] Agent object keys:', Object.keys(agent));
-    
-    console.log('🔍 [RECONNECT] Analizando agente para obtener sessionName:', {
-      id: agent.id,
-      name: agent.name,
-      platform: agent.platform,
-      workflowId: agent.workflowId, // Debería ser "agent_175665623854"
-      platformConfig: agent.platformConfig, // Ver contenido completo
-      rawAgent: JSON.stringify(agent, null, 2), // ✅ LOGGING COMPLETO DEL AGENTE
-    });
-    
     try {
-      // 🎯 PRIORIDAD 1: Buscar en platformConfig primero (más confiable para sessionName)
-      console.log('🔍 [RECONNECT] PASO 1: Revisando platformConfig...');
+      // PRIORIDAD 1: Buscar en platformConfig primero (más confiable para sessionName)
       if (agent.platformConfig) {
-        console.log('🔍 [RECONNECT] platformConfig existe:', typeof agent.platformConfig, agent.platformConfig);
         try {
           const config: WhatsAppPlatformConfig = typeof agent.platformConfig === 'string' 
             ? JSON.parse(agent.platformConfig) 
             : agent.platformConfig;
-          console.log('🔍 [RECONNECT] platformConfig parseado:', config);
           if (config.sessionName && config.sessionName.trim() !== '') {
-            console.log('✅ [RECONNECT] SessionName encontrado en agent.platformConfig:', config.sessionName);
             return config.sessionName;
-          } else {
-            console.log('⚠️ [RECONNECT] platformConfig no tiene sessionName válido:', config.sessionName);
           }
         } catch (error) {
-          console.warn('❌ [RECONNECT] Error parsing agent.platformConfig:', error);
+          console.warn('Error parsing agent.platformConfig:', error);
         }
-      } else {
-        console.log('⚠️ [RECONNECT] agent.platformConfig no existe');
       }
       
-      // PRIORIDAD 2: workflowId - pero solo si parece ser un sessionName, no un workflow ID
-      console.log('🔍 [RECONNECT] PASO 2: Revisando workflowId...');
+      // PRIORIDAD 2: workflowId - pero solo si parece ser un sessionName
       if (agent.workflowId && agent.workflowId.trim() !== '') {
-        console.log('🔍 [RECONNECT] workflowId existe:', agent.workflowId);
-        // Verificar si workflowId es un sessionName (formato: agent_123456789) o workflow ID (formato: UUID)
         const isSessionName = agent.workflowId.startsWith('agent_') && /^agent_\d+$/.test(agent.workflowId);
-        const isWorkflowId = agent.workflowId.includes('-') && agent.workflowId.length > 30; // UUID pattern
-        
-        console.log('🔍 [RECONNECT] Análisis de workflowId:', {
-          workflowId: agent.workflowId,
-          isSessionName,
-          isWorkflowId,
-          startsWithAgent: agent.workflowId.startsWith('agent_'),
-          matchesPattern: /^agent_\d+$/.test(agent.workflowId),
-          hasHyphens: agent.workflowId.includes('-'),
-          length: agent.workflowId.length
-        });
+        const isWorkflowId = agent.workflowId.includes('-') && agent.workflowId.length > 30;
         
         if (isSessionName) {
-          console.log('✅ [RECONNECT] SessionName encontrado en workflowId (formato sessionName):', agent.workflowId);
           return agent.workflowId;
-        } else if (isWorkflowId) {
-          console.log('⚠️ [RECONNECT] workflowId contiene ID de workflow, no sessionName:', agent.workflowId);
-          // Continuar buscando en otros lugares
-        } else {
-          console.log('✅ [RECONNECT] SessionName encontrado en workflowId (formato custom):', agent.workflowId);
+        } else if (!isWorkflowId) {
           return agent.workflowId;
         }
-      } else {
-        console.log('⚠️ [RECONNECT] agent.workflowId no existe o está vacío');
       }
       
-      // PRIORIDAD 3: Buscar en settings.variables donde se almacena la configuración de plataforma
+      // PRIORIDAD 3: Buscar en settings.variables
       if (agent.settings?.variables) {
-        console.log('🔍 [RECONNECT] Revisando settings.variables:', agent.settings.variables);
-        
-        const sessionName = agent.settings.variables.sessionName;
+        const sessionName = agent.settings.variables.sessionName as string || 
+                           agent.settings.variables.sessionId as string || 
+                           agent.settings.variables.whatsappSession as string;
         if (sessionName && sessionName !== '') {
-          console.log('✅ [RECONNECT] SessionName encontrado en variables:', sessionName);
           return sessionName;
         }
         
-        // También buscar otros posibles nombres de campo
-        const sessionId = agent.settings.variables.sessionId;
-        if (sessionId && sessionId !== '') {
-          console.log('✅ [RECONNECT] SessionName encontrado como sessionId:', sessionId);
-          return sessionId;
-        }
-        
-        const whatsappSession = agent.settings.variables.whatsappSession;
-        if (whatsappSession && whatsappSession !== '') {
-          console.log('✅ [RECONNECT] SessionName encontrado como whatsappSession:', whatsappSession);
-          return whatsappSession;
-        }
-        
-        // Buscar en platformConfig si existe (puede estar como JSON string)
+        // Buscar en platformConfig si existe
         const platformConfig = agent.settings.variables.platformConfig;
         if (platformConfig) {
           try {
             const config = typeof platformConfig === 'string' ? JSON.parse(platformConfig) : platformConfig;
             if (config.sessionName) {
-              console.log('✅ [RECONNECT] SessionName encontrado en variables.platformConfig:', config.sessionName);
               return config.sessionName;
             }
           } catch (error) {
@@ -153,24 +95,20 @@ export function WhatsAppReconnectModal({
         }
       }
       
-      // PRIORIDAD 4: Buscar en settings.apiKeys donde también podría estar almacenado
+      // PRIORIDAD 4: Buscar en settings.apiKeys
       if (agent.settings?.apiKeys) {
-        console.log('🔍 [RECONNECT] Revisando settings.apiKeys:', agent.settings.apiKeys);
-        
-        const sessionName = agent.settings.apiKeys.sessionName;
+        const sessionName = agent.settings.apiKeys.sessionName as string;
         if (sessionName && sessionName !== '') {
-          console.log('✅ [RECONNECT] SessionName encontrado en apiKeys:', sessionName);
           return sessionName;
         }
       }
       
     } catch (error) {
-      console.warn('❌ Error parsing agent settings:', error);
+      console.warn('Error parsing agent settings:', error);
     }
     
     // Fallback: usar el nombre del agente como sessionName
     const fallbackSessionName = agent.name?.replace(/\s+/g, '_').toLowerCase() || `agent_${agent.id}`;
-    console.log('⚠️ [RECONNECT] No se encontró sessionName, usando fallback:', fallbackSessionName);
     return fallbackSessionName;
   };
 
@@ -183,51 +121,32 @@ export function WhatsAppReconnectModal({
     
     try {
       const sessionName = getSessionName(agent);
-      console.log('🔄 [RECONNECT] Conectando sesión existente:', sessionName);
-      
-      // Usar la función específica para reconexión que genera QR de sesión existente
-      const response = await n8nApi.reconnectExistingWhatsAppSession(sessionName);
-      
-      console.log('📥 [RECONNECT] Respuesta recibida:', {
-        success: response.success,
-        base64Length: response.base64?.length,
-        base64Prefix: response.base64?.substring(0, 50),
-        base64HasDataPrefix: response.base64?.startsWith('data:'),
-        sessionName: response.sessionName
-      });
+      const response = await n8nApi.connectWhatsAppSession(sessionName, 'connect');
       
       if (response.success && response.base64) {
         // Limpiar el base64 si ya viene con el prefijo
         let cleanBase64 = response.base64;
-        if (cleanBase64.startsWith('data:image/')) {
-          // Si ya tiene el prefijo data:, usarlo directamente
-          console.log('🖼️ [RECONNECT] QR ya tiene prefijo data:, usando directamente');
-        } else {
-          // Si no tiene prefijo, agregarlo
+        if (!cleanBase64.startsWith('data:image/')) {
           cleanBase64 = `data:image/png;base64,${cleanBase64}`;
-          console.log('🖼️ [RECONNECT] Agregando prefijo data: al QR');
         }
         
         setWhatsappSession({
           sessionName: response.sessionName,
-          qrCode: cleanBase64, // Usar la versión limpia
+          qrCode: cleanBase64,
           isConnected: false,
           timestamp: response.timestamp
         });
-        // Iniciar verificación de estado de conexión
+        
         setConnectionChecking(true);
         
-        // DESPUÉS de generar el QR, activar el workflow de verificación en n8n
-        console.log('🚀 [RECONNECT] Activando workflow de verificación en n8n...');
+        // Activar workflow de verificación en n8n
         setTimeout(async () => {
           try {
-            // Hacer una primera llamada para "despertar" el workflow de verificación
-            await n8nApi.checkWhatsAppStatus(sessionName);
-            console.log('✅ [RECONNECT] Workflow de verificación activado en n8n');
+            await n8nApi.checkWhatsAppStatus(sessionName, 'status');
           } catch (error) {
-            console.warn('⚠️ [RECONNECT] Error activando workflow de verificación:', error);
+            console.warn('Error activando workflow de verificación:', error);
           }
-        }, 1000); // Activar después de 1 segundo de generar el QR
+        }, 1000);
         
         toast({
           title: 'QR Generado',
@@ -256,23 +175,18 @@ export function WhatsAppReconnectModal({
     onClose();
   }, [onReconnectSuccess, onClose]);
 
-  // Polling automático cuando se muestra el QR - Simplificado para evitar dependencias circulares
+  // Polling automático cuando se muestra el QR
   useEffect(() => {
     if (!whatsappSession || whatsappSession.isConnected || qrExpired || pollingInterval) {
       return;
     }
     
-    console.log('🔄 [RECONNECT] Iniciando polling de conexión para sesión:', whatsappSession.sessionName);
-    
-    // Función de polling con timing inteligente
+    // Función de polling
     let pollCount = 0;
     const pollConnection = async () => {
       try {
         pollCount++;
-        console.log(`🔍 [RECONNECT] Verificando estado de WhatsApp (intento ${pollCount})...`);
-        const status = await n8nApi.checkWhatsAppStatus(whatsappSession.sessionName);
-        
-        console.log('📋 [RECONNECT] Respuesta del status:', status);
+        const status = await n8nApi.checkWhatsAppStatus(whatsappSession.sessionName, 'status');
         
         // Solo considerar como conectado si el estado es realmente 'open' o 'connected'
         const isConnected = status.success && (
@@ -281,8 +195,6 @@ export function WhatsAppReconnectModal({
         );
         
         if (isConnected) {
-          console.log('✅ [RECONNECT] ¡WhatsApp conectado exitosamente!');
-          
           // Actualizar estado local
           setWhatsappSession(prev => prev ? { ...prev, isConnected: true } : null);
           setConnectionChecking(false);
@@ -304,31 +216,21 @@ export function WhatsAppReconnectModal({
           setTimeout(() => {
             handleSuccess();
           }, 2000);
-          
-        } else {
-          console.log(`🔍 [RECONNECT] WhatsApp aún no conectado (${status.status}). Continuando polling...`);
-          // Solo continuar polling sin actualizar mensajes complejos
         }
         
       } catch (error) {
-        console.error('❌ [RECONNECT] Error verificando estado de WhatsApp:', error);
-        // Continuar polling sin detener por errores temporales
+        console.error('Error verificando estado de WhatsApp:', error);
       }
     };
     
-    // Empezar polling después de 5 segundos para dar tiempo al usuario
-    console.log('⏰ [RECONNECT] Esperando 5 segundos antes de iniciar verificación...');
-    
     const initialDelay = setTimeout(() => {
-      // Iniciar polling cada 5 segundos (más espaciado)
       setConnectionChecking(true);
       const pollingIntervalId = setInterval(pollConnection, 5000);
       setPollingInterval(pollingIntervalId);
-    }, 1000); // Esperar 5 segundos
+    }, 1000);
     
     // Timeout de 5 minutos para expirar el QR
     const qrTimeout = setTimeout(() => {
-      console.log('⏰ [RECONNECT] QR expirado por timeout');
       setQrExpired(true);
       
       if (pollingInterval) {
@@ -448,15 +350,7 @@ export function WhatsAppReconnectModal({
                       alt="WhatsApp QR Code"
                       className="w-48 h-48"
                       onError={(e) => {
-                        console.error('❌ Error cargando imagen QR:', e);
-                        console.log('🔍 QR Code data:', {
-                          length: whatsappSession.qrCode.length,
-                          prefix: whatsappSession.qrCode.substring(0, 50),
-                          isDataUrl: whatsappSession.qrCode.startsWith('data:')
-                        });
-                      }}
-                      onLoad={() => {
-                        console.log('✅ QR Code cargado exitosamente');
+                        console.error('Error cargando imagen QR:', e);
                       }}
                     />
                   </div>

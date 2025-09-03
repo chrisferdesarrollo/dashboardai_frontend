@@ -100,31 +100,63 @@ const getWebhookClient = () => createWebhookClient();
 export const n8nApi = {
 
   // WhatsApp - Crear sesión y obtener QR
-  async createWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+  async createWhatsAppSession(sessionName: string, operationType: string = 'create'): Promise<WhatsAppSessionResponse> {
     try {
-      const url = '/create-whatsapp-session';
-      const payload = { sessionName };
-      const webhookApi = await getWebhookClient();
-      const config = await getN8nConfig();
+      console.log('🚀 [N8N-CREATE] Iniciando creación de sesión WhatsApp:', sessionName);
       
-      console.log('Calling n8n webhook:', {
+      const url = '/evolution-api';
+      const payload = { 
+        sessionName, 
+        operationType,
+        timestamp: new Date().toISOString()
+      };
+      
+      console.log('🔧 [N8N-CREATE] Obteniendo configuración de n8n...');
+      const config = await getN8nConfig();
+      console.log('🔧 [N8N-CREATE] Configuración obtenida:', {
+        webhookUrl: config.webhookUrl ? '✅ Presente' : '❌ Ausente',
+        apiUrl: config.apiUrl ? '✅ Presente' : '❌ Ausente',
+        apiToken: config.apiToken ? '✅ Presente' : '❌ Ausente'
+      });
+      
+      if (!config.webhookUrl) {
+        throw new Error('URL del webhook de n8n no está configurada. Verifica la configuración de n8n.');
+      }
+      
+      const webhookApi = await getWebhookClient();
+      
+      console.log('🔧 [N8N-CREATE] Configuración completa:', {
+        sessionName,
         baseURL: config.webhookUrl,
         url,
         fullURL: `${config.webhookUrl}${url}`,
         payload
       });
       
+      console.log('📡 [N8N-CREATE] Enviando petición POST a:', `${config.webhookUrl}${url}`);
       const response = await webhookApi.post(url, payload);
       
-      console.log('n8n webhook response:', response.data);
+      console.log('✅ [N8N-CREATE] Respuesta recibida:', response.data);
       
       return response.data;
     } catch (error) {
-      console.error('Error creando sesión WhatsApp:', error);
+      console.error('❌ [N8N-CREATE] Error creando sesión WhatsApp:', error);
+      
+      if (axios.isAxiosError(error)) {
+        console.error('🚨 [N8N-CREATE] Detalles del error HTTP:', {
+          status: error.response?.status,
+          statusText: error.response?.statusText,
+          url: error.config?.url,
+          baseURL: error.config?.baseURL,
+          fullURL: `${error.config?.baseURL}${error.config?.url}`,
+          data: error.response?.data,
+          message: error.message
+        });
+      }
       
       // Implementación temporal para desarrollo
-      if (error instanceof Error && error.message.includes('Network Error')) {
-        console.warn('🚧 Modo desarrollo: Simulando respuesta de WhatsApp QR');
+      if (error instanceof Error && (error.message.includes('Network Error') || error.message.includes('webhook'))) {
+        console.warn('🚧 Modo desarrollo: Simulando respuesta de WhatsApp QR debido a error de red');
         const webhookConfig = await getN8nConfig();
         
         // QR code simulado más realista (representa un texto de ejemplo)
@@ -147,12 +179,16 @@ export const n8nApi = {
   },
 
   // WhatsApp - Conectar sesión existente (para reconexión)
-  async connectWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+  async connectWhatsAppSession(sessionName: string, operationType: string = 'connect'): Promise<WhatsAppSessionResponse> {
     try {
       console.log('🔌 [N8N-CONNECT] Iniciando conexión de sesión WhatsApp existente:', sessionName);
       
-      const url = '/connect-whatsapp-session';
-      const payload = { sessionName };
+      const url = '/evolution-api';
+      const payload = { 
+        sessionName, 
+        operationType,
+        timestamp: new Date().toISOString()
+      };
       const webhookApi = await getWebhookClient();
       const config = await getN8nConfig();
       
@@ -218,10 +254,14 @@ export const n8nApi = {
   },
 
   // WhatsApp - Verificar estado de conexión
-  async checkWhatsAppStatus(sessionName: string): Promise<WhatsAppStatusResponse> {
+  async checkWhatsAppStatus(sessionName: string, operationType: string = 'status'): Promise<WhatsAppStatusResponse> {
     try {
-      const url = '/check-whatsapp-status';
-      const payload = { sessionName };
+      const url = '/evolution-api';
+      const payload = { 
+        sessionName, 
+        operationType,
+        timestamp: new Date().toISOString()
+      };
       const webhookApi = await getWebhookClient();
       const config = await getN8nConfig();
       
@@ -261,7 +301,7 @@ export const n8nApi = {
   },
 
   // WhatsApp - Eliminar sesión a través del proxy del backend
-  async deleteWhatsAppSessionViaProxy(sessionName: string): Promise<WhatsAppDeleteResponse> {
+  async deleteWhatsAppSessionViaProxy(sessionName: string, operationType: string = 'delete'): Promise<WhatsAppDeleteResponse> {
     try {
       console.log('🚨 [PROXY-DELETE] Eliminando sesión WhatsApp vía proxy backend:', sessionName);
       
@@ -281,7 +321,9 @@ export const n8nApi = {
       }
 
       const response = await backendApi.post('/n8n/proxy/delete-whatsapp-session', {
-        sessionName
+        sessionName,
+        operationType,
+        timestamp: new Date().toISOString()
       });
       
       console.log('✅ [PROXY-DELETE] Sesión eliminada exitosamente vía proxy');
@@ -293,12 +335,16 @@ export const n8nApi = {
   },
 
   // WhatsApp - Eliminar sesión
-  async deleteWhatsAppSession(sessionName: string): Promise<WhatsAppDeleteResponse> {
+  async deleteWhatsAppSession(sessionName: string, operationType: string = 'delete'): Promise<WhatsAppDeleteResponse> {
     try {
       console.log('🚨 [N8N-DELETE] Iniciando eliminación de sesión WhatsApp:', sessionName);
       
-      const url = '/delete-whatsapp-session';
-      const payload = { sessionName };
+      const url = '/evolution-api';
+      const payload = { 
+        sessionName, 
+        operationType,
+        timestamp: new Date().toISOString()
+      };
       const webhookApi = await getWebhookClient();
       const config = await getN8nConfig();
       
@@ -334,7 +380,7 @@ export const n8nApi = {
       )) {
         console.log('🔄 [N8N-DELETE] Reintentando eliminación vía proxy backend...');
         try {
-          return await this.deleteWhatsAppSessionViaProxy(sessionName);
+          return await this.deleteWhatsAppSessionViaProxy(sessionName, operationType);
         } catch (proxyError) {
           console.error('❌ [N8N-DELETE] Error también en proxy, devolviendo respuesta exitosa para no bloquear UX');
           // Devolver respuesta exitosa para no bloquear la experiencia del usuario
@@ -367,15 +413,17 @@ export const n8nApi = {
   },
 
   // WhatsApp - Reconectar sesión existente (buscar sesión activa y obtener QR)
-  async reconnectExistingWhatsAppSession(sessionName: string): Promise<WhatsAppSessionResponse> {
+  async reconnectExistingWhatsAppSession(sessionName: string, operationType: string = 'reconnect'): Promise<WhatsAppSessionResponse> {
     try {
       console.log('🔄 [N8N-RECONNECT] Iniciando reconexión de sesión WhatsApp existente:', sessionName);
       
       // Usar el webhook de conectar existente pero con un parámetro que indique que es reconexión
-      const url = '/connect-whatsapp-session';
+      const url = '/evolution-api';
       const payload = { 
         sessionName,
-        mode: 'reconnect' // Indicar que es una reconexión, no creación
+        operationType,
+        mode: 'reconnect', // Indicar que es una reconexión, no creación
+        timestamp: new Date().toISOString()
       };
       const webhookApi = await getWebhookClient();
       const config = await getN8nConfig();
@@ -443,12 +491,16 @@ export const n8nApi = {
   },
 
   // WhatsApp - Desconectar sesión (logout)
-  async disconnectWhatsAppSession(sessionName: string): Promise<WhatsAppDeleteResponse> {
+  async disconnectWhatsAppSession(sessionName: string, operationType: string = 'disconnect'): Promise<WhatsAppDeleteResponse> {
     try {
       console.log('🔌 [N8N-DISCONNECT] Iniciando desconexión de sesión WhatsApp:', sessionName);
       
-      const url = '/logout-whatsapp-session'; // Usar el mismo webhook que hace logout-instance
-      const payload = { sessionName };
+      const url = '/evolution-api'; // Usar el mismo webhook que hace logout-instance
+      const payload = { 
+        sessionName, 
+        operationType,
+        timestamp: new Date().toISOString()
+      };
       const webhookApi = await getWebhookClient();
       const config = await getN8nConfig();
       

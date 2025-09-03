@@ -239,7 +239,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
   const cleanupSession = async (sessionName: string) => {
     try {
       console.log('🚨 [CLEANUP] Limpiando sesión de WhatsApp:', sessionName);
-      await n8nApi.deleteWhatsAppSession(sessionName);
+      await n8nApi.deleteWhatsAppSession(sessionName, 'delete');
       console.log('✅ [CLEANUP] Sesión limpiada exitosamente');
       
       // Mostrar toast informativo (no intrusivo)
@@ -525,7 +525,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
       setQrExpired(false);
       
       // Llamar al webhook de n8n para crear la sesión
-      const response = await n8nApi.createWhatsAppSession(sessionName);
+      const response = await n8nApi.createWhatsAppSession(sessionName, 'create');
       
       if (response.success && response.base64) {
         console.log('QR received:', {
@@ -561,6 +561,73 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     }
   };
 
+  // Función para reconectar sesión existente (regenerar QR)
+  const reconnectWhatsAppSession = async () => {
+    if (!whatsappSession?.sessionName) return;
+
+    setIsConnecting(true);
+    setQrExpired(false);
+    
+    try {
+      const response = await n8nApi.reconnectExistingWhatsAppSession(whatsappSession.sessionName, 'reconnect');
+      
+      if (response.success && response.base64) {
+        setWhatsappSession({
+          sessionName: response.sessionName,
+          qrCode: response.base64,
+          isConnected: false,
+          timestamp: new Date().toISOString(),
+        });
+        
+        setConnectionChecking(true);
+        startConnectionPolling(response.sessionName);
+
+        toast({
+          title: 'QR Regenerado',
+          description: 'Nuevo código QR generado. Escanéalo con WhatsApp para reconectar.',
+        });
+      }
+    } catch (error) {
+      console.error('Error reconectando sesión:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo regenerar el código QR. Intenta crear una nueva sesión.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  };
+
+  // Función para desconectar sesión actual
+  const disconnectWhatsAppSession = async () => {
+    if (!whatsappSession?.sessionName) return;
+
+    try {
+      await n8nApi.disconnectWhatsAppSession(whatsappSession.sessionName, 'disconnect');
+      
+      // Limpiar estado local
+      setWhatsappSession(null);
+      setConnectionChecking(false);
+      if (pollingInterval) {
+        clearInterval(pollingInterval);
+        setPollingInterval(null);
+      }
+
+      toast({
+        title: 'Sesión desconectada',
+        description: 'La sesión de WhatsApp ha sido desconectada exitosamente.',
+      });
+    } catch (error) {
+      console.error('Error desconectando sesión:', error);
+      toast({
+        title: 'Error',
+        description: 'Hubo un problema al desconectar la sesión.',
+        variant: 'destructive',
+      });
+    }
+  };
+
   // Función para verificar periódicamente el estado de conexión
   const startConnectionPolling = (sessionName: string) => {
     console.log('Starting connection polling for session:', sessionName);
@@ -568,7 +635,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     const interval = setInterval(async () => {
       try {
         console.log('Polling WhatsApp status...');
-        const status = await n8nApi.checkWhatsAppStatus(sessionName);
+        const status = await n8nApi.checkWhatsAppStatus(sessionName, 'status');
         
         console.log('Status check result:', status);
         
@@ -874,6 +941,19 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                               Esperando conexión...
                             </div>
                           )}
+                          {/* Botón pequeño para regenerar QR cuando está activo */}
+                          <div className="flex justify-center mt-3">
+                            <Button
+                              type="button"
+                              variant="ghost"
+                              size="sm"
+                              onClick={reconnectWhatsAppSession}
+                              disabled={isConnecting}
+                              className="text-xs"
+                            >
+                              ↻ Regenerar QR
+                            </Button>
+                          </div>
                         </div>
                       </CardContent>
                     </Card>
@@ -907,18 +987,30 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   {!whatsappSession.isConnected && qrExpired && (
                     <Button
                       type="button"
-                      onClick={createWhatsAppSession}
+                      onClick={reconnectWhatsAppSession}
                       disabled={isConnecting}
                       className="flex-1"
                     >
                       {isConnecting ? (
                         <>
                           <Loader2 className="mr-2 h-4 w-4 animate-spin" />
-                          Generando...
+                          Regenerando...
                         </>
                       ) : (
                         'Generar nuevo QR'
                       )}
+                    </Button>
+                  )}
+
+                  {/* Botón para desconectar sesión activa */}
+                  {whatsappSession.isConnected && (
+                    <Button
+                      type="button"
+                      variant="outline"
+                      onClick={disconnectWhatsAppSession}
+                      className="flex-1"
+                    >
+                      Desconectar WhatsApp
                     </Button>
                   )}
                   
