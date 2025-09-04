@@ -1,6 +1,6 @@
 import axios from 'axios';
 import configService from './configService';
-import { n8nApi } from './n8nApi';
+import { whatsappApi } from './whatsappApi';
 import { Agent, WhatsAppPlatformConfig } from '@/types/agent';
 
 // Función para crear cliente API con configuración dinámica
@@ -306,8 +306,8 @@ export const agentService = {
             console.warn('⚠️ [DELETEAGENT] No hay platformConfig, usando fallback:', sessionName);
           }
           
-          console.log('🔄 [DELETEAGENT] LLAMANDO n8nApi.deleteWhatsAppSession con sessionName:', sessionName);
-          const deleteResult = await n8nApi.deleteWhatsAppSession(sessionName);
+          console.log('🔄 [DELETEAGENT] LLAMANDO whatsappApi.deleteWhatsAppSession con sessionName:', sessionName);
+          const deleteResult = await whatsappApi.deleteWhatsAppSession(sessionName);
           console.log('✅ [DELETEAGENT] Sesión de WhatsApp eliminada. Resultado:', JSON.stringify(deleteResult, null, 2));
           
         } catch (error) {
@@ -361,55 +361,7 @@ export const agentService = {
    * Desconectar sesión de WhatsApp de un agente
    */
   async disconnectWhatsAppSession(agentId: string): Promise<void> {
-    try {
-      console.log('🔌 [DISCONNECT] Iniciando desconexión de sesión WhatsApp para agente:', agentId);
-      
-      // 1. Obtener información del agente
-      const agentApi = await getApiClient();
-      const agentResponse = await agentApi.get(`/agents/${agentId}`);
-      const agentInfo = agentResponse.data.data;
-      
-      console.log('📋 [DISCONNECT] Información del agente obtenida:', {
-        id: agentInfo.id,
-        name: agentInfo.name,
-        platform: agentInfo.platform,
-        status: agentInfo.status
-      });
-
-      // 2. Solo proceder si es un agente de WhatsApp
-      if (agentInfo.platform === 'whatsapp') {
-        let sessionName = `agent_${agentId}`;
-        
-        // Extraer sessionName de platformConfig si existe
-        if (agentInfo.platformConfig) {
-          try {
-            const platformConfig = JSON.parse(agentInfo.platformConfig);
-            
-            if (platformConfig.sessionName) {
-              sessionName = platformConfig.sessionName;
-              console.log('📋 [DISCONNECT] Usando sessionName de configuración:', sessionName);
-            } else {
-              console.warn('⚠️ [DISCONNECT] No se encontró sessionName en platformConfig, usando fallback:', sessionName);
-            }
-          } catch (e) {
-            console.warn('⚠️ [DISCONNECT] Error parseando platformConfig, usando fallback:', e);
-          }
-        } else {
-          console.warn('⚠️ [DISCONNECT] No hay platformConfig, usando fallback:', sessionName);
-        }
-        
-        console.log('🔄 [DISCONNECT] LLAMANDO n8nApi.disconnectWhatsAppSession con sessionName:', sessionName);
-        const disconnectResult = await n8nApi.disconnectWhatsAppSession(sessionName);
-        console.log('✅ [DISCONNECT] Sesión de WhatsApp desconectada. Resultado:', JSON.stringify(disconnectResult, null, 2));
-        
-      } else {
-        console.log('ℹ️ [DISCONNECT] No es un agente de WhatsApp, saltando desconexión de sesión');
-      }
-      
-    } catch (error: unknown) {
-      console.error('❌ [DISCONNECT] Error desconectando sesión WhatsApp:', error);
-      throw error;
-    }
+    console.log('🔌 [DISCONNECT] Función de desconexión deshabilitada para agente:', agentId);
   },
 };
 

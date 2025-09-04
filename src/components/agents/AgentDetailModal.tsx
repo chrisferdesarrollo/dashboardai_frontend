@@ -125,18 +125,6 @@ export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalPro
                   {agent.description || 'Sin descripción'}
                 </p>
               </div>
-
-              {/* Información de sesión para WhatsApp */}
-              {agent.platform === 'whatsapp' && agent.sessionName && (
-                <div>
-                  <h3 className="text-sm font-medium text-muted-foreground mb-2">
-                    Sesión WhatsApp
-                  </h3>
-                  <p className="text-sm bg-blue-50 dark:bg-blue-950/30 p-3 rounded-lg border border-blue-200 dark:border-blue-800">
-                    <span className="font-mono">{agent.sessionName}</span>
-                  </p>
-                </div>
-              )}
             </div>
 
             <div className="space-y-4">
@@ -361,10 +349,13 @@ export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalPro
                         );
                       }
                       
-                      // Fallback: mostrar cualquier configuración disponible
+                      // Fallback: mostrar configuración disponible (excluyendo campos técnicos)
+                      const technicalFields = ['sessionName', 'isConnected', 'connectedAt', 'timestamp'];
+                      const filteredConfig = Object.entries(config).filter(([key]) => !technicalFields.includes(key));
+                      
                       return (
                         <div className="grid grid-cols-1 gap-3">
-                          {Object.entries(config).map(([key, value]) => (
+                          {filteredConfig.map(([key, value]) => (
                             <div key={key} className="flex justify-between items-center p-3 bg-muted/50 rounded-lg">
                               <span className="text-sm font-medium">{key}</span>
                               <span className="text-sm">{String(value)}</span>

@@ -4,24 +4,21 @@ import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { 
-  MoreHorizontal, 
-  Play, 
-  Square, 
-  Edit, 
   Trash2,
   Clock,
   Activity
 } from 'lucide-react';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from '@/components/ui/dropdown-menu';
-import { WhatsAppReconnectModal } from './WhatsAppReconnectModal';
-import { useAgentStore } from '@/store/agentStore';
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -82,27 +79,16 @@ const platformConfig = {
 };
 
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
-  const { toggleAgentStatus } = useAgentStore();
-  const [showReconnectModal, setShowReconnectModal] = useState(false);
+  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
   
   // La verificación ya no es necesaria gracias a las funciones helper
   const PlatformIcon = platformInfo.icon;
 
-  const handleToggleStatus = () => {
-    // Si es un agente de WhatsApp inactivo, mostrar modal de reconexión
-    if (agent.platform === 'whatsapp' && agent.status === 'inactive') {
-      setShowReconnectModal(true);
-    } else {
-      // Para otros casos, usar la funcionalidad normal
-      toggleAgentStatus(agent.id);
-    }
-  };
-
-  const handleReconnectSuccess = () => {
-    // Actualizar el estado del agente después de reconectar
-    toggleAgentStatus(agent.id);
+  const handleDeleteConfirm = () => {
+    onDelete(agent.id);
+    setShowDeleteConfirm(false);
   };
 
   return (
@@ -129,48 +115,6 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
             <Badge className={statusInfo.className}>
               {statusInfo.label}
             </Badge>
-            
-            <DropdownMenu>
-              <DropdownMenuTrigger asChild>
-                <Button 
-                  variant="ghost" 
-                  size="icon" 
-                  className="h-8 w-8 opacity-0 group-hover:opacity-100 transition-opacity"
-                >
-                  <MoreHorizontal className="h-4 w-4" />
-                </Button>
-              </DropdownMenuTrigger>
-              <DropdownMenuContent align="end">
-                <DropdownMenuItem onClick={() => onView(agent)}>
-                  Ver detalles
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={() => onEdit(agent)}>
-                  <Edit className="mr-2 h-4 w-4" />
-                  Editar
-                </DropdownMenuItem>
-                <DropdownMenuItem onClick={handleToggleStatus}>
-                  {agent.status === 'active' ? (
-                    <>
-                      <Square className="mr-2 h-4 w-4" />
-                      Desactivar
-                    </>
-                  ) : (
-                    <>
-                      <Play className="mr-2 h-4 w-4" />
-                      Activar
-                    </>
-                  )}
-                </DropdownMenuItem>
-                <DropdownMenuSeparator />
-                <DropdownMenuItem 
-                  onClick={() => onDelete(agent.id)}
-                  className="text-destructive"
-                >
-                  <Trash2 className="mr-2 h-4 w-4" />
-                  Eliminar
-                </DropdownMenuItem>
-              </DropdownMenuContent>
-            </DropdownMenu>
           </div>
         </div>
       </CardHeader>
@@ -210,33 +154,38 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
           </Button>
           
           <Button
-            variant={agent.status === 'active' ? 'destructive' : 'default'}
+            variant="destructive"
             size="sm"
-            onClick={handleToggleStatus}
+            onClick={() => setShowDeleteConfirm(true)}
             className="flex items-center space-x-1 min-w-[100px]"
           >
-            {agent.status === 'active' ? (
-              <>
-                <Square className="h-3 w-3" />
-                <span>Desactivar</span>
-              </>
-            ) : (
-              <>
-                <Play className="h-3 w-3" />
-                <span>Activar</span>
-              </>
-            )}
+            <Trash2 className="h-3 w-3" />
+            <span>Eliminar</span>
           </Button>
         </div>
       </CardContent>
       
-      {/* Modal de reconexión de WhatsApp */}
-      <WhatsAppReconnectModal
-        isOpen={showReconnectModal}
-        onClose={() => setShowReconnectModal(false)}
-        agent={agent}
-        onReconnectSuccess={handleReconnectSuccess}
-      />
+      {/* Modal de confirmación de eliminación */}
+      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>¿Estás seguro de eliminar este agente?</AlertDialogTitle>
+            <AlertDialogDescription>
+              Esta acción no se puede deshacer. El agente "{agent.name}" será eliminado permanentemente 
+              junto con toda su configuración y historial de ejecuciones.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancelar</AlertDialogCancel>
+            <AlertDialogAction 
+              onClick={handleDeleteConfirm}
+              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
+            >
+              Eliminar permanentemente
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </Card>
   );
 }
