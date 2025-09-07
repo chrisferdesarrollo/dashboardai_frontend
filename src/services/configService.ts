@@ -54,9 +54,69 @@ class ConfigService {
   }
 
   /**
+   * Detecta si estamos en modo desarrollo local
+   */
+  private isLocalDevelopment(): boolean {
+    const environment = import.meta.env.VITE_N8N_ENVIRONMENT;
+    const forceLocal = import.meta.env.VITE_FORCE_LOCAL_N8N === 'true';
+    
+    return environment === 'local' || forceLocal ||
+           (import.meta.env.DEV && 
+           (import.meta.env.VITE_N8N_WEBHOOK_URL?.includes('localhost') || 
+            import.meta.env.VITE_N8N_API_URL?.includes('localhost')));
+  }
+
+  /**
+   * Obtiene la configuración de n8n según el entorno especificado
+   */
+  private getN8nConfigByEnvironment(): N8nConfig {
+    const environment = import.meta.env.VITE_N8N_ENVIRONMENT || 'local';
+    
+    // Debug: mostrar todas las variables de entorno
+    console.log('🔍 Debug - Variables de entorno:', {
+      VITE_N8N_ENVIRONMENT: import.meta.env.VITE_N8N_ENVIRONMENT,
+      VITE_FORCE_LOCAL_N8N: import.meta.env.VITE_FORCE_LOCAL_N8N,
+      DEV: import.meta.env.DEV,
+      PROD: import.meta.env.PROD,
+      environment: environment
+    });
+    
+    console.log(`🌍 Usando configuración de n8n para entorno: ${environment}`);
+    
+    if (environment === 'production') {
+      return {
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || '',
+        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || '',
+        apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || '',
+      };
+    } else {
+      return {
+        webhookUrl: import.meta.env.VITE_N8N_LOCAL_WEBHOOK_URL || 
+                   import.meta.env.VITE_N8N_WEBHOOK_URL || '',
+        apiUrl: import.meta.env.VITE_N8N_LOCAL_API_URL || 
+               import.meta.env.VITE_N8N_API_URL || '',
+        apiToken: import.meta.env.VITE_N8N_LOCAL_API_TOKEN || 
+                 import.meta.env.VITE_N8N_API_TOKEN || '',
+      };
+    }
+  }
+
+  /**
    * Obtiene la configuración completa desde el backend
    */
   async getConfig(): Promise<AppConfig> {
+    // Si estamos en desarrollo local, usar directamente las variables de entorno
+    if (this.isLocalDevelopment()) {
+      console.log('🚀 ConfigService.getConfig() - Modo desarrollo local detectado, usando variables de entorno');
+      console.log('🔧 Variables de entorno:', {
+        VITE_FORCE_LOCAL_N8N: import.meta.env.VITE_FORCE_LOCAL_N8N,
+        VITE_N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL,
+        VITE_N8N_API_URL: import.meta.env.VITE_N8N_API_URL,
+        isDev: import.meta.env.DEV
+      });
+      return this.getFallbackConfig();
+    }
+
     try {
       console.log('🔍 ConfigService.getConfig() - Intentando cargar configuración desde backend');
       console.log('🔍 Backend URL:', this.getBackendUrl());
@@ -112,12 +172,15 @@ class ConfigService {
     
     const savedConfig = localStorage.getItem(this.CONFIG_KEY);
     
-    // Configuración por defecto con valores hardcodeados como último recurso
+    // Configuración por defecto usando variables de entorno según el entorno
+    const environment = import.meta.env.VITE_N8N_ENVIRONMENT || 'local';
+    const n8nConfig = this.getN8nConfigByEnvironment();
+    
     const defaultConfig: AppConfig = {
       n8n: {
-        webhookUrl: import.meta.env.VITE_N8N_WEBHOOK_URL || 'https://n8n-n8n.hrxtio.easypanel.host/webhook',
-        apiUrl: import.meta.env.VITE_N8N_API_URL || 'https://n8n-n8n.hrxtio.easypanel.host/api/v1',
-        apiToken: localStorage.getItem(this.N8N_TOKEN_KEY) || import.meta.env.VITE_N8N_API_TOKEN || '',
+        webhookUrl: n8nConfig.webhookUrl,
+        apiUrl: n8nConfig.apiUrl,
+        apiToken: localStorage.getItem(this.N8N_TOKEN_KEY) || n8nConfig.apiToken,
       },
       backend: {
         apiUrl: this.getBackendUrl(),
@@ -125,11 +188,38 @@ class ConfigService {
     };
 
     console.log('🔄 Default config from env vars:', {
+      VITE_N8N_ENVIRONMENT: environment,
       VITE_N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL || 'No configurada',
       VITE_N8N_API_URL: import.meta.env.VITE_N8N_API_URL || 'No configurada',
-      VITE_N8N_API_TOKEN: import.meta.env.VITE_N8N_API_TOKEN ? 'Configurada' : 'No configurada',
+      VITE_N8N_LOCAL_WEBHOOK_URL: import.meta.env.VITE_N8N_LOCAL_WEBHOOK_URL || 'No configurada',
+      VITE_N8N_PROD_WEBHOOK_URL: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'No configurada',
+      VITE_FORCE_LOCAL_N8N: import.meta.env.VITE_FORCE_LOCAL_N8N,
       backendUrl: this.getBackendUrl()
     });
+
+    console.log('🔧 Configuración final de n8n:', {
+      webhookUrl: defaultConfig.n8n.webhookUrl,
+      apiUrl: defaultConfig.n8n.apiUrl,
+      apiToken: defaultConfig.n8n.apiToken ? 'Presente' : 'Ausente'
+    });
+
+    // En modo desarrollo local, ignorar localStorage para forzar uso de variables de entorno
+    if (this.isLocalDevelopment()) {
+      console.log('🚀 Modo desarrollo local: ignorando localStorage y usando solo variables de entorno');
+      
+      // Limpiar TODA la configuración guardada en modo desarrollo para evitar conflictos
+      if (savedConfig) {
+        console.log('🧹 Limpiando configuración guardada en localStorage para modo desarrollo');
+        localStorage.removeItem(this.CONFIG_KEY);
+        localStorage.removeItem(this.N8N_TOKEN_KEY);
+        // Limpiar cualquier otra configuración de n8n que pueda existir
+        localStorage.removeItem('n8n_config');
+        localStorage.removeItem('n8nConfig');
+        localStorage.removeItem('app_config');
+      }
+      
+      return defaultConfig;
+    }
 
     if (savedConfig) {
       try {
@@ -183,6 +273,46 @@ class ConfigService {
    * Obtiene solo la configuración de n8n
    */
   async getN8nConfig(): Promise<N8nConfig> {
+    const environment = import.meta.env.VITE_N8N_ENVIRONMENT || 'local';
+    
+    console.log(`🌍 Entorno configurado: ${environment}`);
+    
+    // Si está configurado como production, usar configuración de producción directamente
+    if (environment === 'production') {
+      console.log('� Modo producción detectado - usando configuración de VPS');
+      const prodConfig = {
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'https://n8n-n8n.hrxtio.easypanel.host/webhook',
+        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'https://n8n-n8n.hrxtio.easypanel.host/api/v1',
+        apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || ''
+      };
+      console.log('🔧 Configuración de producción:', prodConfig);
+      return prodConfig;
+    }
+    
+    // Solo para modo local, intentar obtener del backend primero
+    if (environment === 'local') {
+      console.log('🏠 Modo local detectado');
+      try {
+        const config = await this.getConfig();
+        if (config?.n8n) {
+          console.log('✅ Configuración obtenida del backend:', config.n8n);
+          return config.n8n;
+        }
+      } catch (error) {
+        console.log('⚠️ Error obteniendo configuración del backend, usando fallback local');
+      }
+      
+      // Fallback para modo local
+      const localConfig = {
+        webhookUrl: import.meta.env.VITE_N8N_LOCAL_WEBHOOK_URL || 'http://localhost:5678/webhook',
+        apiUrl: import.meta.env.VITE_N8N_LOCAL_API_URL || 'http://localhost:5678/api/v1',
+        apiToken: import.meta.env.VITE_N8N_LOCAL_API_TOKEN || ''
+      };
+      console.log('🔧 Configuración local:', localConfig);
+      return localConfig;
+    }
+    
+    // Fallback general
     const config = await this.getConfig();
     return config.n8n;
   }

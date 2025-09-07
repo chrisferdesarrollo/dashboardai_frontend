@@ -1,5 +1,5 @@
 {
-  "name": "Gestión Evolution API",
+  "name": "My workflow 2",
   "nodes": [
     {
       "parameters": {
@@ -8,13 +8,13 @@
         "responseMode": "responseNode",
         "options": {}
       },
-      "id": "7f5788da-06f4-4167-b4cd-bacea08e9537",
+      "id": "9f2d96d5-f04c-4adb-9c30-3c7a692ad521",
       "name": "🎯 API Principal WhatsApp",
       "type": "n8n-nodes-base.webhook",
       "typeVersion": 1,
       "position": [
-        -768,
-        424
+        -2640,
+        992
       ],
       "webhookId": "whatsapp-api"
     },
@@ -59,10 +59,10 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        -544,
-        424
+        -2416,
+        992
       ],
-      "id": "27785dee-53f3-4071-b2fd-7f5615ad15c9",
+      "id": "22feb07f-1607-4a07-88dc-bd87aa774686",
       "name": "📥 Procesar Input"
     },
     {
@@ -129,11 +129,11 @@
                   {
                     "id": "925edd01-25f9-45e4-ad2a-3b8c67678ead",
                     "leftValue": "={{ $json.rawData.data.messageType }}",
-                    "rightValue": "conversation",
+                    "rightValue": "message",
                     "operator": {
                       "type": "string",
-                      "operation": "equals",
-                      "name": "filter.operator.equals"
+                      "operation": "exists",
+                      "singleValue": true
                     }
                   }
                 ],
@@ -223,31 +223,11 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -320,
-        360
+        -2192,
+        928
       ],
-      "id": "26c690bc-efcf-4deb-93fd-456695e70afd",
+      "id": "255bb49b-60b2-41eb-9891-6e2bdfd6d443",
       "name": "🔀 Router de Acciones"
-    },
-    {
-      "parameters": {
-        "instanceName": "={{ $json.sessionName }}",
-        "options_Create_instance": {}
-      },
-      "type": "n8n-nodes-evolution-api.evolutionApi",
-      "typeVersion": 1,
-      "position": [
-        -96,
-        -224
-      ],
-      "id": "93555790-90be-4fc2-95c4-c86ecd87e895",
-      "name": "🏗️ Crear Instancia",
-      "credentials": {
-        "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
-        }
-      }
     },
     {
       "parameters": {
@@ -260,15 +240,15 @@
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        128,
-        -224
+        -1744,
+        512
       ],
-      "id": "4f908a2a-17a7-41f4-995c-11af57dda302",
+      "id": "4667fd63-35a5-4e4a-bd9d-2c324c82d308",
       "name": "⚙️ Configurar Instancia",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
@@ -276,7 +256,7 @@
       "parameters": {
         "resource": "events-api",
         "instanceName": "={{ $json.data.settings.instanceName }}",
-        "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
+        "webhookUrl": "http://localhost:5678/webhook/evolution-api",
         "webhookEvents": [
           "MESSAGES_UPSERT"
         ]
@@ -284,15 +264,15 @@
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        352,
-        -224
+        -1520,
+        512
       ],
-      "id": "4825f489-e557-45fb-8a5b-70850cac2a56",
+      "id": "0145258f-508c-4490-a998-ec6002c4fe33",
       "name": "🔗 Configurar Webhook",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
@@ -304,15 +284,15 @@
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        576,
-        -224
+        -1296,
+        512
       ],
-      "id": "f1bffbaf-aad6-486b-bdc3-6e951b23d47f",
+      "id": "9287b7fa-47e9-4a7e-9e88-a8de5e34c0b5",
       "name": "🔌 Conectar Instancia",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
@@ -344,89 +324,432 @@
       "type": "n8n-nodes-base.if",
       "typeVersion": 2,
       "position": [
-        800,
-        -224
+        -1072,
+        512
       ],
-      "id": "36750517-c09a-49ba-9677-599ff00b1cc1",
+      "id": "130b6cb8-8906-418e-8077-2099f1f6ff0d",
       "name": "📱 Validar QR"
     },
     {
       "parameters": {
-        "operation": "instance-connect",
-        "instanceName": "={{ $json.rawData.sessionName }}"
+        "assignments": {
+          "assignments": [
+            {
+              "id": "text-content",
+              "name": "messageText",
+              "value": "={{ $('📥 Procesar Input').item.json.rawData.data.message.conversation }}",
+              "type": "string"
+            },
+            {
+              "id": "5bc9fa64-ca11-46cd-9e2e-b3d2177857b7",
+              "name": "userName",
+              "value": "={{ $json.rawData.sender }}",
+              "type": "string"
+            },
+            {
+              "id": "2d67f1b2-9577-439a-8eeb-82b05569a07b",
+              "name": "dateTime",
+              "value": "={{ $json.rawData.date_time }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1072,
+        704
+      ],
+      "id": "95b0ebfd-75cf-4f7a-b05f-e1e64485862f",
+      "name": "📄 Extraer Texto"
+    },
+    {
+      "parameters": {
+        "resource": "chat-api",
+        "operation": "get-media-base64",
+        "instanceName": "={{ $json.rawData.instance }}",
+        "messageId": "={{ $json.rawData.data.key.id }}"
       },
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        -96,
-        -32
+        -1744,
+        896
       ],
-      "id": "1adb52ba-b762-44cd-8da5-ab97ad57d424",
-      "name": "🔄 Conectar Existente",
+      "id": "01ef561f-8e3d-46c6-ae4c-049f8bb58dec",
+      "name": "🎵 Obtener Audio",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
     {
       "parameters": {
-        "operation": "fetch-instances",
-        "instanceName": "={{ $json.sessionName }}"
+        "operation": "toBinary",
+        "sourceProperty": "data.base64",
+        "options": {
+          "mimeType": "audio/mp3"
+        }
       },
-      "type": "n8n-nodes-evolution-api.evolutionApi",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.convertToFile",
+      "typeVersion": 1.1,
       "position": [
-        -96,
-        616
+        -1520,
+        896
       ],
-      "id": "21d22c76-f299-4266-b157-11763c2f87cc",
-      "name": "📊 Obtener Estado",
+      "id": "9f2b41a9-1b87-48ac-8ebd-a45df6e6e78e",
+      "name": "🔄 Convertir Audio"
+    },
+    {
+      "parameters": {
+        "resource": "audio",
+        "operation": "transcribe",
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.openAi",
+      "typeVersion": 1.8,
+      "position": [
+        -1296,
+        896
+      ],
+      "id": "acec1dac-9276-4394-99b6-ae09a0eb0330",
+      "name": "🎤 Transcribir Audio",
       "credentials": {
-        "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+        "openAiApi": {
+          "id": "sr5R8AqauLrfaE9q",
+          "name": "dashboardai"
         }
       }
     },
     {
       "parameters": {
-        "operation": "logout-instance",
-        "instanceName": "={{ $json.sessionName }}"
+        "assignments": {
+          "assignments": [
+            {
+              "id": "transcribed-text",
+              "name": "messageText",
+              "value": "={{ $json.text }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
       },
-      "type": "n8n-nodes-evolution-api.evolutionApi",
-      "typeVersion": 1,
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
       "position": [
-        -96,
-        808
+        -1072,
+        896
       ],
-      "id": "627c7f8b-f074-46cc-8ea9-d43346914089",
-      "name": "🔌❌ Desconectar",
+      "id": "4a7584f0-d481-44c0-acba-7e17b051b659",
+      "name": "📝 Extraer Transcripción"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={\n  \"instance\": \"{{ $('Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"sessionName\": \"{{ $('Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"remoteJid\": \"{{ $('Tipo de Mensaje').item.json.rawData.data.key.remoteJid }}\",\n  \"messageId\": \"{{ $('Tipo de Mensaje').item.json.rawData.data.instanceId }}\",\n  \"pushName\": \"{{ $('Tipo de Mensaje').item.json.rawData.data.pushName }}\",\n  \"messageText\": \"{{ $input.all().find(item => item.json.messageText)?.json.messageText || 'Sin mensaje' }}\",\n  \"dateTime\": \"{{ $json.dateTime }}\"\n\n}\n",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -848,
+        800
+      ],
+      "id": "fc380b9d-ff0a-4afc-a617-d67b01783f31",
+      "name": "🤖 Preparar IA"
+    },
+    {
+      "parameters": {
+        "operation": "executeQuery",
+        "query": "SELECT prompt FROM agents WHERE session_name = $1 AND status = 'active' LIMIT 1;",
+        "options": {
+          "queryReplacement": "=Parameter 1: ={{ $json.sessionName }}"
+        }
+      },
+      "type": "n8n-nodes-base.postgres",
+      "typeVersion": 2.5,
+      "position": [
+        -624,
+        800
+      ],
+      "id": "4abc814e-afa7-440c-b778-c6800f146fd7",
+      "name": "🧠 Obtener Prompt",
       "credentials": {
-        "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+        "postgres": {
+          "id": "0YJ2P9Vcx6FrkozP",
+          "name": "Postgres account"
+        }
+      },
+      "disabled": true
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $('🤖 Preparar IA').item.json.messageText }}",
+        "options": {
+          "systemMessage": "={{ $json.prompt || 'Eres un asistente útil' }}"
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        -400,
+        800
+      ],
+      "id": "00db5e1c-254c-4b48-9d38-182b8f8ad3cf",
+      "name": "🤖 Agente IA"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        -448,
+        1040
+      ],
+      "id": "a9a264aa-7907-4918-93df-8520c79c4b57",
+      "name": "🧠 OpenAI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "sr5R8AqauLrfaE9q",
+          "name": "dashboardai"
         }
       }
     },
     {
       "parameters": {
-        "operation": "delete-instance",
-        "instanceName": "={{ $json.sessionName }}"
+        "resource": "messages-api",
+        "instanceName": "={{ $('🤖 Preparar IA').item.json.instance }}",
+        "remoteJid": "={{ $('🤖 Preparar IA').item.json.remoteJid }}",
+        "messageText": "={{ $json.output }}",
+        "options_message": {}
       },
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        -96,
-        1000
+        -48,
+        704
       ],
-      "id": "867bd7e7-2baf-438f-9878-db06ba15dccd",
-      "name": "🗑️ Eliminar Instancia",
+      "id": "21325d9c-5fc2-435f-8ec1-84de905f146f",
+      "name": "📤 Enviar Respuesta",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "content": "## 🎯 API Unificada WhatsApp\n\n### Endpoints Soportados:\n- **create**: Crear nueva sesión\n- **connect**: Conectar sesión existente\n- **status**: Verificar estado de sesión\n- **disconnect**: Desconectar sesión\n- **delete**: Eliminar sesión\n- **message**: Procesar mensajes (automático)\n",
+        "height": 304,
+        "width": 320,
+        "color": 6
+      },
+      "type": "n8n-nodes-base.stickyNote",
+      "typeVersion": 1,
+      "position": [
+        -2592,
+        304
+      ],
+      "id": "8822889f-7108-4eba-b9ad-565595a6cf21",
+      "name": "📚 Documentación"
+    },
+    {
+      "parameters": {
+        "conditions": {
+          "options": {
+            "caseSensitive": true,
+            "leftValue": "",
+            "typeValidation": "strict",
+            "version": 1
+          },
+          "conditions": [
+            {
+              "id": "instance-exists-condition",
+              "leftValue": "={{ $json.success }}",
+              "rightValue": "",
+              "operator": {
+                "type": "boolean",
+                "operation": "true",
+                "singleValue": true
+              }
+            }
+          ],
+          "combinator": "and"
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.if",
+      "typeVersion": 2,
+      "position": [
+        -1744,
+        1184
+      ],
+      "id": "2ca1ad03-e5ca-4e36-9f82-ca5c9ab1a396",
+      "name": "Verificar Instancia Existe"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "raw-status-assign",
+              "name": "rawStatus",
+              "value": "={{ $json.instance ? $json.instance.connectionStatus : ($json.data && $json.data[0] ? $json.data[0].connectionStatus : 'unknown') }}",
+              "type": "string"
+            },
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.data[0].name }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1520,
+        1088
+      ],
+      "id": "30314f3a-ee98-42fb-b2b6-8650e58b2997",
+      "name": "Extraer Estado Raw"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "connected-assign",
+              "name": "connected",
+              "value": "={{ $json.rawStatus === 'open' }}",
+              "type": "boolean"
+            },
+            {
+              "id": "status-assign",
+              "name": "status",
+              "value": "={{ $json.rawStatus }}",
+              "type": "string"
+            },
+            {
+              "id": "session-name-assign",
+              "name": "sessionName",
+              "value": "={{ $json.sessionName }}",
+              "type": "string"
+            },
+            {
+              "id": "connection-details-assign",
+              "name": "connectionDetails",
+              "value": "={{ \n  $json.rawStatus === 'open' ? 'Conectado y funcionando' :\n  $json.rawStatus === 'close' ? 'Desconectado' :\n  $json.rawStatus === 'connecting' ? 'Conectando...' :\n  $json.rawStatus === 'connection' ? 'Estableciendo conexión' :\n  'Estado desconocido: ' + $json.rawStatus\n}}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -1296,
+        1088
+      ],
+      "id": "8d6beecb-9ff5-490e-b30e-cc83a40a5348",
+      "name": "Procesar Estado Mejorado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"connected\": {{ $json.connected }},\n  \"status\": \"{{ $json.status }}\",\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"connectionDetails\": \"{{ $json.connectionDetails }}\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1072,
+        1088
+      ],
+      "id": "f524e75d-f5cd-419c-922d-4a1ee8d24dd8",
+      "name": "Respuesta Estado"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": false,\n  \"connected\": false,\n  \"status\": \"not_found\",\n  \"sessionName\": \"{{ $('Obtener Estado').item.json.data[0].name }}\",\n  \"error\": \"Instancia no encontrada\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
+        "options": {
+          "responseCode": 404
+        }
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1520,
+        1280
+      ],
+      "id": "dcbd6139-997f-43ff-95bd-fe435d0d05ac",
+      "name": "Respuesta No Encontrada"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión eliminada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -1744,
+        1376
+      ],
+      "id": "417984e3-ebed-4d34-bc3e-0dabc53b378c",
+      "name": "Respuesta Exitosa"
+    },
+    {
+      "parameters": {
+        "respondWith": "json",
+        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Instancia creada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n   \"base64\": \"{{ $json.data.base64 }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.respondToWebhook",
+      "typeVersion": 1.1,
+      "position": [
+        -848,
+        512
+      ],
+      "id": "584ae6ea-b661-4ee1-b1cb-c720d371034b",
+      "name": "Respuesta Exitosa2"
+    },
+    {
+      "parameters": {
+        "instanceName": "={{ $json.sessionName }}",
+        "options_Create_instance": {}
+      },
+      "type": "n8n-nodes-evolution-api.evolutionApi",
+      "typeVersion": 1,
+      "position": [
+        -1968,
+        512
+      ],
+      "id": "f6f9e3e7-8d8c-4483-811d-d48d26e05c22",
+      "name": "Crear Instancia",
+      "credentials": {
+        "evolutionApi": {
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
@@ -488,341 +811,78 @@
       "type": "n8n-nodes-base.switch",
       "typeVersion": 3.2,
       "position": [
-        -96,
-        232
+        -1968,
+        800
       ],
-      "id": "55c453b4-4e4d-4016-a9a9-e018b9ca4619",
-      "name": "📝 Tipo de Mensaje"
+      "id": "a2369896-5fb7-47a1-9284-3672963f1397",
+      "name": "Tipo de Mensaje"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "text-content",
-              "name": "messageText",
-              "value": "={{ $('📥 Procesar Input').item.json.rawData.data.message.conversation }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        800,
-        136
-      ],
-      "id": "0a6979d9-4bec-4751-bf8d-d79ffff3ca4f",
-      "name": "📄 Extraer Texto"
-    },
-    {
-      "parameters": {
-        "resource": "chat-api",
-        "operation": "get-media-base64",
-        "instanceName": "={{ $json.instance }}",
-        "messageId": "={{ $json.messageId }}"
+        "operation": "fetch-instances",
+        "instanceName": "={{ $json.sessionName }}"
       },
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        128,
-        328
+        -1968,
+        1184
       ],
-      "id": "8003b033-dc51-45e4-8c81-759c83a88e5c",
-      "name": "🎵 Obtener Audio",
+      "id": "867a7ac8-42e6-4a49-9067-38abe3ca98e1",
+      "name": "Obtener Estado",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
     {
       "parameters": {
-        "operation": "toBinary",
-        "sourceProperty": "data.base64",
-        "options": {
-          "mimeType": "audio/mp3"
-        }
-      },
-      "type": "n8n-nodes-base.convertToFile",
-      "typeVersion": 1.1,
-      "position": [
-        352,
-        328
-      ],
-      "id": "215484d7-d6b6-4ac5-868f-6a95b24938f2",
-      "name": "🔄 Convertir Audio"
-    },
-    {
-      "parameters": {
-        "resource": "audio",
-        "operation": "transcribe",
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.openAi",
-      "typeVersion": 1.8,
-      "position": [
-        576,
-        328
-      ],
-      "id": "ae3c7b34-c706-40b0-9914-85b9332ced5c",
-      "name": "🎤 Transcribir Audio",
-      "credentials": {
-        "openAiApi": {
-          "id": "3rgyY1ch5GFd39mm",
-          "name": "TobyKeyOpenIA"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "transcribed-text",
-              "name": "messageText",
-              "value": "={{ $json.text }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        800,
-        328
-      ],
-      "id": "e98edeb0-3fdc-4dc6-a4c7-c397dd173b25",
-      "name": "📝 Extraer Transcripción"
-    },
-    {
-      "parameters": {
-        "mode": "raw",
-        "jsonOutput": "={\n  \"instance\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"sessionName\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.instance }}\",\n  \"remoteJid\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.key.remoteJid }}\",\n  \"messageId\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.instanceId }}\",\n  \"pushName\": \"{{ $('📝 Tipo de Mensaje').item.json.rawData.data.pushName }}\",\n  \"messageText\": \"{{ $input.all().find(item => item.json.messageText)?.json.messageText || 'Sin mensaje' }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        1024,
-        232
-      ],
-      "id": "0801709b-9d3c-4ade-aa90-4f14308d172f",
-      "name": "🤖 Preparar IA"
-    },
-    {
-      "parameters": {
-        "operation": "executeQuery",
-        "query": "SELECT prompt FROM agents WHERE session_name = $1 AND status = 'active' LIMIT 1;",
-        "options": {
-          "queryReplacement": "=Parameter 1: ={{ $json.sessionName }}"
-        }
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1248,
-        232
-      ],
-      "id": "21c84eeb-97a6-4aa3-ad7e-ddd0a8bb835d",
-      "name": "🧠 Obtener Prompt",
-      "credentials": {
-        "postgres": {
-          "id": "jiNb1FxtP36jdv0e",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "promptType": "define",
-        "text": "={{ $('🤖 Preparar IA').item.json.messageText }}",
-        "options": {
-          "systemMessage": "={{ $json.prompt || 'Eres un asistente útil' }}"
-        }
-      },
-      "type": "@n8n/n8n-nodes-langchain.agent",
-      "typeVersion": 2.2,
-      "position": [
-        1472,
-        232
-      ],
-      "id": "04e2f3a3-70d3-4094-ad58-7f2ce2fbac13",
-      "name": "🤖 Agente IA"
-    },
-    {
-      "parameters": {
-        "model": {
-          "__rl": true,
-          "mode": "list",
-          "value": "gpt-4o-mini"
-        },
-        "options": {}
-      },
-      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
-      "typeVersion": 1.2,
-      "position": [
-        1544,
-        456
-      ],
-      "id": "4f0ba671-fb73-4b72-bd56-5a11fd9ed6b8",
-      "name": "🧠 OpenAI Model",
-      "credentials": {
-        "openAiApi": {
-          "id": "3rgyY1ch5GFd39mm",
-          "name": "TobyKeyOpenIA"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "resource": "messages-api",
-        "instanceName": "={{ $('🤖 Preparar IA').item.json.instance }}",
-        "remoteJid": "={{ $('🤖 Preparar IA').item.json.remoteJid }}",
-        "messageText": "={{ $json.output }}",
-        "options_message": {}
+        "operation": "delete-instance",
+        "instanceName": "={{ $json.sessionName }}"
       },
       "type": "n8n-nodes-evolution-api.evolutionApi",
       "typeVersion": 1,
       "position": [
-        1824,
-        136
+        -1968,
+        1376
       ],
-      "id": "f96a2f69-4633-4b78-8472-ff50c5e6a8b5",
-      "name": "📤 Enviar Respuesta",
+      "id": "4caf3515-1cdb-4135-8904-21492f65882c",
+      "name": "Eliminar Instancia",
       "credentials": {
         "evolutionApi": {
-          "id": "bgjm0UrybKIg4h20",
-          "name": "Evolution account"
+          "id": "KLJuE1bYGQxrr4Gp",
+          "name": "dashboardai"
         }
       }
     },
     {
       "parameters": {
-        "operation": "executeQuery",
-        "query": "INSERT INTO conversation_logs (session_name, user_message, ai_response, user_name, timestamp, created_at) VALUES ($1, $2, $3, $4, $5, CURRENT_TIMESTAMP);",
-        "options": {
-          "queryReplacement": "=Parameter 1: ={{ $('🤖 Preparar IA').item.json.sessionName }}\nParameter 2: ={{ $('🤖 Preparar IA').item.json.messageText }}\nParameter 3: ={{ $('🤖 Agente IA').item.json.output }}\nParameter 4: ={{ $('🤖 Preparar IA').item.json.pushName }}\nParameter 5: ={{ $('📥 Procesar Input').item.json.timestamp }}"
-        }
-      },
-      "type": "n8n-nodes-base.postgres",
-      "typeVersion": 2.5,
-      "position": [
-        1824,
-        328
-      ],
-      "id": "a53f6def-35f2-4705-b44b-c7d95fa49443",
-      "name": "📊 Registrar Log",
-      "credentials": {
-        "postgres": {
-          "id": "jiNb1FxtP36jdv0e",
-          "name": "Postgres account"
-        }
-      }
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"action\": \"{{ $('📥 Procesar Input').item.json.action }}\",\n  \"sessionName\": \"{{ $('📥 Procesar Input').item.json.sessionName }}\",\n  \"error\": \"{{ $json.error || 'Error en la operación' }}\",\n  \"timestamp\": \"{{ $('📥 Procesar Input').item.json.timestamp }}\"\n}",
-        "options": {
-          "responseCode": 400
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1024,
-        -128
-      ],
-      "id": "7d18b834-0ab8-4445-81b0-033b1f6a2379",
-      "name": "❌ Respuesta Error"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"error\": \"Acción no válida o no especificada\",\n  \"validActions\": [\"create\", \"connect\", \"status\", \"disconnect\", \"delete\"],\n  \"timestamp\": \"{{ $('📥 Procesar Input').item.json.timestamp }}\"\n}",
-        "options": {
-          "responseCode": 400
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        -768,
-        1224
-      ],
-      "id": "6f0fbeb2-8bae-4652-bebb-4c10ca29f5d8",
-      "name": "⚠️ Acción Inválida"
-    },
-    {
-      "parameters": {
-        "content": "## 🎯 API Unificada WhatsApp\n\n### Endpoints Soportados:\n- **create**: Crear nueva sesión\n- **connect**: Conectar sesión existente\n- **status**: Verificar estado de sesión\n- **disconnect**: Desconectar sesión\n- **delete**: Eliminar sesión\n- **message**: Procesar mensajes (automático)\n",
-        "height": 304,
-        "width": 320,
-        "color": 6
-      },
-      "type": "n8n-nodes-base.stickyNote",
-      "typeVersion": 1,
-      "position": [
-        -784,
-        -224
-      ],
-      "id": "3bdaa771-8bdb-4f0c-b2a7-d30c1ac0784b",
-      "name": "📚 Documentación"
-    },
-    {
-      "parameters": {
-        "conditions": {
-          "options": {
-            "caseSensitive": true,
-            "leftValue": "",
-            "typeValidation": "strict",
-            "version": 1
-          },
-          "conditions": [
-            {
-              "id": "instance-exists-condition",
-              "leftValue": "={{ $json.success }}",
-              "rightValue": "",
-              "operator": {
-                "type": "boolean",
-                "operation": "true",
-                "singleValue": true
-              }
-            }
-          ],
-          "combinator": "and"
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.if",
-      "typeVersion": 2,
-      "position": [
-        128,
-        616
-      ],
-      "id": "4450be1b-9eec-421c-9e93-135818467c33",
-      "name": "Verificar Instancia Existe"
-    },
-    {
-      "parameters": {
         "assignments": {
           "assignments": [
             {
-              "id": "raw-status-assign",
-              "name": "rawStatus",
-              "value": "={{ $json.instance ? $json.instance.connectionStatus : ($json.data && $json.data[0] ? $json.data[0].connectionStatus : 'unknown') }}",
+              "id": "9cb2d9c0-b679-4043-a8ca-6fce4fb4bbf4",
+              "name": "user_message",
+              "value": "={{ $('🤖 Preparar IA').item.json.messageText }}",
               "type": "string"
             },
             {
-              "id": "session-name-assign",
-              "name": "sessionName",
-              "value": "={{ $json.data[0].name }}",
+              "id": "c90b64bf-04ea-4811-8a87-5afcbe76ed84",
+              "name": "user_name",
+              "value": "={{ $('🤖 Preparar IA').item.json.pushName }}",
+              "type": "string"
+            },
+            {
+              "id": "54f98c8a-8f60-4f8b-b59d-f073ba56e78b",
+              "name": "ai_response",
+              "value": "={{ $json.output }}",
+              "type": "string"
+            },
+            {
+              "id": "7d0ee80a-8022-4542-bcb0-2f06adb39764",
+              "name": "session_name",
+              "value": "={{ $('🤖 Preparar IA').item.json.sessionName }}",
               "type": "string"
             }
           ]
@@ -832,179 +892,38 @@
       "type": "n8n-nodes-base.set",
       "typeVersion": 3.4,
       "position": [
-        352,
-        520
+        -48,
+        896
       ],
-      "id": "3e6afa7d-dd2e-4ebe-b8fb-43fb81993027",
-      "name": "Extraer Estado Raw"
+      "id": "81b1afc5-0145-4e6d-bacf-64dd1451e755",
+      "name": "Edit Fields"
     },
     {
       "parameters": {
-        "assignments": {
-          "assignments": [
+        "method": "POST",
+        "url": "http://localhost:3000/api/conversation-logs",
+        "sendQuery": true,
+        "specifyQuery": "json",
+        "jsonQuery": "={\n    \"sessionName\": \"{{ $json.session_name }}\",\n    \"userMessage\": \"{{ $json.user_message }}\",\n    \"aiResponse\": \"{{ $json.ai_response }}\",\n    \"userName\": \"{{ $json.user_name }}\"\n}",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
             {
-              "id": "connected-assign",
-              "name": "connected",
-              "value": "={{ $json.rawStatus === 'open' }}",
-              "type": "boolean"
-            },
-            {
-              "id": "status-assign",
-              "name": "status",
-              "value": "={{ $json.rawStatus }}",
-              "type": "string"
-            },
-            {
-              "id": "session-name-assign",
-              "name": "sessionName",
-              "value": "={{ $json.sessionName }}",
-              "type": "string"
-            },
-            {
-              "id": "connection-details-assign",
-              "name": "connectionDetails",
-              "value": "={{ \n  $json.rawStatus === 'open' ? 'Conectado y funcionando' :\n  $json.rawStatus === 'close' ? 'Desconectado' :\n  $json.rawStatus === 'connecting' ? 'Conectando...' :\n  $json.rawStatus === 'connection' ? 'Estableciendo conexión' :\n  'Estado desconocido: ' + $json.rawStatus\n}}",
-              "type": "string"
+              "name": "Content-Type",
+              "value": "application/json"
             }
           ]
         },
         "options": {}
       },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
       "position": [
-        576,
-        520
+        160,
+        896
       ],
-      "id": "0e7d05b5-8fca-4c9d-b762-2e82b1634ae0",
-      "name": "Procesar Estado Mejorado"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"connected\": {{ $json.connected }},\n  \"status\": \"{{ $json.status }}\",\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"connectionDetails\": \"{{ $json.connectionDetails }}\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        800,
-        520
-      ],
-      "id": "2faedd23-8919-45dc-8c8b-571d0ca032e6",
-      "name": "Respuesta Estado"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": false,\n  \"connected\": false,\n  \"status\": \"not_found\",\n  \"sessionName\": \"{{ $('📊 Obtener Estado').item.json.data[0].name }}\",\n  \"error\": \"Instancia no encontrada\",\n  \"timestamp\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}\"\n}",
-        "options": {
-          "responseCode": 404
-        }
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        352,
-        712
-      ],
-      "id": "02722207-de98-4cc6-beef-2773bacfb83c",
-      "name": "Respuesta No Encontrada"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión desconectada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        128,
-        808
-      ],
-      "id": "116b60b4-cfeb-4f1f-8854-5878fd956271",
-      "name": "Respuesta Exitosa1"
-    },
-    {
-      "parameters": {
-        "assignments": {
-          "assignments": [
-            {
-              "id": "connection-data-assign",
-              "name": "connectionData",
-              "value": "={{ $json }}",
-              "type": "object"
-            },
-            {
-              "id": "session-name-pass",
-              "name": "sessionName",
-              "value": "={{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}",
-              "type": "string"
-            },
-            {
-              "id": "timestamp-pass",
-              "name": "timestamp",
-              "value": "={{ $('🎯 API Principal WhatsApp').item.json.body.timestamp }}",
-              "type": "string"
-            }
-          ]
-        },
-        "options": {}
-      },
-      "type": "n8n-nodes-base.set",
-      "typeVersion": 3.4,
-      "position": [
-        128,
-        -32
-      ],
-      "id": "fed240c3-b57b-4325-88e9-9eaf2ae442f0",
-      "name": "Preparar Activación Mensajería"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"sessionName\": \"{{ $json.sessionName }}\",\n  \"base64\": \"{{ $json.connectionData.data.base64 }}\",\n  \"status\": \"connected\",\n  \"message\": \"Instancia conectada correctamente\",\n  \"timestamp\": \"{{ $json.timestamp }}\",\n  \"messagingActivated\": true\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        352,
-        -32
-      ],
-      "id": "a24c8f5a-6216-4900-a449-c682ea15cdfe",
-      "name": "Conexión Exitosa con Mensajería"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Sesión eliminada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        128,
-        1000
-      ],
-      "id": "a07f666c-2552-4729-9d5f-8d145953d912",
-      "name": "Respuesta Exitosa"
-    },
-    {
-      "parameters": {
-        "respondWith": "json",
-        "responseBody": "={\n  \"success\": true,\n  \"message\": \"Instancia creada correctamente\",\n  \"sessionName\": \"{{ $('🎯 API Principal WhatsApp').item.json.body.sessionName }}\",\n   \"base64\": \"{{ $json.data.base64 }}\",\n  \"timestamp\": \"{{ $now }}\"\n}",
-        "options": {}
-      },
-      "type": "n8n-nodes-base.respondToWebhook",
-      "typeVersion": 1.1,
-      "position": [
-        1024,
-        -320
-      ],
-      "id": "4235efa3-b871-48e8-9037-6a86d81caae6",
-      "name": "Respuesta Exitosa2"
+      "id": "17fbf7c7-5cc8-4188-9dcf-d4ba466ca81b",
+      "name": "HTTP Request1"
     }
   ],
   "pinData": {
@@ -1029,12 +948,12 @@
           "query": {},
           "body": {
             "event": "messages.upsert",
-            "instance": "agent_1756938447018",
+            "instance": "agent_1757079002425",
             "data": {
               "key": {
                 "remoteJid": "573105471106@s.whatsapp.net",
                 "fromMe": true,
-                "id": "D10DA820AB43EED3A51CE254B03AD0F7"
+                "id": "8797785B403E38B396086E5E65467176"
               },
               "pushName": "Christian",
               "status": "SERVER_ACK",
@@ -1042,15 +961,15 @@
                 "conversation": "Hola"
               },
               "messageType": "conversation",
-              "messageTimestamp": 1756938821,
-              "instanceId": "3a1048bc-d22a-42ca-b56e-d0a2245222bb",
+              "messageTimestamp": 1757090163,
+              "instanceId": "85575e22-aa63-4b3f-88ef-2bbadf5e2596",
               "source": "android"
             },
             "destination": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
-            "date_time": "2025-09-03T19:33:41.930Z",
+            "date_time": "2025-09-05T13:36:03.256Z",
             "sender": "573105471106@s.whatsapp.net",
             "server_url": "https://n8n-evolution-api.hrxtio.easypanel.host",
-            "apikey": "157E6C1A-736E-43B9-90E4-119042F00CE4"
+            "apikey": "25F99FC5-42E6-4FA2-9F8A-207439D726D7"
           },
           "webhookUrl": "https://n8n-n8n.hrxtio.easypanel.host/webhook/evolution-api",
           "executionMode": "production"
@@ -1085,53 +1004,30 @@
       "main": [
         [
           {
-            "node": "🏗️ Crear Instancia",
+            "node": "Crear Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [],
+        [
+          {
+            "node": "Tipo de Mensaje",
             "type": "main",
             "index": 0
           }
         ],
         [
           {
-            "node": "🔄 Conectar Existente",
+            "node": "Obtener Estado",
             "type": "main",
             "index": 0
           }
         ],
+        [],
         [
           {
-            "node": "📝 Tipo de Mensaje",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "📊 Obtener Estado",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "🔌❌ Desconectar",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "🗑️ Eliminar Instancia",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🏗️ Crear Instancia": {
-      "main": [
-        [
-          {
-            "node": "⚙️ Configurar Instancia",
+            "node": "Eliminar Instancia",
             "type": "main",
             "index": 0
           }
@@ -1176,75 +1072,6 @@
         [
           {
             "node": "Respuesta Exitosa2",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "❌ Respuesta Error",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔄 Conectar Existente": {
-      "main": [
-        [
-          {
-            "node": "Preparar Activación Mensajería",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📊 Obtener Estado": {
-      "main": [
-        [
-          {
-            "node": "Verificar Instancia Existe",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🔌❌ Desconectar": {
-      "main": [
-        [
-          {
-            "node": "Respuesta Exitosa1",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "🗑️ Eliminar Instancia": {
-      "main": [
-        [
-          {
-            "node": "Respuesta Exitosa",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "📝 Tipo de Mensaje": {
-      "main": [
-        [
-          {
-            "node": "📄 Extraer Texto",
-            "type": "main",
-            "index": 0
-          }
-        ],
-        [
-          {
-            "node": "🎵 Obtener Audio",
             "type": "main",
             "index": 0
           }
@@ -1337,7 +1164,7 @@
             "index": 0
           },
           {
-            "node": "📊 Registrar Log",
+            "node": "Edit Fields",
             "type": "main",
             "index": 0
           }
@@ -1353,11 +1180,6 @@
             "index": 0
           }
         ]
-      ]
-    },
-    "📤 Enviar Respuesta": {
-      "main": [
-        []
       ]
     },
     "Verificar Instancia Existe": {
@@ -1378,17 +1200,6 @@
         ]
       ]
     },
-    "Procesar Estado Mejorado": {
-      "main": [
-        [
-          {
-            "node": "Respuesta Estado",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
     "Extraer Estado Raw": {
       "main": [
         [
@@ -1400,11 +1211,73 @@
         ]
       ]
     },
-    "Preparar Activación Mensajería": {
+    "Procesar Estado Mejorado": {
       "main": [
         [
           {
-            "node": "Conexión Exitosa con Mensajería",
+            "node": "Respuesta Estado",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Crear Instancia": {
+      "main": [
+        [
+          {
+            "node": "⚙️ Configurar Instancia",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Tipo de Mensaje": {
+      "main": [
+        [
+          {
+            "node": "📄 Extraer Texto",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🎵 Obtener Audio",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Obtener Estado": {
+      "main": [
+        [
+          {
+            "node": "Verificar Instancia Existe",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Eliminar Instancia": {
+      "main": [
+        [
+          {
+            "node": "Respuesta Exitosa",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Edit Fields": {
+      "main": [
+        [
+          {
+            "node": "HTTP Request1",
             "type": "main",
             "index": 0
           }
@@ -1416,10 +1289,11 @@
   "settings": {
     "executionOrder": "v1"
   },
-  "versionId": "160a5fed-95fc-4fed-a2d0-b3e48fa19f48",
+  "versionId": "04d50c7f-cdd8-486c-ba0d-13b423d17690",
   "meta": {
-    "instanceId": "307c54c8d5f163d28b3084dc585d9d465d53558c2c9cd27ab7250063fa3974d3"
+    "templateCredsSetupCompleted": true,
+    "instanceId": "758a8ecbeac679d995af3a2b1674b6cb80d424fbb637e36c95859f5faa894a87"
   },
-  "id": "mejlrWWB09erJUEh",
+  "id": "3XSMzwzbbU3uCnxO",
   "tags": []
 }

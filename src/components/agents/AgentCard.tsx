@@ -1,4 +1,3 @@
-import { useState } from 'react';
 import { Agent } from '@/types/agent';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
@@ -9,16 +8,6 @@ import {
   Activity
 } from 'lucide-react';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-} from '@/components/ui/alert-dialog';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
@@ -79,17 +68,11 @@ const platformConfig = {
 };
 
 export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
-  const [showDeleteConfirm, setShowDeleteConfirm] = useState(false);
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
   
   // La verificación ya no es necesaria gracias a las funciones helper
   const PlatformIcon = platformInfo.icon;
-
-  const handleDeleteConfirm = () => {
-    onDelete(agent.id);
-    setShowDeleteConfirm(false);
-  };
 
   return (
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">
@@ -156,7 +139,7 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
           <Button
             variant="destructive"
             size="sm"
-            onClick={() => setShowDeleteConfirm(true)}
+            onClick={() => onDelete(agent.id)}
             className="flex items-center space-x-1 min-w-[100px]"
           >
             <Trash2 className="h-3 w-3" />
@@ -164,28 +147,6 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
           </Button>
         </div>
       </CardContent>
-      
-      {/* Modal de confirmación de eliminación */}
-      <AlertDialog open={showDeleteConfirm} onOpenChange={setShowDeleteConfirm}>
-        <AlertDialogContent>
-          <AlertDialogHeader>
-            <AlertDialogTitle>¿Estás seguro de eliminar este agente?</AlertDialogTitle>
-            <AlertDialogDescription>
-              Esta acción no se puede deshacer. El agente "{agent.name}" será eliminado permanentemente 
-              junto con toda su configuración y historial de ejecuciones.
-            </AlertDialogDescription>
-          </AlertDialogHeader>
-          <AlertDialogFooter>
-            <AlertDialogCancel>Cancelar</AlertDialogCancel>
-            <AlertDialogAction 
-              onClick={handleDeleteConfirm}
-              className="bg-destructive text-destructive-foreground hover:bg-destructive/90"
-            >
-              Eliminar permanentemente
-            </AlertDialogAction>
-          </AlertDialogFooter>
-        </AlertDialogContent>
-      </AlertDialog>
     </Card>
   );
 }
