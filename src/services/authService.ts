@@ -10,7 +10,8 @@ import {
 } from '@/types/auth';
 
 // En desarrollo usar el proxy, en producción la URL completa
-const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api';
+//const API_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api';
+const API_BASE_URL = import.meta.env.DEV ? 'http://148.230.92.75:8080/api' : 'http://148.230.92.75:8080/api';
 
 // Crear instancia de axios con configuración base
 const api = axios.create({
