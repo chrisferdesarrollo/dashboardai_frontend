@@ -281,7 +281,7 @@ class ConfigService {
     if (environment === 'production') {
       console.log('� Modo producción detectado - usando configuración de VPS');
       const prodConfig = {
-        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'https://n8n-n8n.hrxtio.easypanel.host/webhook',
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'http://148.230.92.75:5678/webhook',
         apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'https://n8n-n8n.hrxtio.easypanel.host/api/v1',
         apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || ''
       };
