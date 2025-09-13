@@ -5,17 +5,26 @@ import { Button } from '@/components/ui/button';
 import { 
   Trash2,
   Clock,
-  Activity
+  Activity,
+  Wifi,
+  WifiOff,
+  Loader2
 } from 'lucide-react';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
+import { whatsappApi } from '@/services/whatsappApi';
+import { agentService } from '@/services/agentApi';
+import { useState } from 'react';
+import { toast } from '@/hooks/use-toast';
+import { WhatsAppConnectionModal } from './WhatsAppConnectionModal';
 
 interface AgentCardProps {
   agent: Agent;
   onEdit: (agent: Agent) => void;
   onDelete: (id: string) => void;
   onView: (agent: Agent) => void;
+  onStatusChange?: (agentId: string, newStatus: 'active' | 'inactive' | 'error') => void;
 }
 
 const statusConfig = {
@@ -67,12 +76,82 @@ const platformConfig = {
   },
 };
 
-export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
+export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: AgentCardProps) {
+  const [isConnecting, setIsConnecting] = useState(false);
+  const [isDisconnecting, setIsDisconnecting] = useState(false);
+  const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
+  const [showConnectionModal, setShowConnectionModal] = useState(false);
+  
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
   
   // La verificación ya no es necesaria gracias a las funciones helper
   const PlatformIcon = platformInfo.icon;
+
+  // Función para conectar WhatsApp (ahora abre el modal)
+  const handleConnect = () => {
+    if (!agent.sessionName || agent.platform !== 'whatsapp') {
+      toast({
+        title: "Error",
+        description: "No se puede conectar: sesión no configurada o no es WhatsApp",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setShowConnectionModal(true);
+  };
+
+  // Función para desconectar WhatsApp
+  const handleDisconnect = async () => {
+    if (!agent.sessionName || agent.platform !== 'whatsapp') {
+      toast({
+        title: "Error",
+        description: "No se puede desconectar: sesión no configurada o no es WhatsApp",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDisconnecting(true);
+    try {
+      const result = await whatsappApi.disconnectWhatsAppSession(agent.sessionName);
+      
+      if (result.success) {
+        setConnectionStatus('disconnected');
+        
+        // 🆕 Actualizar estado del agente en la base de datos
+        try {
+          await agentService.updateAgentStatus(agent.id, 'inactive');
+          onStatusChange?.(agent.id, 'inactive');
+          
+          toast({
+            title: "Desconectado",
+            description: `WhatsApp desconectado para ${agent.name}`,
+            variant: "default",
+          });
+        } catch (dbError) {
+          console.error('Error actualizando estado del agente:', dbError);
+          toast({
+            title: "Parcialmente exitoso",
+            description: "WhatsApp desconectado, pero no se pudo actualizar el estado en la base de datos",
+            variant: "default",
+          });
+        }
+      } else {
+        throw new Error('No se pudo desconectar la sesión');
+      }
+    } catch (error) {
+      console.error('Error desconectando WhatsApp:', error);
+      toast({
+        title: "Error de desconexión",
+        description: error instanceof Error ? error.message : "No se pudo desconectar de WhatsApp",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  };
 
   return (
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">
@@ -126,26 +205,74 @@ export function AgentCard({ agent, onEdit, onDelete, onView }: AgentCardProps) {
         </div>
 
         {/* Acciones */}
-        <div className="flex items-center justify-between pt-2">
-          <Button 
-            variant="outline" 
-            size="sm"
-            onClick={() => onView(agent)}
-            className="flex-1 mr-2"
-          >
-            Ver Detalles
-          </Button>
+        <div className="space-y-2">
+          {/* Botón de conexión para WhatsApp basado en el estado */}
+          {agent.platform === 'whatsapp' && agent.sessionName && (
+            <div className="flex items-center gap-2">
+              {agent.status === 'active' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnect}
+                  disabled={isDisconnecting}
+                  className="flex items-center space-x-1 flex-1 border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950 dark:hover:border-orange-700 dark:hover:text-orange-300"
+                >
+                  {isDisconnecting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                  <span>{isDisconnecting ? 'Desconectando...' : 'Desconectar WhatsApp'}</span>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleConnect}
+                  disabled={isConnecting}
+                  className="flex items-center space-x-1 flex-1 border-green-200 text-green-700 hover:bg-green-50 hover:border-green-300 hover:text-green-800 dark:border-green-800 dark:text-green-400 dark:hover:bg-green-950 dark:hover:border-green-700 dark:hover:text-green-300"
+                >
+                  {isConnecting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Wifi className="h-3 w-3" />
+                  )}
+                  <span>{isConnecting ? 'Conectando...' : 'Conectar WhatsApp'}</span>
+                </Button>
+              )}
+            </div>
+          )}
           
-          <Button
-            variant="destructive"
-            size="sm"
-            onClick={() => onDelete(agent.id)}
-            className="flex items-center space-x-1 min-w-[100px]"
-          >
-            <Trash2 className="h-3 w-3" />
-            <span>Eliminar</span>
-          </Button>
+          {/* Botones principales */}
+          <div className="flex items-center justify-between">
+            <Button 
+              variant="outline" 
+              size="sm"
+              onClick={() => onView(agent)}
+              className="flex-1 mr-2"
+            >
+              Ver Detalles
+            </Button>
+            
+            <Button
+              variant="destructive"
+              size="sm"
+              onClick={() => onDelete(agent.id)}
+              className="flex items-center space-x-1 min-w-[100px]"
+            >
+              <Trash2 className="h-3 w-3" />
+              <span>Eliminar</span>
+            </Button>
+          </div>
         </div>
+
+        {/* Modal de conexión WhatsApp */}
+        <WhatsAppConnectionModal
+          isOpen={showConnectionModal}
+          onClose={() => setShowConnectionModal(false)}
+          agent={agent}
+          onStatusChange={onStatusChange || (() => {})}
+        />
       </CardContent>
     </Card>
   );

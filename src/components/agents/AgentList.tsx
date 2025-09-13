@@ -28,6 +28,7 @@ export function AgentList() {
     loading,
     fetchAgents,
     deleteAgent,
+    updateAgentStatus,
     error,
   } = useAgentStore();
 
@@ -39,6 +40,23 @@ export function AgentList() {
   const [showDetailModal, setShowDetailModal] = useState(false);
 
   const agents = getFilteredAgents();
+
+  // 🆕 Función para manejar cambios de estado del agente
+  const handleStatusChange = async (agentId: string, newStatus: 'active' | 'inactive' | 'error') => {
+    try {
+      // Actualizar el estado local inmediatamente para una respuesta rápida de la UI
+      await updateAgentStatus(agentId, newStatus);
+      
+      console.log(`✅ Estado del agente ${agentId} actualizado a: ${newStatus}`);
+    } catch (error) {
+      console.error('❌ Error actualizando estado del agente:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el estado del agente',
+        variant: 'destructive',
+      });
+    }
+  };
 
   const handleCreateAgent = () => {
     setEditingAgent(null);
@@ -177,6 +195,7 @@ export function AgentList() {
               onEdit={handleEditAgent}
               onDelete={handleDeleteAgent}
               onView={handleViewAgent}
+              onStatusChange={handleStatusChange}
             />
           ))}
         </div>

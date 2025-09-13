@@ -32,6 +32,7 @@ interface AgentStore {
   updateAgent: (input: UpdateAgentInput) => Promise<void>;
   deleteAgent: (id: string) => Promise<void>;
   toggleAgentStatus: (id: string) => Promise<void>;
+  updateAgentStatus: (id: string, status: 'active' | 'inactive' | 'error') => Promise<void>;
   executeAgent: (id: string, input?: unknown) => Promise<void>;
   fetchExecutions: (agentId?: string) => Promise<void>;
 
@@ -174,6 +175,38 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     } catch (error) {
       set({ error: 'Error al cambiar estado del agente', loading: false });
       console.error('Error toggling agent status:', error);
+    }
+  },
+
+  updateAgentStatus: async (id, status) => {
+    console.log(`🔄 Actualizando estado del agente ${id} a: ${status}`);
+    set({ loading: true, error: null });
+    try {
+      const agent = get().agents.find(a => a.id === id);
+      if (!agent) {
+        throw new Error('Agente no encontrado');
+      }
+      
+      // Llamar a la API para actualizar el estado en la base de datos
+      await agentService.updateAgentStatus(id, status);
+      
+      // Actualizar el estado local después de la llamada exitosa a la API
+      const agents = get().agents.map(a => 
+        a.id === id 
+          ? { 
+              ...a, 
+              status: status,
+              updatedAt: new Date()
+            }
+          : a
+      );
+      set({ agents, loading: false });
+      
+      console.log(`✅ Estado del agente ${id} actualizado localmente a: ${status}`);
+    } catch (error) {
+      set({ error: 'Error al actualizar estado del agente', loading: false });
+      console.error('❌ Error updating agent status:', error);
+      throw error; // Re-lanzar el error para que el componente lo pueda manejar
     }
   },
 
