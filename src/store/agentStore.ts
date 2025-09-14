@@ -2,6 +2,7 @@ import { create } from 'zustand';
 import { Agent, CreateAgentInput, UpdateAgentInput, AgentExecution } from '@/types/agent';
 import { agentService, mapAgentResponseToAgent, CreateAgentRequest } from '@/services/agentApi';
 import { whatsappApi } from '@/services/whatsappApi';
+import { useAuthStore } from '@/store/authStore';
 
 interface AgentStore {
   // Estado
@@ -66,8 +67,19 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
     console.log('🔄 Iniciando fetchAgents...');
     set({ loading: true, error: null });
     try {
-      console.log('📡 Llamando a agentService.getAgents()...');
-      const response = await agentService.getAgents();
+      // Obtener el usuario autenticado
+      const authStore = useAuthStore.getState();
+      const currentUser = authStore.user;
+      
+      if (!currentUser || !currentUser.id) {
+        console.error('❌ No hay usuario autenticado o falta el ID del usuario');
+        set({ error: 'Usuario no autenticado', loading: false });
+        return;
+      }
+      
+      console.log('� Usuario autenticado:', currentUser.username, 'ID:', currentUser.id);
+      console.log('�📡 Llamando a agentService.getAgentsByUser() con userId:', currentUser.id);
+      const response = await agentService.getAgentsByUser(currentUser.id);
       console.log('📥 Respuesta completa recibida:', response);
       
       if (response.success && (response.data || response.agents)) {
@@ -76,7 +88,7 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
         const mappedAgents = agentsData.map(mapAgentResponseToAgent);
         console.log('🔄 Agentes mapeados:', mappedAgents);
         set({ agents: mappedAgents, loading: false });
-        console.log('✅ Agentes cargados exitosamente');
+        console.log('✅ Agentes cargados exitosamente para el usuario:', currentUser.username);
       } else {
         console.log('❌ Respuesta sin éxito o sin datos:', response);
         set({ error: response.error || 'Error al cargar agentes', loading: false });
@@ -90,11 +102,29 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   createAgent: async (input) => {
     set({ loading: true, error: null });
     try {
-      const response = await agentService.createAgent(input);
+      // Obtener el usuario autenticado y asegurar que el userId está incluido
+      const authStore = useAuthStore.getState();
+      const currentUser = authStore.user;
+      
+      if (!currentUser || !currentUser.id) {
+        const errorMessage = 'Usuario no autenticado';
+        set({ error: errorMessage, loading: false });
+        throw new Error(errorMessage);
+      }
+      
+      // Asegurar que el input tenga el userId del usuario autenticado
+      const agentInput = {
+        ...input,
+        userId: currentUser.id
+      };
+      
+      console.log('👤 Creando agente para usuario:', currentUser.username, 'ID:', currentUser.id);
+      const response = await agentService.createAgent(agentInput);
       if (response.success && response.data) {
         const mappedAgent = mapAgentResponseToAgent(response.data);
         const agents = [...get().agents, mappedAgent];
         set({ agents, loading: false });
+        console.log('✅ Agente creado exitosamente para usuario:', currentUser.username);
         return mappedAgent; // Devolver el agente creado
       } else {
         const errorMessage = response.error || 'Error al crear agente';
