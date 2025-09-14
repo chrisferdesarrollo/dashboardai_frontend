@@ -140,7 +140,7 @@ class ConfigService {
       console.log('🔍 Backend URL:', this.getBackendUrl());
       console.log('🔍 Auth token presente:', !!this.getAuthToken());
       
-      const response = await fetch(`${this.getBackendUrl()}/configuration/n8n`, {
+      const response = await fetch(`${this.getBackendUrl()}/configuration/n8n/config`, {
         headers: this.getAuthHeaders(),
       });
 
