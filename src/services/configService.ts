@@ -36,7 +36,13 @@ class ConfigService {
   
   // Obtener URL base del backend
   private getBackendUrl(): string {
-    return import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    console.log('🔧 [ConfigService] getBackendUrl():', {
+      VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
+      finalUrl: backendUrl,
+      allEnvVars: import.meta.env
+    });
+    return backendUrl;
   }
 
   // Obtener token de autenticación
@@ -324,6 +330,7 @@ class ConfigService {
     console.log('🔧 ConfigService.getBackendConfig() iniciado');
     const config = await this.getConfig();
     console.log('🔧 Configuración del backend obtenida:', config.backend);
+    console.log('🔧 URL final del backend:', config.backend.apiUrl);
     return config.backend;
   }
 
