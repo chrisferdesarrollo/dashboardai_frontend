@@ -211,12 +211,24 @@ export const agentService = {
    * Obtener agentes por usuario
    */
   async getAgentsByUser(userId: number): Promise<GetAgentsResponse> {
+    console.log('🔵 [VPS DEBUG] getAgentsByUser() iniciado con userId:', userId);
     try {
+      console.log('🔵 [VPS DEBUG] Obteniendo cliente API...');
       const agentApi = await getApiClient();
-      const response = await agentApi.get(`/agents/user/${userId}`);
+      console.log('🔵 [VPS DEBUG] Cliente API obtenido, base URL:', agentApi.defaults.baseURL);
+      
+      const endpoint = `/agents/user/${userId}`;
+      console.log('🔵 [VPS DEBUG] Haciendo petición GET a:', endpoint);
+      
+      const response = await agentApi.get(endpoint);
+      console.log('🔵 [VPS DEBUG] Respuesta recibida:', response.status, response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error('Error fetching user agents:', error);
+      console.error('🔴 [VPS DEBUG] Error fetching user agents:', error);
+      if (axios.isAxiosError(error)) {
+        console.error('🔴 [VPS DEBUG] Error response:', error.response?.status, error.response?.data);
+        console.error('🔴 [VPS DEBUG] Error URL:', error.config?.url);
+      }
       return {
         success: false,
         error: 'Error al obtener los agentes del usuario'

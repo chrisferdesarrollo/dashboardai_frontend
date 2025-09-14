@@ -64,23 +64,28 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
 
   // Operaciones asíncronas
   fetchAgents: async () => {
-    console.log('🔄 Iniciando fetchAgents...');
+    console.log('🔄 [VPS DEBUG] Iniciando fetchAgents...');
     set({ loading: true, error: null });
     try {
       // Obtener el usuario autenticado
+      console.log('🔵 [VPS DEBUG] Obteniendo estado de autenticación...');
       const authStore = useAuthStore.getState();
+      console.log('🔵 [VPS DEBUG] AuthStore completo:', authStore);
       const currentUser = authStore.user;
+      console.log('🔵 [VPS DEBUG] Usuario actual:', currentUser);
       
       if (!currentUser || !currentUser.id) {
-        console.error('❌ No hay usuario autenticado o falta el ID del usuario');
+        console.error('❌ [VPS DEBUG] No hay usuario autenticado o falta el ID del usuario');
+        console.error('❌ [VPS DEBUG] currentUser:', currentUser);
+        console.error('❌ [VPS DEBUG] currentUser?.id:', currentUser?.id);
         set({ error: 'Usuario no autenticado', loading: false });
         return;
       }
       
-      console.log('� Usuario autenticado:', currentUser.username, 'ID:', currentUser.id);
-      console.log('�📡 Llamando a agentService.getAgentsByUser() con userId:', currentUser.id);
+      console.log('👤 [VPS DEBUG] Usuario autenticado:', currentUser.username, 'ID:', currentUser.id);
+      console.log('📡 [VPS DEBUG] Llamando a agentService.getAgentsByUser() con userId:', currentUser.id);
       const response = await agentService.getAgentsByUser(currentUser.id);
-      console.log('📥 Respuesta completa recibida:', response);
+      console.log('📥 [VPS DEBUG] Respuesta completa recibida:', response);
       
       if (response.success && (response.data || response.agents)) {
         console.log('📊 Datos de agentes recibidos:', response.data || response.agents);
