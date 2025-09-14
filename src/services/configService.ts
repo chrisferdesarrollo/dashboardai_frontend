@@ -36,13 +36,25 @@ class ConfigService {
   
   // Obtener URL base del backend
   private getBackendUrl(): string {
-    const backendUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+    // Detectar si estamos en el VPS por la URL del navegador
+    const isVPS = window.location.hostname === '148.230.92.75';
+    
+    let finalUrl;
+    if (isVPS) {
+      finalUrl = 'http://148.230.92.75:8080/api';
+      console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
+    } else {
+      finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+      console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
+    }
+    
     console.log('🔧 [ConfigService] getBackendUrl():', {
+      hostname: window.location.hostname,
+      isVPS: isVPS,
       VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
-      finalUrl: backendUrl,
-      allEnvVars: import.meta.env
+      finalUrl: finalUrl
     });
-    return backendUrl;
+    return finalUrl;
   }
 
   // Obtener token de autenticación
