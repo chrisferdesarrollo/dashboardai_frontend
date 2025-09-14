@@ -15,7 +15,7 @@ import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { whatsappApi } from '@/services/whatsappApi';
 import { agentService } from '@/services/agentApi';
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { WhatsAppConnectionModal } from './WhatsAppConnectionModal';
 
@@ -89,7 +89,7 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
   const PlatformIcon = platformInfo.icon;
 
   // Función para conectar WhatsApp (ahora abre el modal)
-  const handleConnect = () => {
+  const handleConnect = useCallback(() => {
     if (!agent.sessionName || agent.platform !== 'whatsapp') {
       toast({
         title: "Error",
@@ -100,10 +100,10 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     }
 
     setShowConnectionModal(true);
-  };
+  }, [agent.sessionName, agent.platform]);
 
   // Función para desconectar WhatsApp
-  const handleDisconnect = async () => {
+  const handleDisconnect = useCallback(async () => {
     if (!agent.sessionName || agent.platform !== 'whatsapp') {
       toast({
         title: "Error",
@@ -151,7 +151,7 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     } finally {
       setIsDisconnecting(false);
     }
-  };
+  }, [agent.sessionName, agent.platform, agent.id, agent.name, onStatusChange]);
 
   return (
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">

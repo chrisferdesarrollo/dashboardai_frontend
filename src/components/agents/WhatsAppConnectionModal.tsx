@@ -186,7 +186,9 @@ export function WhatsAppConnectionModal({
     if (isOpen && agent.sessionName && !whatsappSession) {
       connectWhatsAppSession();
     }
-  }, [isOpen, agent.sessionName, connectWhatsAppSession, whatsappSession]);
+    // Removing connectWhatsAppSession from dependencies to prevent infinite re-renders
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [isOpen, agent.sessionName, whatsappSession]);
 
   // Manejar cierre del modal
   const handleClose = () => {

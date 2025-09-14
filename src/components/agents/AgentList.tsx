@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { Search, Filter, Plus, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -42,7 +42,7 @@ export function AgentList() {
   const agents = getFilteredAgents();
 
   // 🆕 Función para manejar cambios de estado del agente
-  const handleStatusChange = async (agentId: string, newStatus: 'active' | 'inactive' | 'error') => {
+  const handleStatusChange = useCallback(async (agentId: string, newStatus: 'active' | 'inactive' | 'error') => {
     try {
       // Actualizar el estado local inmediatamente para una respuesta rápida de la UI
       await updateAgentStatus(agentId, newStatus);
@@ -56,24 +56,24 @@ export function AgentList() {
         variant: 'destructive',
       });
     }
-  };
+  }, [updateAgentStatus, toast]);
 
-  const handleCreateAgent = () => {
+  const handleCreateAgent = useCallback(() => {
     setEditingAgent(null);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleEditAgent = (agent: Agent) => {
+  const handleEditAgent = useCallback((agent: Agent) => {
     setEditingAgent(agent);
     setIsModalOpen(true);
-  };
+  }, []);
 
-  const handleDeleteAgent = (id: string) => {
+  const handleDeleteAgent = useCallback((id: string) => {
     const agent = agents.find(a => a.id === id);
     if (agent) {
       setAgentToDelete(agent);
     }
-  };
+  }, [agents]);
 
   const confirmDeleteAgent = async () => {
     if (!agentToDelete) return;
@@ -102,10 +102,10 @@ export function AgentList() {
     setIsDeleting(false);
   };
 
-  const handleViewAgent = (agent: Agent) => {
+  const handleViewAgent = useCallback((agent: Agent) => {
     setSelectedAgent(agent);
     setShowDetailModal(true);
-  };
+  }, []);
 
   return (
     <div className="space-y-6">

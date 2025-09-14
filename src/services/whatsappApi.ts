@@ -35,13 +35,29 @@ interface WhatsAppDeleteResponse {
   timestamp: string;
 }
 
+// Cache para configuración de n8n
+let n8nConfigCache: { webhookUrl: string; apiUrl: string; apiToken: string } | null = null;
+let configCacheTime = 0;
+const CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
+
 // Función auxiliar para obtener configuración de n8n
 async function getN8nConfig() {
   try {
+    // Usar cache si está disponible y no ha expirado
+    const now = Date.now();
+    if (n8nConfigCache && (now - configCacheTime) < CONFIG_CACHE_DURATION) {
+      return n8nConfigCache;
+    }
+    
     const config = await configService.getN8nConfig();
     if (!config || !config.webhookUrl) {
       throw new Error('Configuración de n8n no encontrada o incompleta');
     }
+    
+    // Guardar en cache
+    n8nConfigCache = config;
+    configCacheTime = now;
+    
     return config;
   } catch (error) {
     console.error('Error obteniendo configuración de n8n:', error);
@@ -75,32 +91,16 @@ export const whatsappApi = {
         timestamp: new Date().toISOString()
       };
       
-      console.log('🔧 [WHATSAPP-CREATE] Obteniendo configuración de n8n...');
       const config = await getN8nConfig();
-      console.log('🔧 [WHATSAPP-CREATE] Configuración obtenida:', {
-        webhookUrl: config.webhookUrl ? '✅ Presente' : '❌ Ausente',
-        apiUrl: config.apiUrl ? '✅ Presente' : '❌ Ausente',
-        apiToken: config.apiToken ? '✅ Presente' : '❌ Ausente'
-      });
       
       if (!config.webhookUrl) {
         throw new Error('URL del webhook de n8n no está configurada. Verifica la configuración de n8n.');
       }
       
       const webhookApi = await getWebhookClient();
-      
-      console.log('🔧 [WHATSAPP-CREATE] Configuración completa:', {
-        sessionName,
-        baseURL: config.webhookUrl,
-        url,
-        fullURL: `${config.webhookUrl}${url}`,
-        payload
-      });
-      
-      console.log('📡 [WHATSAPP-CREATE] Enviando petición POST a:', `${config.webhookUrl}${url}`);
       const response = await webhookApi.post(url, payload);
       
-      console.log('✅ [WHATSAPP-CREATE] Respuesta recibida:', response.data);
+      console.log('✅ [WHATSAPP-CREATE] Sesión creada exitosamente');
       
       return response.data;
     } catch (error) {
