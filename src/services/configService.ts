@@ -123,10 +123,11 @@ class ConfigService {
    * Obtiene la configuración completa desde el backend
    */
   async getConfig(): Promise<AppConfig> {
-    // Si estamos en desarrollo local, usar directamente las variables de entorno
-    if (this.isLocalDevelopment()) {
-      console.log('🚀 ConfigService.getConfig() - Modo desarrollo local detectado, usando variables de entorno');
+    // Si estamos en desarrollo local o en VPS, usar directamente la configuración de fallback
+    if (this.isLocalDevelopment() || window.location.hostname === '148.230.92.75') {
+      console.log('🚀 ConfigService.getConfig() - Modo desarrollo o VPS detectado, usando configuración directa');
       console.log('🔧 Variables de entorno:', {
+        hostname: window.location.hostname,
         VITE_FORCE_LOCAL_N8N: import.meta.env.VITE_FORCE_LOCAL_N8N,
         VITE_N8N_WEBHOOK_URL: import.meta.env.VITE_N8N_WEBHOOK_URL,
         VITE_N8N_API_URL: import.meta.env.VITE_N8N_API_URL,
@@ -200,6 +201,17 @@ class ConfigService {
       apiUrl: 'http://148.230.92.75:5678/api/v1',
       apiToken: ''
     };
+    
+    // Si estamos en el VPS, usar siempre la configuración de emergencia
+    if (window.location.hostname === '148.230.92.75') {
+      console.log('🚨 USANDO CONFIGURACIÓN DE EMERGENCIA PARA VPS');
+      return {
+        n8n: emergencyConfig,
+        backend: {
+          apiUrl: this.getBackendUrl(),
+        },
+      };
+    }
     
     const defaultConfig: AppConfig = {
       n8n: {
