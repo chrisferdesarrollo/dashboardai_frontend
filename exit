@@ -1,0 +1,317 @@
+[33mcommit cf2f696a5ad7e02a1e35acd897d78a153286353a[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mproducción[m[33m, [m[1;31morigin/producción[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 17:35:38 2025 -0500
+
+    6
+
+[33mcommit da0b122be4b64d2ac8d80dde9eb7c1a766a38ffd[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 16:57:43 2025 -0500
+
+    5
+
+[33mcommit 580c97ace5d088d50755653f46d526d7b6ab70f9[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 15:30:14 2025 -0500
+
+    4
+
+[33mcommit 104a73e6e58cee58eae3a4c1833bb344347f2142[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 15:11:32 2025 -0500
+
+    3
+
+[33mcommit d76c998b8be3dbab539f59d8350c9045cebb913b[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 14:59:45 2025 -0500
+
+    3
+
+[33mcommit a8434134db26fdc4d8b260cdea01750af8163191[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 14:54:05 2025 -0500
+
+    2
+
+[33mcommit 59198d1743168fc18d1e8fce7259dfef3490fe35[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 14:44:14 2025 -0500
+
+    1
+
+[33mcommit 15cb1bb9184f546131f784393f199213c2e6fb64[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 11:39:23 2025 -0500
+
+    se cambia las direcciones de producción
+
+[33mcommit 1b5333f9922b9785d924a5d90285f3ac4cdfe1eb[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 14 11:17:58 2025 -0500
+
+    Se modifica las direcciones de producción
+
+[33mcommit 7eaa6f2514d4b371563ac256e32337657e4a21bb[m[33m ([m[1;31morigin/conectarWhatsapp[m[33m, [m[1;32mconectarWhatsapp[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sat Sep 13 11:39:22 2025 -0500
+
+    Se vuelve a crear la funcionalidad de conectar whatsapp
+
+[33mcommit 0793455a372a47d582d756604bba5e34368d807a[m[33m ([m[1;31morigin/despliegue[m[33m, [m[1;32mdespliegue[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Fri Sep 12 11:58:27 2025 -0500
+
+    Actualización
+
+[33mcommit 8afe841a266b8aaf7f78d0e984db824b70d95e9e[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Wed Sep 10 16:11:53 2025 +0000
+
+    se configura el Dockerfile para despliegue
+
+[33mcommit d8f7280d88dfe98ccf77a08f6db9fc2fb488213e[m[33m ([m[1;31morigin/deploy[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Tue Sep 9 09:21:18 2025 -0500
+
+    levantando el servicio en la vps
+
+[33mcommit f8d8e2e93b06bb1259959bcc3239062582fabbd0[m[33m ([m[1;31morigin/conversation_logs[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Mon Sep 8 13:48:45 2025 -0500
+
+    1
+
+[33mcommit c111e6616567027e6f546553a6db95c7442d3390[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Mon Sep 8 10:15:37 2025 -0500
+
+    modificación .env.production
+
+[33mcommit b918c37b67a707490d815816dab3569ef5ad48aa[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 7 13:14:49 2025 -0500
+
+    despliegue en la vps
+
+[33mcommit 171c43a197559afb21afed8b5b0a9f2f2be8f047[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Sun Sep 7 12:18:31 2025 -0500
+
+    se crea el servicio para guardar los logs de las conversaciones
+
+[33mcommit 63d2c807d6375f592e15468d60ea5104a499ff16[m[33m ([m[1;31morigin/Limpiando[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Thu Sep 4 16:35:32 2025 -0500
+
+    Se limpia el código y se borra funciones que no se necesitan
+
+[33mcommit 165b099e2b155c1bde1af03e2f2eac4e55a963bc[m[33m ([m[1;31morigin/manejoWhatsapp[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Wed Sep 3 18:09:45 2025 -0500
+
+    Se agrega unos cambios en el workflow
+
+[33mcommit da08c96587c824b234d960588d00e17fc718b153[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Tue Sep 2 18:06:19 2025 -0500
+
+    Se arregla el problema de conectar y desconectar
+
+[33mcommit aae80eb55bef3a28148a1aa880d941c4db395345[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Tue Sep 2 14:13:35 2025 -0500
+
+    Se mejora el comportamiento del modal
+
+[33mcommit f826a9e7e218dfb7afb861be61897962c889851d[m[33m ([m[1;31morigin/reconexiónWhatsapp[m[33m)[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Mon Sep 1 16:53:44 2025 -0500
+
+    Se agrega la funcionalidad de conversaciones
+
+[33mcommit 896637b7681f3e9599ff5342213d20b23d1400c7[m
+Author: chrisferdesarrollo <christian.rojas2@soy.sena.edu.co>
+Date:   Mon Sep 1 15:48:46 2025 -0500
+
+    Se modifica la función de reconexión del agente whatsapp
+
+[33mcommit bcdc530f540572e19f430ee48af48383eff7ca0f[m[33m ([m[1;31morigin/activar-desactivar[m[33m, [m[1;31morigin/HEAD[m[33m, [m[1;32mactivar-desactivar[m[33m)[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Mon Sep 1 13:13:31 2025 -0500
+
+    vinculación para la reconexión de agente
+
+[33mcommit d6a25b85e4fe28e934da79292aa3c2676b8d4c08[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sun Aug 31 11:49:41 2025 -0500
+
+    Se crea la función de activar y desactivar el agente de whatsapp
+
+[33mcommit 549fab51ad1b817f1cf97025ff9e9bf05f1aca79[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 30 20:47:16 2025 -0500
+
+    modificaciones
+
+[33mcommit 9ee7c1d85b8c8db8dc0a0fbe6eb10603d0825c5f[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 30 12:09:59 2025 -0500
+
+    Se modifica la creación de los agentes de whatsapp
+
+[33mcommit e24fd830ffc17c4d7990f54758d9e16a8ccc69d2[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Fri Aug 29 17:45:15 2025 -0500
+
+    cambios pequeños
+
+[33mcommit 3351f80d8898e1ff85f93b47669cff85b73497d4[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Thu Aug 28 20:17:22 2025 -0500
+
+    Arreglo
+
+[33mcommit f2b003591f47a87cf4695b4a4a201d09bf2b499f[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Thu Aug 28 16:22:31 2025 -0500
+
+    Se modifica la creación de los agentes
+
+[33mcommit 4bc3378ae561675b3b4537b3c200307a384ad98a[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Thu Aug 28 11:51:58 2025 -0500
+
+    Se corrigen problemas en la creación del agente
+
+[33mcommit 71df2b8bf275cb37fe809c5b7063884146f48f34[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Wed Aug 27 17:38:05 2025 -0500
+
+    Se crea el servicio de workflows
+
+[33mcommit 3c07b40c97381a74bf02542f775867c0bb324621[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Wed Aug 27 12:59:10 2025 -0500
+
+    Se mejora el listar agents
+
+[33mcommit 4b0bb3ecb87f2aa9441eb6d5b8554dcc4acc8ef2[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Tue Aug 26 15:11:56 2025 -0500
+
+    Configuraciones
+
+[33mcommit da19dd8f60a3cb29130009a1aca78366de15e745[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Tue Aug 26 10:52:46 2025 -0500
+
+    Se elimina los datos mock y se integran los datos reales
+
+[33mcommit 340c9a8264a91f7eb424575c34077f7c76a026c3[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Tue Aug 26 09:06:18 2025 -0500
+
+    Se guarda prompt en bd
+
+[33mcommit 2bcb6c278ad561edcd0a65cd90f6358e3f7b9b12[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Mon Aug 25 12:16:05 2025 -0500
+
+    Se agrega el id_user a los agentes
+
+[33mcommit 29336636f345a1bb07c259166eb34007189de946[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Mon Aug 25 11:25:31 2025 -0500
+
+    Se crea la tabla agentes en al bd
+
+[33mcommit 171ec68257a46f534719b91452eb70411e1df717[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 14:07:16 2025 -0500
+
+    1
+
+[33mcommit 59fa3b15bdb6c99b06d680982b4113dea87c2379[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 13:32:55 2025 -0500
+
+    Vinculación de whatsapp
+
+[33mcommit 5f460878fce5d3414f0c43603073713811fe0279[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 12:15:34 2025 -0500
+
+    4
+
+[33mcommit 411f441aad55e186dbb6aa23f1c08cbb576a592b[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 11:46:38 2025 -0500
+
+    3
+
+[33mcommit e0abfeb4f4329fb3742b7dca8d38aef595d41c2c[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 10:44:55 2025 -0500
+
+    Se cambia el diseño
+
+[33mcommit b47ebf06c4e7268fbb56f067cedf525a8f9c0567[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 08:46:49 2025 -0500
+
+    2
+
+[33mcommit c54bdc01983d29dfd6a7389f4c4386d79310c88c[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 07:35:59 2025 -0500
+
+    1
+
+[33mcommit f3d410a760037b9cc8c7bc7cb2635c5567636317[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Sat Aug 23 07:17:21 2025 -0500
+
+    función del login y registro
+
+[33mcommit 8c48ea940fb1630310ef93a4b5f90e7840429fd3[m
+Author: Christian <ferchris82@hotmail.com>
+Date:   Fri Aug 22 11:18:26 2025 -0500
+
+    primer commit
+
+[33mcommit eb384b422c1536a7b8863d376181e0a3ba4217f4[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Fri Aug 15 12:48:24 2025 +0000
+
+    Connect to Supabase project
+    
+    Add Supabase configuration and types to the project.
+
+[33mcommit ac297741857883e01905b8840aeb17b3eb73f3ac[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Fri Aug 15 12:47:01 2025 +0000
+
+    Fix: Resolve "process is not defined" error
+    
+    The error "Uncaught ReferenceError: process is not defined" indicates that the `process` global variable, commonly used in Node.js environments for accessing environment variables, is not available in the browser environment where the React application is running.
+    
+    This is likely happening because `process.env.REACT_APP_N8N_API_URL` or a similar construct is being accessed directly in the client-side code without proper handling for browser environments.
+    
+    To fix this, environment variables should be accessed using a method that is compatible with client-side React applications, such as prefixing them with `REACT_APP_` (which Vite or Create React App automatically injects) or by using a library like `dotenv` configured for client-side use.
+    
+    This commit addresses the `ReferenceError` by ensuring that environment variables are correctly accessed in the browser context.
+
+[33mcommit 0c4b1ec16b0d692b3126604a63b9c493b10ed7e9[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Fri Aug 15 12:45:41 2025 +0000
+
+    Create n8n agent dashboard
+    
+    Implement a React-based dashboard application for managing AI agents connected to n8n workflows. The application will feature a main screen listing agents with their status and recent activity, full CRUD operations for agents, and a detailed view for each agent including configurable parameters, execution history, and real-time logs. It will integrate with n8n via HTTP endpoints, handle token authentication, and utilize React Query for state management. The UI will be built with React and TailwindCSS, following a clean admin panel design with reusable components, dark mode support, and notifications.
+
+[33mcommit 59adfb69f8ae18129b2a2ee753941036ea452a8c[m
+Author: gpt-engineer-app[bot] <159125892+gpt-engineer-app[bot]@users.noreply.github.com>
+Date:   Fri Aug 15 12:40:59 2025 +0000
+
+    Use tech stack vite_react_shadcn_ts_20250728_minor
