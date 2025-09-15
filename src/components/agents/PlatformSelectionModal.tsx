@@ -28,29 +28,55 @@ export function PlatformSelectionModal({
           </DialogTitle>
         </DialogHeader>
         
-        <div className="space-y-4 py-6">
-          <p className="text-center text-muted-foreground mb-6">
+        <div className="space-y-6 py-6">
+          <p className="text-center text-muted-foreground text-sm leading-relaxed">
             ¿En qué plataforma quieres crear tu agente?
           </p>
           
-          <div className="flex justify-center items-center gap-6 px-4">
+          <div className="flex justify-center items-center gap-12 px-4">
             {/* WhatsApp Option */}
-            <Button
-              variant="outline"
-              className="aspect-square h-20 w-20 flex items-center justify-center hover:bg-green-50 hover:border-green-300 transition-colors rounded-xl p-2"
+            <div
+              className="group relative cursor-pointer flex flex-col items-center justify-center
+                         transition-all duration-300 ease-in-out
+                         hover:scale-110 active:scale-95"
               onClick={() => handlePlatformSelect('whatsapp')}
             >
-              <WhatsAppIcon className="w-full h-full" />
-            </Button>
+              <div className="relative h-16 w-16 transition-all duration-300 group-hover:scale-110">
+                <WhatsAppIcon className="w-full h-full filter group-hover:brightness-110 
+                                       group-hover:drop-shadow-2xl transition-all duration-300" />
+                <div className="absolute inset-0 rounded-full bg-green-400/10 scale-0 group-hover:scale-[2] 
+                               transition-transform duration-500 ease-out blur-md"></div>
+                <div className="absolute inset-0 rounded-full bg-green-400/5 scale-0 group-hover:scale-[3] 
+                               transition-transform duration-700 ease-out blur-lg"></div>
+              </div>
+              <div className="mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
+                             text-sm font-medium text-green-600 dark:text-green-400 transform 
+                             translate-y-2 group-hover:translate-y-0">
+                WhatsApp
+              </div>
+            </div>
             
             {/* Telegram Option */}
-            <Button
-              variant="outline"
-              className="aspect-square h-20 w-20 flex items-center justify-center hover:bg-blue-50 hover:border-blue-300 transition-colors rounded-xl p-2"
+            <div
+              className="group relative cursor-pointer flex flex-col items-center justify-center
+                         transition-all duration-300 ease-in-out
+                         hover:scale-110 active:scale-95"
               onClick={() => handlePlatformSelect('telegram')}
             >
-              <TelegramIcon className="w-full h-full" />
-            </Button>
+              <div className="relative h-16 w-16 transition-all duration-300 group-hover:scale-110">
+                <TelegramIcon className="w-full h-full filter group-hover:brightness-110 
+                                      group-hover:drop-shadow-2xl transition-all duration-300" />
+                <div className="absolute inset-0 rounded-full bg-blue-400/10 scale-0 group-hover:scale-[2] 
+                               transition-transform duration-500 ease-out blur-md"></div>
+                <div className="absolute inset-0 rounded-full bg-blue-400/5 scale-0 group-hover:scale-[3] 
+                               transition-transform duration-700 ease-out blur-lg"></div>
+              </div>
+              <div className="mt-3 opacity-0 group-hover:opacity-100 transition-all duration-300 ease-in-out
+                             text-sm font-medium text-blue-600 dark:text-blue-400 transform 
+                             translate-y-2 group-hover:translate-y-0">
+                Telegram
+              </div>
+            </div>
           </div>
         </div>
       </DialogContent>
