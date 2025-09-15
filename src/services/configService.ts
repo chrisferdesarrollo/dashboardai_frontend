@@ -194,11 +194,18 @@ class ConfigService {
     const environment = import.meta.env.VITE_N8N_ENVIRONMENT || 'local';
     const n8nConfig = this.getN8nConfigByEnvironment();
     
+    // CONFIGURACIÓN DE EMERGENCIA - HARDCODEADA PARA PRODUCCIÓN
+    const emergencyConfig = {
+      webhookUrl: 'http://148.230.92.75:5678/webhook',
+      apiUrl: 'http://148.230.92.75:5678/api/v1',
+      apiToken: ''
+    };
+    
     const defaultConfig: AppConfig = {
       n8n: {
-        webhookUrl: n8nConfig.webhookUrl,
-        apiUrl: n8nConfig.apiUrl,
-        apiToken: localStorage.getItem(this.N8N_TOKEN_KEY) || n8nConfig.apiToken,
+        webhookUrl: n8nConfig.webhookUrl || emergencyConfig.webhookUrl,
+        apiUrl: n8nConfig.apiUrl || emergencyConfig.apiUrl,
+        apiToken: localStorage.getItem(this.N8N_TOKEN_KEY) || n8nConfig.apiToken || emergencyConfig.apiToken,
       },
       backend: {
         apiUrl: this.getBackendUrl(),
