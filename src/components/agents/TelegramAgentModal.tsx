@@ -61,7 +61,35 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
 
   const isEditing = !!agent;
 
+  // Función para resetear completamente el estado del modal
+  const resetModalState = () => {
+    setCurrentStep('telegram-bot-setup');
+    setIsLoading(false);
+    setBotSetupCompleted(false);
+    setIsValidatingBot(false);
+    setBotValidation({
+      tokenValid: null,
+      botInfo: null,
+      errorMessage: ''
+    });
+    setFormData({
+      name: '',
+      description: '',
+      botToken: '',
+      botUsername: '',
+      systemPrompt: '',
+      welcomeMessage: '',
+      commandsHelp: '',
+      businessType: '',
+      businessInfo: '',
+      targetAudience: '',
+      conversationalGoal: 'sales',
+    });
+  };
+
   useEffect(() => {
+    if (!isOpen) return; // Solo ejecutar cuando el modal se abre
+    
     if (agent) {
       setFormData({
         name: agent.name,
@@ -80,28 +108,15 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
       setCurrentStep('agent-config');
       setBotSetupCompleted(true);
     } else {
-      setFormData({
-        name: '',
-        description: '',
-        botToken: '',
-        botUsername: '',
-        systemPrompt: '',
-        welcomeMessage: '',
-        commandsHelp: '',
-        businessType: '',
-        businessInfo: '',
-        targetAudience: '',
-        conversationalGoal: 'sales',
-      });
-      setCurrentStep('telegram-bot-setup');
-      setBotSetupCompleted(false);
+      // Para nuevos agentes, resetear completamente el estado
+      resetModalState();
     }
   }, [agent, isOpen]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     
-    if (!formData.botToken || !formData.botUsername) {
+    if (!formData.botToken) {
       toast({
         title: 'Error',
         description: 'Por favor completa la configuración del bot de Telegram',
@@ -191,11 +206,13 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
 
   const handleBackButton = () => {
     if (currentStep === 'telegram-bot-setup' && !isEditing) {
+      resetModalState(); // Resetear estado antes de volver atrás
       onBack();
     } else if (currentStep === 'business-config') {
       setCurrentStep('telegram-bot-setup');
     } else if (currentStep === 'agent-config') {
       if (isEditing) {
+        resetModalState(); // Resetear estado antes de cerrar
         onClose();
       } else {
         setCurrentStep('business-config');
@@ -204,13 +221,12 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
   };
 
   const handleModalClose = () => {
-    setCurrentStep('telegram-bot-setup');
-    setBotSetupCompleted(false);
+    resetModalState(); // Resetear completamente el estado
     onClose();
   };
 
   const validateBotSetup = () => {
-    return formData.botToken.trim() && formData.botUsername.trim() && botValidation.tokenValid === true;
+    return formData.botToken.trim() && botValidation.tokenValid === true;
   };
 
   const validateBotToken = async (token: string) => {
@@ -241,8 +257,8 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
           errorMessage: ''
         });
         
-        // Auto-completar el username si no está lleno
-        if (!formData.botUsername && botInfo.username) {
+        // Auto-completar el username en el formData
+        if (botInfo.username) {
           handleChange('botUsername', `@${botInfo.username}`);
         }
         
@@ -269,10 +285,10 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
   };
 
   const configureTelegramBot = async () => {
-    if (!formData.botToken || !formData.botUsername) {
+    if (!formData.botToken) {
       toast({
         title: 'Error',
-        description: 'Por favor completa el Token y Username del bot',
+        description: 'Por favor ingresa el Token del bot',
         variant: 'destructive',
       });
       return;
@@ -365,7 +381,7 @@ Comportamiento:
             <div className="text-center">
               <h3 className="text-lg font-semibold mb-2">Configurar Bot de Telegram</h3>
               <p className="text-muted-foreground">
-                Primero necesitas crear un bot en Telegram usando BotFather
+                Crea tu bot en Telegram y conecta el token
               </p>
             </div>
 
@@ -375,74 +391,8 @@ Comportamiento:
                   <div className="flex items-center gap-3 mb-4">
                     <Bot className="h-8 w-8 text-blue-600" />
                     <div>
-                      <h4 className="font-semibold">Instrucciones para crear tu Bot</h4>
-                      <p className="text-sm text-muted-foreground">Sigue estos pasos en Telegram</p>
-                    </div>
-                  </div>
-                  
-                  <div className="space-y-3">
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                        1
-                      </div>
-                      <div>
-                        <p className="font-medium">Busca @BotFather en Telegram</p>
-                        <p className="text-sm text-muted-foreground">Es el bot oficial para crear otros bots</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                        2
-                      </div>
-                      <div>
-                        <p className="font-medium">Envía el comando /newbot</p>
-                        <p className="text-sm text-muted-foreground">Para crear un nuevo bot</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                        3
-                      </div>
-                      <div>
-                        <p className="font-medium">Elige un nombre para tu bot</p>
-                        <p className="text-sm text-muted-foreground">Ej: "Mi Asistente Virtual"</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-blue-100 dark:bg-blue-900 text-blue-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                        4
-                      </div>
-                      <div>
-                        <p className="font-medium">Elige un username único</p>
-                        <p className="text-sm text-muted-foreground">Debe terminar en "bot" (ej: miasistente_bot)</p>
-                      </div>
-                    </div>
-                    
-                    <div className="flex items-start gap-3">
-                      <div className="flex-shrink-0 w-6 h-6 bg-green-100 dark:bg-green-900 text-green-600 rounded-full flex items-center justify-center text-sm font-semibold">
-                        5
-                      </div>
-                      <div>
-                        <p className="font-medium">Copia el Token que te da BotFather</p>
-                        <p className="text-sm text-muted-foreground">Tendrá formato: 123456789:ABCdefGHI...</p>
-                      </div>
-                    </div>
-                  </div>
-
-                  <div className="mt-6 p-4 bg-yellow-50 dark:bg-yellow-900/20 border border-yellow-200 dark:border-yellow-800 rounded-lg">
-                    <div className="flex items-start gap-2">
-                      <AlertCircle className="h-5 w-5 text-yellow-600 mt-0.5" />
-                      <div>
-                        <p className="text-sm font-medium text-yellow-800 dark:text-yellow-200">
-                          ¡Importante!
-                        </p>
-                        <p className="text-sm text-yellow-700 dark:text-yellow-300">
-                          Guarda bien el Token, lo necesitarás para configurar tu bot. No lo compartas con nadie.
-                        </p>
-                      </div>
+                      <h4 className="font-semibold">Crear Bot en Telegram</h4>
+                      <p className="text-sm text-muted-foreground">Usa @BotFather para crear tu bot y obtener el token</p>
                     </div>
                   </div>
 
@@ -458,9 +408,9 @@ Comportamiento:
               </CardContent>
             </Card>
 
-            {/* Formulario para ingresar los datos del bot */}
+            {/* Formulario para ingresar el token del bot */}
             <div className="space-y-4">
-              <h4 className="font-semibold">Configura tu Bot</h4>
+              <h4 className="font-semibold">Token del Bot</h4>
               
               <div>
                 <Label htmlFor="botToken">Bot Token</Label>
@@ -478,7 +428,7 @@ Comportamiento:
                     }}
                     placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
                     required
-                    className={`pr-10 ${
+                    className={`pr-10 placeholder:text-muted-foreground/40 ${
                       botValidation.tokenValid === true ? 'border-green-500' :
                       botValidation.tokenValid === false ? 'border-red-500' : ''
                     }`}
@@ -499,36 +449,13 @@ Comportamiento:
                 {botValidation.tokenValid === true && botValidation.botInfo && (
                   <p className="text-sm text-green-600 mt-1 flex items-center gap-1">
                     <Check className="h-3 w-3" />
-                    Bot "{botValidation.botInfo.first_name}" conectado
+                    Bot "{botValidation.botInfo.first_name}" conectado exitosamente
                   </p>
                 )}
                 {botValidation.tokenValid === false && (
                   <p className="text-sm text-red-600 mt-1 flex items-center gap-1">
                     <X className="h-3 w-3" />
                     {botValidation.errorMessage || 'Token inválido'}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <Label htmlFor="botUsername">Nombre de usuario del Bot</Label>
-                <Input
-                  id="botUsername"
-                  value={formData.botUsername}
-                  onChange={(e) => handleChange('botUsername', e.target.value)}
-                  placeholder="@miasistente_bot"
-                  required
-                  className={
-                    botValidation.botInfo && formData.botUsername.includes(botValidation.botInfo.username || '') 
-                      ? 'border-green-500' : ''
-                  }
-                />
-                <p className="text-sm text-muted-foreground mt-1">
-                  Username que asignaste al bot (incluye @)
-                </p>
-                {botValidation.botInfo && botValidation.botInfo.username && (
-                  <p className="text-xs text-blue-600 mt-1">
-                    Username sugerido: @{botValidation.botInfo.username}
                   </p>
                 )}
               </div>
@@ -652,6 +579,7 @@ Comportamiento:
                   placeholder="Describe tu negocio: productos/servicios, horarios, ubicación, precios, promociones especiales..."
                   rows={4}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Esta información será usada para entrenar a tu agente IA
@@ -667,6 +595,7 @@ Comportamiento:
                   onChange={(e) => handleChange('targetAudience', e.target.value)}
                   placeholder="Ej: Familias con niños, profesionales jóvenes, empresas locales..."
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
             </div>
@@ -711,6 +640,7 @@ Comportamiento:
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="Ej: Asistente de Ventas Telegram"
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -723,6 +653,7 @@ Comportamiento:
                   placeholder="Describe qué hace este agente..."
                   rows={3}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -735,6 +666,7 @@ Comportamiento:
                   placeholder="Define cómo debe comportarse tu agente. Ej: Eres un asistente de ventas amigable que ayuda a los clientes..."
                   rows={4}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -746,6 +678,7 @@ Comportamiento:
                   onChange={(e) => handleChange('welcomeMessage', e.target.value)}
                   placeholder="¡Hola! 🤖 Soy tu asistente virtual. Usa /help para ver los comandos disponibles."
                   rows={3}
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -757,6 +690,7 @@ Comportamiento:
                   onChange={(e) => handleChange('commandsHelp', e.target.value)}
                   placeholder="/start - Iniciar conversación&#10;/help - Mostrar ayuda&#10;/info - Información del bot"
                   rows={4}
+                  className="placeholder:text-muted-foreground/40"
                 />
                 <p className="text-sm text-muted-foreground mt-1">
                   Comandos disponibles para el bot
@@ -814,7 +748,7 @@ Comportamiento:
         handleModalClose();
       }
     }}>
-      <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-lg max-h-[90vh] overflow-y-auto">
         <DialogHeader>
           <div className="flex items-center gap-3">
             <Button

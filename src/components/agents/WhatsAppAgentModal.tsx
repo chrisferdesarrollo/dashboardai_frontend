@@ -1030,6 +1030,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   placeholder="Describe tu negocio: productos/servicios, horarios, ubicación, precios, promociones especiales..."
                   rows={4}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
                 <p className="text-xs text-muted-foreground mt-1">
                   Esta información será usada para entrenar a tu agente IA
@@ -1045,6 +1046,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   onChange={(e) => handleChange('targetAudience', e.target.value)}
                   placeholder="Ej: Familias con niños, profesionales jóvenes, empresas locales..."
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -1071,7 +1073,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                         }));
                       }}
                       placeholder="hablar con humano, quiero comprar, problema urgente"
-                      className="text-xs"
+                      className="text-xs placeholder:text-muted-foreground/40"
                     />
                   </div>
                   <div className="flex items-center space-x-2">
@@ -1170,6 +1172,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   onChange={(e) => handleChange('name', e.target.value)}
                   placeholder="Ej: Asistente de Ventas"
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -1182,6 +1185,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   placeholder="Describe qué hace este agente..."
                   rows={3}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
 
@@ -1194,6 +1198,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                   placeholder="Define cómo debe comportarse tu agente. Ej: Eres un asistente de ventas amigable que ayuda a los clientes..."
                   rows={4}
                   required
+                  className="placeholder:text-muted-foreground/40"
                 />
               </div>
             </div>
