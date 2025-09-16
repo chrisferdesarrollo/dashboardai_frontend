@@ -28,11 +28,16 @@ export interface TelegramMessageResponse {
 export interface TelegramConfigurationRequest {
   botToken: string;
   botUsername: string;
-  operationType: 'configure' | 'test' | 'setup_webhook' | 'remove_webhook';
+  operationType: 'configure' | 'test' | 'setup_webhook' | 'remove_webhook' | 'connect';
   userId?: string;
   agentId?: string;
   webhookUrl?: string;
   timestamp?: string;
+}
+
+export interface TelegramAgentConnectionRequest {
+  botToken: string;
+  operationType: 'connect';
 }
 
 export interface TelegramBotInfo {
@@ -95,10 +100,15 @@ class TelegramApi {
   async configureTelegramBot(
     botToken: string,
     botUsername: string,
-    operationType: 'configure' | 'test' | 'setup_webhook' | 'remove_webhook' = 'configure'
+    operationType: 'configure' | 'test' | 'setup_webhook' | 'remove_webhook' | 'connect' = 'configure'
   ): Promise<TelegramBotResponse> {
     try {
       console.log('🚀 [TELEGRAM-CONFIGURE] Iniciando configuración de bot:', botUsername);
+      
+      // Si es operación de conexión de agente, usar la función específica
+      if (operationType === 'connect') {
+        return this.connectTelegramAgent(botToken);
+      }
       
       // Primero validar que el bot funciona
       const isValid = await this.validateBotToken(botToken);
@@ -358,6 +368,74 @@ class TelegramApi {
   }
 
   /**
+   * Conecta un agente de Telegram al webhook específico
+   * Esta función se ejecuta al presionar "Crear Agente"
+   */
+  async connectTelegramAgent(botToken: string): Promise<TelegramBotResponse> {
+    try {
+      console.log('🤖 [TELEGRAM-CONNECT-AGENT] Conectando agente de Telegram');
+      
+      // Primero validar que el bot funciona
+      const isValid = await this.validateBotToken(botToken);
+      if (!isValid) {
+        throw new Error('Token de bot inválido');
+      }
+
+      // URL específica para conectar el agente
+      const agentWebhookUrl = 'http://148.230.92.75:5678/webhook/telegram-api';
+      
+      // Payload específico para conectar agente
+      const payload: TelegramAgentConnectionRequest = { 
+        botToken,
+        operationType: 'connect'
+      };
+      
+      // Crear cliente axios específico para esta URL
+      const agentClient = axios.create({
+        baseURL: agentWebhookUrl,
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 [TELEGRAM-CONNECT-AGENT] Enviando request a:', agentWebhookUrl);
+      console.log('📄 [TELEGRAM-CONNECT-AGENT] Payload:', { ...payload, botToken: '[HIDDEN]' });
+      
+      const response = await agentClient.post('', payload);
+      
+      console.log('✅ [TELEGRAM-CONNECT-AGENT] Agente conectado exitosamente');
+      
+      return {
+        success: true,
+        message: 'Agente de Telegram conectado exitosamente',
+        botToken: botToken,
+        isConfigured: true,
+        timestamp: new Date().toISOString(),
+        ...response.data
+      };
+      
+    } catch (error: unknown) {
+      console.error('❌ [TELEGRAM-CONNECT-AGENT] Error conectando agente:', error);
+      
+      let errorMessage = 'Error de conexión con el servicio de agente de Telegram';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (axios.isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Error del servidor: ${error.response.status} - ${error.response.statusText}`;
+          console.error('Response data:', error.response.data);
+        } else if (error.request) {
+          errorMessage = 'No se pudo conectar con el servidor del agente';
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
    * Limpia el cache de configuración
    */
   clearConfigCache(): void {
@@ -369,3 +447,39 @@ class TelegramApi {
 
 // Exportar instancia única
 export const telegramApi = new TelegramApi();
+
+/*
+EJEMPLO DE USO PARA CONECTAR AGENTE AL PRESIONAR "CREAR AGENTE":
+
+// En tu componente donde tienes el botón "Crear Agente"
+import { telegramApi } from '../services/telegramApi';
+
+const handleCreateAgent = async (botToken: string) => {
+  try {
+    // Conectar el agente usando la nueva función
+    const result = await telegramApi.connectTelegramAgent(botToken);
+    
+    if (result.success) {
+      console.log('✅ Agente conectado:', result.message);
+      // Aquí puedes actualizar el estado de tu aplicación
+      // mostrar un mensaje de éxito, etc.
+    }
+  } catch (error) {
+    console.error('❌ Error conectando agente:', error);
+    // Manejar error en la UI
+  }
+};
+
+// O usando la función configureTelegramBot con operationType 'connect'
+const handleCreateAgentAlternative = async (botToken: string, botUsername: string) => {
+  try {
+    const result = await telegramApi.configureTelegramBot(botToken, botUsername, 'connect');
+    
+    if (result.success) {
+      console.log('✅ Agente conectado:', result.message);
+    }
+  } catch (error) {
+    console.error('❌ Error conectando agente:', error);
+  }
+};
+*/

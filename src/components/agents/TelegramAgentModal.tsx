@@ -172,10 +172,27 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
           variant: 'destructive',
         });
       } else {
+        // Primero conectar el bot de Telegram al webhook
+        try {
+          console.log('🤖 Conectando bot de Telegram al webhook...');
+          const telegramResult = await telegramApi.connectTelegramAgent(formData.botToken);
+          
+          if (!telegramResult.success) {
+            throw new Error(telegramResult.message || 'Error conectando el bot de Telegram');
+          }
+          
+          console.log('✅ Bot de Telegram conectado exitosamente');
+        } catch (telegramError) {
+          console.error('❌ Error conectando bot de Telegram:', telegramError);
+          throw new Error(telegramError instanceof Error ? telegramError.message : 'Error conectando bot de Telegram');
+        }
+
+        // Luego crear el agente en el sistema
         await createAgent(agentData);
+        
         toast({
           title: 'Agente creado',
-          description: `¡Agente "${formData.name}" creado exitosamente!`,
+          description: `¡Agente "${formData.name}" creado exitosamente y conectado a Telegram!`,
         });
         
         // Mostrar paso completado
