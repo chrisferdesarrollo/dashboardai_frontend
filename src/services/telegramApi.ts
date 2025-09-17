@@ -382,7 +382,7 @@ class TelegramApi {
       }
 
       // URL específica para conectar el agente
-      const agentWebhookUrl = 'https://topias.app/n8n/webhook/telegram-api';
+      const agentWebhookUrl = 'https://topias.app:5678/webhook/telegram-api';
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 
