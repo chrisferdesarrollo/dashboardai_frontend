@@ -37,11 +37,11 @@ class ConfigService {
   // Obtener URL base del backend
   private getBackendUrl(): string {
     // Detectar si estamos en el VPS por la URL del navegador
-    const isVPS = window.location.hostname === '148.230.92.75';
+    const isVPS = window.location.hostname === 'topias.app';
     
     let finalUrl;
     if (isVPS) {
-      finalUrl = 'http://148.230.92.75:8080/api';
+      finalUrl = 'https://topias.app/api';
       console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
     } else {
       finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
@@ -124,7 +124,7 @@ class ConfigService {
    */
   async getConfig(): Promise<AppConfig> {
     // Si estamos en desarrollo local o en VPS, usar directamente la configuración de fallback
-    if (this.isLocalDevelopment() || window.location.hostname === '148.230.92.75') {
+    if (this.isLocalDevelopment() || window.location.hostname === 'topias.app') {
       console.log('🚀 ConfigService.getConfig() - Modo desarrollo o VPS detectado, usando configuración directa');
       console.log('🔧 Variables de entorno:', {
         hostname: window.location.hostname,
@@ -197,13 +197,13 @@ class ConfigService {
     
     // CONFIGURACIÓN DE EMERGENCIA - HARDCODEADA PARA PRODUCCIÓN
     const emergencyConfig = {
-      webhookUrl: 'http://148.230.92.75:8443/webhook',
-      apiUrl: 'http://148.230.92.75:8443/api/v1',
+      webhookUrl: 'https://topias.app/n8n/webhook',
+      apiUrl: 'https://topias.app/n8n/api/v1',
       apiToken: ''
     };
     
     // Si estamos en el VPS, usar siempre la configuración de emergencia
-    if (window.location.hostname === '148.230.92.75') {
+    if (window.location.hostname === 'topias.app') {
       console.log('🚨 USANDO CONFIGURACIÓN DE EMERGENCIA PARA VPS');
       return {
         n8n: emergencyConfig,
@@ -318,8 +318,8 @@ class ConfigService {
     if (environment === 'production') {
       console.log('� Modo producción detectado - usando configuración de VPS');
       const prodConfig = {
-        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'http://148.230.92.75:8443/webhook',
-        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'http://148.230.92.75:8443/api/v1',
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'https://topias.app/n8n/webhook',
+        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'https://topias.app/n8n/api/v1',
         apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || ''
       };
       console.log('🔧 Configuración de producción:', prodConfig);

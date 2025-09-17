@@ -127,21 +127,21 @@ export const N8nConnectionTest: React.FC = () => {
             <Globe className="h-4 w-4 text-blue-600" />
             <span className="font-medium">URL VPS:</span>
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-              http://148.230.92.75:3000
+              https://topias.app
             </code>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Zap className="h-4 w-4 text-orange-600" />
             <span className="font-medium">Webhook Base:</span>
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-              http://148.230.92.75:3000/webhook
+              https://topias.app/n8n/webhook
             </code>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Database className="h-4 w-4 text-green-600" />
             <span className="font-medium">API Base:</span>
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-              http://148.230.92.75:3000/api/v1
+              https://topias.app/n8n/api/v1
             </code>
           </div>
         </CardContent>
