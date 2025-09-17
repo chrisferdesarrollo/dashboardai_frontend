@@ -1,7 +1,7 @@
 import axios from 'axios';
 
 // Configuration for backend proxy
-const BACKEND_BASE_URL = 'http://localhost:8080/api';
+const BACKEND_BASE_URL = import.meta.env.DEV ? '/api' : 'http://localhost:8080/api';
 
 // Create axios instance for backend calls
 const backendApi = axios.create({

@@ -36,21 +36,27 @@ class ConfigService {
   
   // Obtener URL base del backend
   private getBackendUrl(): string {
-    // Detectar si estamos en el VPS por la URL del navegador
-    const isVPS = window.location.hostname === '148.230.92.75';
-    
+    // En desarrollo usar el proxy, en producción la URL completa
     let finalUrl;
-    if (isVPS) {
-      finalUrl = 'http://148.230.92.75:8080/api';
-      console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
+    if (import.meta.env.DEV) {
+      finalUrl = '/api';
+      console.log('🔧 [ConfigService] Modo desarrollo, usando proxy:', finalUrl);
     } else {
-      finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-      console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
+      // Detectar si estamos en el VPS por la URL del navegador
+      const isVPS = window.location.hostname === '148.230.92.75';
+      
+      if (isVPS) {
+        finalUrl = 'http://148.230.92.75:8080/api';
+        console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
+      } else {
+        finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+        console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
+      }
     }
     
     console.log('🔧 [ConfigService] getBackendUrl():', {
       hostname: window.location.hostname,
-      isVPS: isVPS,
+      isDev: import.meta.env.DEV,
       VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
       finalUrl: finalUrl
     });

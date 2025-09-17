@@ -36,7 +36,7 @@ export interface TestConnectionResponse {
 }
 
 class N8nConfigurationService {
-  private readonly baseURL = import.meta.env.VITE_API_URL || 'http://localhost:8080';
+  private readonly baseURL = import.meta.env.DEV ? '' : (import.meta.env.VITE_API_URL || 'http://localhost:8080');
   
   /**
    * Get authorization headers
