@@ -90,7 +90,7 @@ export const useConversationStore = create<ConversationState>()(
               contact: {
                 id: 'contact-1',
                 name: 'Juan Pérez',
-                phone: '+521234567890',
+                phone: '+521234844390',
                 platformId: '5215551234567@c.us',
                 platform: 'whatsapp',
                 isBlocked: false,
@@ -122,7 +122,7 @@ export const useConversationStore = create<ConversationState>()(
               contact: {
                 id: 'contact-2',
                 name: 'María García',
-                phone: '+521234567891',
+                phone: '+521234844391',
                 platformId: '5215551234568@c.us',
                 platform: 'whatsapp',
                 isBlocked: false,

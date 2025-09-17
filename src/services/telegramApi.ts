@@ -382,7 +382,7 @@ class TelegramApi {
       }
 
       // URL específica para conectar el agente
-      const agentWebhookUrl = 'http://148.230.92.75:5678/webhook/telegram-api';
+      const agentWebhookUrl = 'http://148.230.92.75:8443/webhook/telegram-api';
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 

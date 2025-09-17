@@ -443,7 +443,7 @@ Comportamiento:
                         validateBotToken(e.target.value);
                       }, 500);
                     }}
-                    placeholder="1234567890:ABCdefGHIjklMNOpqrSTUvwxYZ"
+                    placeholder="1234844390:ABCdefGHIjklMNOpqrSTUvwxYZ"
                     required
                     className={`pr-10 placeholder:text-muted-foreground/40 ${
                       botValidation.tokenValid === true ? 'border-green-500' :

@@ -43,7 +43,7 @@ const getN8nConfig = async () => configService.getN8nConfig();
 const createApiClient = async () => {
   const config = await getN8nConfig();
   return axios.create({
-    baseURL: config.apiUrl || 'http://localhost:5678/api/v1',
+    baseURL: config.apiUrl || 'http://localhost:8443/api/v1',
     headers: {
       'Authorization': config.apiToken ? `Bearer ${config.apiToken}` : '',
       'Content-Type': 'application/json',
@@ -54,7 +54,7 @@ const createApiClient = async () => {
 const createWebhookClient = async () => {
   const config = await getN8nConfig();
   return axios.create({
-    baseURL: config.webhookUrl || 'http://localhost:5678/webhook',
+    baseURL: config.webhookUrl || 'http://localhost:8443/webhook',
     headers: {
       'Content-Type': 'application/json',
     },

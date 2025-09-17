@@ -36,27 +36,21 @@ class ConfigService {
   
   // Obtener URL base del backend
   private getBackendUrl(): string {
-    // En desarrollo usar el proxy, en producción la URL completa
+    // Detectar si estamos en el VPS por la URL del navegador
+    const isVPS = window.location.hostname === '148.230.92.75';
+    
     let finalUrl;
-    if (import.meta.env.DEV) {
-      finalUrl = '/api';
-      console.log('🔧 [ConfigService] Modo desarrollo, usando proxy:', finalUrl);
+    if (isVPS) {
+      finalUrl = 'http://148.230.92.75:8080/api';
+      console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
     } else {
-      // Detectar si estamos en el VPS por la URL del navegador
-      const isVPS = window.location.hostname === '148.230.92.75';
-      
-      if (isVPS) {
-        finalUrl = 'http://148.230.92.75:8080/api';
-        console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
-      } else {
-        finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
-        console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
-      }
+      finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
+      console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
     }
     
     console.log('🔧 [ConfigService] getBackendUrl():', {
       hostname: window.location.hostname,
-      isDev: import.meta.env.DEV,
+      isVPS: isVPS,
       VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
       finalUrl: finalUrl
     });
@@ -203,8 +197,8 @@ class ConfigService {
     
     // CONFIGURACIÓN DE EMERGENCIA - HARDCODEADA PARA PRODUCCIÓN
     const emergencyConfig = {
-      webhookUrl: 'http://148.230.92.75:5678/webhook',
-      apiUrl: 'http://148.230.92.75:5678/api/v1',
+      webhookUrl: 'http://148.230.92.75:8443/webhook',
+      apiUrl: 'http://148.230.92.75:8443/api/v1',
       apiToken: ''
     };
     
@@ -324,8 +318,8 @@ class ConfigService {
     if (environment === 'production') {
       console.log('� Modo producción detectado - usando configuración de VPS');
       const prodConfig = {
-        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'http://148.230.92.75:5678/webhook',
-        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'http://148.230.92.75:5678/api/v1',
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'http://148.230.92.75:8443/webhook',
+        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'http://148.230.92.75:8443/api/v1',
         apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || ''
       };
       console.log('🔧 Configuración de producción:', prodConfig);
@@ -347,8 +341,8 @@ class ConfigService {
       
       // Fallback para modo local
       const localConfig = {
-        webhookUrl: import.meta.env.VITE_N8N_LOCAL_WEBHOOK_URL || 'http://localhost:5678/webhook',
-        apiUrl: import.meta.env.VITE_N8N_LOCAL_API_URL || 'http://localhost:5678/api/v1',
+        webhookUrl: import.meta.env.VITE_N8N_LOCAL_WEBHOOK_URL || 'http://localhost:8443/webhook',
+        apiUrl: import.meta.env.VITE_N8N_LOCAL_API_URL || 'http://localhost:8443/api/v1',
         apiToken: import.meta.env.VITE_N8N_LOCAL_API_TOKEN || ''
       };
       console.log('🔧 Configuración local:', localConfig);
