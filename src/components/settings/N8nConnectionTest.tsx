@@ -134,14 +134,14 @@ export const N8nConnectionTest: React.FC = () => {
             <Zap className="h-4 w-4 text-orange-600" />
             <span className="font-medium">Webhook Base:</span>
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-              https://topias.app:5678/webhook
+              https://n8n.topias.app/webhook
             </code>
           </div>
           <div className="flex items-center gap-2 text-sm">
             <Database className="h-4 w-4 text-green-600" />
             <span className="font-medium">API Base:</span>
             <code className="bg-gray-100 px-2 py-1 rounded text-xs">
-              https://topias.app/n8n/api/v1
+              https://n8n.topias.app/api/v1
             </code>
           </div>
         </CardContent>

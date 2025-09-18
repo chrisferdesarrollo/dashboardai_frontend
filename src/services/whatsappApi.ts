@@ -40,6 +40,12 @@ let n8nConfigCache: { webhookUrl: string; apiUrl: string; apiToken: string } | n
 let configCacheTime = 0;
 const CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+// Función para limpiar cache de configuración
+function clearN8nConfigCache() {
+  n8nConfigCache = null;
+  configCacheTime = 0;
+}
+
 // Función auxiliar para obtener configuración de n8n
 async function getN8nConfig() {
   try {
@@ -83,6 +89,9 @@ export const whatsappApi = {
   async createWhatsAppSession(sessionName: string, operationType: string = 'create'): Promise<WhatsAppSessionResponse> {
     try {
       console.log('🚀 [WHATSAPP-CREATE] Iniciando creación de sesión WhatsApp:', sessionName);
+      
+      // Limpiar cache para forzar recarga de configuración
+      clearN8nConfigCache();
       
       const url = '/evolution-api';
       const payload = { 
@@ -470,6 +479,9 @@ export const whatsappApi = {
   }
 
 };
+
+// Función utilitaria exportada para limpiar cache
+export { clearN8nConfigCache };
 
 // Exportar tipos para uso en otros archivos
 export type {

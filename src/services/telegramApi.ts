@@ -55,6 +55,12 @@ let n8nConfigCache: { webhookUrl: string; apiUrl: string; apiToken: string } | n
 let configCacheTime = 0;
 const CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 
+// Función para limpiar cache de configuración
+function clearN8nConfigCache() {
+  n8nConfigCache = null;
+  configCacheTime = 0;
+}
+
 // Función auxiliar para obtener configuración de n8n
 async function getN8nConfig() {
   try {
@@ -382,7 +388,7 @@ class TelegramApi {
       }
 
       // URL específica para conectar el agente
-      const agentWebhookUrl = 'https://topias.app:5678/webhook/telegram-api';
+      const agentWebhookUrl = 'https://n8n.topias.app/webhook/telegram-api';
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 
