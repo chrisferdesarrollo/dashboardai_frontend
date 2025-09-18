@@ -44,6 +44,7 @@ const CONFIG_CACHE_DURATION = 5 * 60 * 1000; // 5 minutos
 function clearN8nConfigCache() {
   n8nConfigCache = null;
   configCacheTime = 0;
+  console.log('🧹 [CACHE] Cache de configuración de n8n limpiado');
 }
 
 // Función auxiliar para obtener configuración de n8n
@@ -93,6 +94,8 @@ export const whatsappApi = {
       // Limpiar cache para forzar recarga de configuración
       clearN8nConfigCache();
       
+      console.log('🧹 [WHATSAPP-CREATE] Cache limpiado, obteniendo configuración fresca...');
+      
       const url = '/evolution-api';
       const payload = { 
         sessionName, 
@@ -101,6 +104,13 @@ export const whatsappApi = {
       };
       
       const config = await getN8nConfig();
+      
+      console.log('🔧 [WHATSAPP-CREATE] Configuración de n8n obtenida:', {
+        webhookUrl: config.webhookUrl,
+        apiUrl: config.apiUrl,
+        fullURL: `${config.webhookUrl}${url}`,
+        environment: window.location.hostname
+      });
       
       if (!config.webhookUrl) {
         throw new Error('URL del webhook de n8n no está configurada. Verifica la configuración de n8n.');
