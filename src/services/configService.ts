@@ -197,8 +197,8 @@ class ConfigService {
     
     // CONFIGURACIÓN DE EMERGENCIA - HARDCODEADA PARA PRODUCCIÓN
     const emergencyConfig = {
-      webhookUrl: 'https://topias.app:5678/webhook',
-      apiUrl: 'https://topias.app/n8n/api/v1',
+      webhookUrl: 'https://n8n.topias.app/webhook',
+      apiUrl: 'https://n8n.topias.app/api/v1',
       apiToken: ''
     };
     
@@ -318,8 +318,8 @@ class ConfigService {
     if (environment === 'production') {
       console.log('� Modo producción detectado - usando configuración de VPS');
       const prodConfig = {
-        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'https://topias.app:5678/webhook',
-        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'https://topias.app/n8n/api/v1',
+        webhookUrl: import.meta.env.VITE_N8N_PROD_WEBHOOK_URL || 'https://n8n.topias.app/webhook',
+        apiUrl: import.meta.env.VITE_N8N_PROD_API_URL || 'https://n8n.topias.app/api/v1',
         apiToken: import.meta.env.VITE_N8N_PROD_API_TOKEN || ''
       };
       console.log('🔧 Configuración de producción:', prodConfig);
