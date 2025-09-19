@@ -21,7 +21,7 @@ interface WhatsAppAgentModalProps {
   agent?: Agent | null;
 }
 
-type CreationStep = 'whatsapp-linking' | 'business-config' | 'agent-config' | 'completed';
+type CreationStep = 'whatsapp-linking' | 'agent-config' | 'completed';
 
 interface WhatsAppSession {
   sessionName: string;
@@ -55,59 +55,15 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
   const [showDeleteConfirmation, setShowDeleteConfirmation] = useState(false);
   const [pendingAction, setPendingAction] = useState<'close' | 'cancel' | null>(null);
   
-  // Estado para mantener los datos del Business Config al navegar hacia atrás
-  const [preserveBusinessConfig, setPreserveBusinessConfig] = useState(false);
   const [initialModalOpen, setInitialModalOpen] = useState(true);
   
   // Referencia para evitar resets durante navegación interna
   const hasInitialized = useRef(false);
   
-  // Función helper para obtener resumen de datos preservados
-  const getPreservedDataSummary = () => {
-    // Si no hay flag de preservación O no hay datos reales, no mostrar nada
-    if (!preserveBusinessConfig || (!formData.businessType && !formData.businessInfo && !formData.targetAudience)) {
-      return null;
-    }
-    
-    const summary: string[] = [];
-    if (formData.businessType) {
-      const businessTypes: Record<string, string> = {
-        restaurant: 'Restaurante',
-        retail: 'Tienda/Retail', 
-        services: 'Servicios',
-        healthcare: 'Salud',
-        education: 'Educación',
-        real_estate: 'Bienes Raíces',
-        automotive: 'Automotriz',
-        beauty: 'Belleza/Spa',
-        travel: 'Viajes/Turismo',
-        technology: 'Tecnología',
-        other: 'Otro'
-      };
-      summary.push(`Tipo: ${businessTypes[formData.businessType] || formData.businessType}`);
-    }
-    if (formData.businessInfo) summary.push(`Descripción: ${formData.businessInfo.substring(0, 30)}...`);
-    if (formData.targetAudience) summary.push(`Audiencia: ${formData.targetAudience.substring(0, 25)}...`);
-    if (formData.conversationalGoal) {
-      const goals: Record<string, string> = {
-        sales: 'Ventas',
-        reservations: 'Reservas', 
-        support: 'Soporte',
-        lead_generation: 'Generación de leads'
-      };
-      summary.push(`Objetivo: ${goals[formData.conversationalGoal] || formData.conversationalGoal}`);
-    }
-    return summary.length > 0 ? summary : null;
-  };
-  
   const [formData, setFormData] = useState({
     name: '',
     description: '',
     prompt: '',
-    businessType: '',
-    businessInfo: '',
-    targetAudience: '',
-    conversationalGoal: 'sales', // sales, reservations, support, lead_generation
     features: {
       attend24_7: true,
       autoFAQ: true,
@@ -169,60 +125,25 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
 
   const isEditing = !!agent;
 
-  // Función para generar prompt inteligente basado en el negocio
+  // Función para generar prompt simple basado en la configuración del usuario
   const generateBusinessPrompt = (data: typeof formData) => {
     const basePrompt = data.prompt.trim();
-    
-    const businessTypePrompts = {
-      restaurant: "especializado en atención gastronómica",
-      retail: "experto en ventas al por menor",
-      services: "especializado en servicios profesionales",
-      healthcare: "especializado en atención médica y salud",
-      education: "especializado en servicios educativos",
-      real_estate: "experto en bienes raíces",
-      automotive: "especializado en servicios automotrices",
-      beauty: "especializado en servicios de belleza y spa",
-      travel: "experto en viajes y turismo",
-      technology: "especializado en tecnología",
-      other: "especializado en tu industria"
-    };
 
-    const goalPrompts = {
-      sales: "Tu objetivo principal es vender productos o servicios, identificar necesidades del cliente y cerrar ventas.",
-      reservations: "Tu objetivo principal es ayudar a los clientes a hacer reservas, verificar disponibilidad y confirmar citas.",
-      support: "Tu objetivo principal es brindar soporte técnico y resolver problemas de los clientes.",
-      lead_generation: "Tu objetivo principal es capturar información de prospectos y calificar leads de calidad."
-    };
+    // Si no hay prompt personalizado, usar uno básico
+    if (!basePrompt) {
+      return `Eres un asistente de IA para WhatsApp. Tu objetivo es ayudar a los clientes de manera profesional y amigable.
 
+PERSONALIDAD:
+- Tono: ${data.customConfig.personality.tone}
+- Formalidad: ${data.customConfig.personality.formality}
+- Idioma: ${data.customConfig.personality.language}
+
+Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, sé ${data.customConfig.personality.formality} y responde en ${data.customConfig.personality.language}.`;
+    }
+
+    // Si hay prompt personalizado, solo agregar configuración de personalidad
     const enhancedPrompt = `
 ${basePrompt}
-
-INFORMACIÓN DE NEGOCIO:
-${data.businessInfo}
-
-AUDIENCIA OBJETIVO: ${data.targetAudience}
-
-CONTEXTO PROFESIONAL:
-Eres un asistente de IA ${businessTypePrompts[data.businessType as keyof typeof businessTypePrompts] || 'profesional'}.
-${goalPrompts[data.conversationalGoal as keyof typeof goalPrompts]}
-
-FUNCIONALIDADES ACTIVAS:
-✅ Atiendes consultas 24/7
-✅ Respondes preguntas frecuentes automáticamente
-✅ Guías a los clientes en su proceso de compra/reserva
-✅ Calificas y filtras prospectos reales
-✅ Te integras con el equipo de ventas humano cuando sea necesario
-
-REGLAS DE ESCALADO:
-- Transfiere a un humano cuando detectes estas palabras clave: ${data.customConfig.escalationRules.keywords.join(', ')}
-- Transfiere automáticamente después de ${data.customConfig.escalationRules.autoTransferAfter} intentos fallidos
-- ${data.customConfig.escalationRules.workingHours ? 'Solo transferir durante horario laboral' : 'Transferir en cualquier momento'}
-
-CAPTURA DE LEADS:
-${data.customConfig.leadCapture.enabled ? `
-- Captura obligatoriamente: ${data.customConfig.leadCapture.requiredFields.join(', ')}
-- Califica por: presupuesto, timeline y toma de decisiones
-` : '- Captura de leads deshabilitada'}
 
 PERSONALIDAD:
 - Tono: ${data.customConfig.personality.tone}
@@ -285,9 +206,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     setShowDeleteConfirmation(false);
     setConnectionChecking(false);
     
-    // Reset del flag de preservación al confirmar eliminación
-    setPreserveBusinessConfig(false);
-    console.log('🗑️ [CONFIRM] Limpiando flag de preservación tras confirmación');
+    console.log('🗑️ [CONFIRM] Sesión eliminada tras confirmación');
     
     // Ejecutar la acción pendiente
     if (pendingAction === 'close') {
@@ -330,9 +249,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     
     setConnectionChecking(false);
     
-    // Reset del flag de preservación al cerrar completamente
-    setPreserveBusinessConfig(false);
-    console.log('🧹 [CLOSE] Limpiando flag de preservación al cerrar modal');
+    console.log('🧹 [CLOSE] Cerrando modal completamente');
     
     onClose();
   };
@@ -366,7 +283,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
 
   // Manejar botón atrás con navegación inteligente
   const handleBackButton = () => {
-    console.log('🔙 [BACK] Botón atrás presionado en paso:', currentStep, 'preserve:', preserveBusinessConfig);
+    console.log('🔙 [BACK] Botón atrás presionado en paso:', currentStep);
     
     // Limpiar polling si está activo
     if (pollingInterval) {
@@ -376,26 +293,9 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     
     // Navegación específica por paso
     switch (currentStep) {
-      case 'business-config':
-        // Cuando el usuario va de business-config a whatsapp-linking, 
-        // marcar que debe preservar los datos del negocio
-        setPreserveBusinessConfig(true);
-        console.log('💾 [PRESERVE] Marcando datos de Business Config para preservar');
-        
-        // Si hay una sesión (conectada o no), regresar a whatsapp-linking
-        if (whatsappSession) {
-          console.log('🔙 [BACK] Regresando a whatsapp-linking manteniendo sesión:', whatsappSession.isConnected ? 'conectada' : 'no conectada');
-          setCurrentStep('whatsapp-linking');
-        } else {
-          // Si no hay sesión, salir completamente del modal
-          console.log('🚪 [BACK] No hay sesión, saliendo del modal');
-          onBack();
-        }
-        break;
-        
       case 'agent-config':
-        console.log('🔙 [BACK] Regresando de agent-config a business-config');
-        setCurrentStep('business-config');
+        console.log('🔙 [BACK] Regresando de agent-config a whatsapp-linking');
+        setCurrentStep('whatsapp-linking');
         break;
         
       case 'whatsapp-linking':
@@ -407,8 +307,6 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           setWhatsappSession(null);
           setConnectionChecking(false);
         }
-        // Limpiar flag de preservación al salir completamente
-        setPreserveBusinessConfig(false);
         onBack(); // Salir completamente del modal
         break;
     }
@@ -426,10 +324,6 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
         name: '', 
         description: '', 
         prompt: '',
-        businessType: '',
-        businessInfo: '',
-        targetAudience: '',
-        conversationalGoal: 'sales',
         features: {
           attend24_7: true,
           autoFAQ: true,
@@ -495,11 +389,10 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     }
   }, [isOpen, isEditing]);
 
-  // Reset preserve flag when modal closes completely
+  // Reset flags when modal closes completely
   useEffect(() => {
     if (!isOpen) {
       console.log('🚪 [MODAL-CLOSE] Modal cerrado, reseteando flags');
-      setPreserveBusinessConfig(false);
       setInitialModalOpen(true);
       hasInitialized.current = false; // Permitir reinicialización en próxima apertura
     }
@@ -657,11 +550,7 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           sessionName: whatsappSession.sessionName,
           isConnected: true,
           connectedAt: new Date().toISOString(),
-          timestamp: whatsappSession.timestamp,
-          businessType: formData.businessType,
-          conversationalGoal: formData.conversationalGoal,
-          targetAudience: formData.targetAudience,
-          businessInfo: formData.businessInfo
+          timestamp: whatsappSession.timestamp
         }),
         customConfig: formData.customConfig,
         userId: user?.id
@@ -678,19 +567,13 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
         description: `¡Agente "${formData.name}" creado exitosamente!`,
       });
       
-      // Reset del flag de preservación tras éxito
-      setPreserveBusinessConfig(false);
-      console.log('🎉 [SUCCESS] Agente creado exitosamente, limpiando flag de preservación');
+      console.log('🎉 [SUCCESS] Agente creado exitosamente');
       
       // Limpiar el formulario
       setFormData({
         name: '',
         description: '',
         prompt: '',
-        businessType: '',
-        businessInfo: '',
-        targetAudience: '',
-        conversationalGoal: 'sales',
         features: {
           attend24_7: true,
           autoFAQ: true,
@@ -788,34 +671,6 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
               <p className="text-muted-foreground">
                 Primero necesitas conectar tu cuenta de WhatsApp para crear el agente
               </p>
-              
-              {/* Indicador de datos preservados */}
-              {preserveBusinessConfig && (
-                <div className="mt-4 p-4 bg-blue-50 dark:bg-blue-900/20 border border-blue-200 dark:border-blue-800 rounded-lg">
-                  <div className="flex items-center justify-center gap-2 text-blue-700 dark:text-blue-300 text-sm font-medium mb-2">
-                    <CheckCircle className="h-4 w-4" />
-                    Tienes una configuración de negocio guardada
-                  </div>
-                  
-                  {/* Resumen de datos preservados */}
-                  {getPreservedDataSummary() && getPreservedDataSummary()!.length > 0 && (
-                    <div className="bg-white dark:bg-gray-800 rounded p-3 mt-2">
-                      <p className="text-xs font-medium text-gray-700 dark:text-gray-300 mb-2">Datos guardados:</p>
-                      <div className="space-y-1">
-                        {getPreservedDataSummary()!.map((item, index) => (
-                          <p key={index} className="text-xs text-gray-600 dark:text-gray-400">
-                            • {item}
-                          </p>
-                        ))}
-                      </div>
-                    </div>
-                  )}
-                  
-                  <p className="text-xs text-blue-600 dark:text-blue-400 mt-2">
-                    Después de conectar WhatsApp podrás continuar con tu configuración
-                  </p>
-                </div>
-              )}
             </div>
 
             {!whatsappSession ? (
@@ -903,25 +758,11 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
                     Cancelar
                   </Button>
                   
-                  {/* Botón especial para volver a Business Config cuando hay datos preservados */}
-                  {whatsappSession.isConnected && preserveBusinessConfig && (
+                  {/* Botón normal para continuar cuando está conectado */}
+                  {whatsappSession.isConnected && (
                     <Button
                       type="button"
-                      onClick={() => {
-                        console.log('📝 [RETURN] Regresando a Business Config con datos preservados');
-                        setCurrentStep('business-config');
-                      }}
-                      className="flex-1 bg-blue-600 hover:bg-blue-700"
-                    >
-                      Continuar con mi Configuración
-                    </Button>
-                  )}
-                  
-                  {/* Botón normal para continuar cuando está conectado pero no hay datos preservados */}
-                  {whatsappSession.isConnected && !preserveBusinessConfig && (
-                    <Button
-                      type="button"
-                      onClick={() => setCurrentStep('business-config')}
+                      onClick={() => setCurrentStep('agent-config')}
                       className="flex-1"
                     >
                       Continuar
@@ -933,225 +774,6 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
           </div>
         );
 
-      case 'business-config':
-        return (
-          <div className="space-y-6">
-            <div className="text-center mb-6">
-              <h3 className="text-lg font-semibold mb-2">Configura tu Negocio</h3>
-              <p className="text-muted-foreground">
-                Personaliza tu agente para tu tipo de negocio y objetivos
-              </p>
-            </div>
-
-            <div className="space-y-6">
-              {/* Tipo de Negocio */}
-              <div>
-                <Label htmlFor="businessType">Tipo de Negocio</Label>
-                <select
-                  id="businessType"
-                  value={formData.businessType}
-                  onChange={(e) => handleChange('businessType', e.target.value)}
-                  className="w-full p-2 border border-input bg-background rounded-md"
-                  required
-                >
-                  <option value="">Selecciona tu tipo de negocio</option>
-                  <option value="restaurant">Restaurante</option>
-                  <option value="retail">Tienda/Retail</option>
-                  <option value="services">Servicios</option>
-                  <option value="healthcare">Salud</option>
-                  <option value="education">Educación</option>
-                  <option value="real_estate">Bienes Raíces</option>
-                  <option value="automotive">Automotriz</option>
-                  <option value="beauty">Belleza/Spa</option>
-                  <option value="travel">Viajes/Turismo</option>
-                  <option value="technology">Tecnología</option>
-                  <option value="other">Otro</option>
-                </select>
-              </div>
-
-              {/* Objetivo Conversacional */}
-              <div>
-                <Label>Objetivo Principal</Label>
-                <div className="grid grid-cols-2 gap-3 mt-2">
-                  {[
-                    { value: 'sales', label: '💰 Ventas', desc: 'Vender productos/servicios' },
-                    { value: 'reservations', label: '📅 Reservas', desc: 'Reservar citas/mesas' },
-                    { value: 'support', label: '🛠️ Soporte', desc: 'Atención al cliente' },
-                    { value: 'lead_generation', label: '🎯 Leads', desc: 'Capturar prospectos' }
-                  ].map((goal) => (
-                    <Card
-                      key={goal.value}
-                      className={`cursor-pointer transition-all ${
-                        formData.conversationalGoal === goal.value
-                          ? 'ring-2 ring-primary bg-primary/5'
-                          : 'hover:bg-muted/50'
-                      }`}
-                      onClick={() => handleChange('conversationalGoal', goal.value)}
-                    >
-                      <CardContent className="p-3 text-center">
-                        <div className="text-lg mb-1">{goal.label}</div>
-                        <div className="text-xs text-muted-foreground">{goal.desc}</div>
-                      </CardContent>
-                    </Card>
-                  ))}
-                </div>
-              </div>
-
-              {/* Funcionalidades Incluidas */}
-              <div>
-                <Label className="text-base font-semibold text-green-600">
-                  ✅ Funcionalidades Incluidas
-                </Label>
-                <div className="grid grid-cols-1 gap-2 mt-3 p-4 bg-green-50 dark:bg-green-950 rounded-lg">
-                  {[
-                    { key: 'attend24_7', label: '🕐 Atender consultas 24/7', enabled: true },
-                    { key: 'autoFAQ', label: '❓ Responder preguntas frecuentes automáticamente', enabled: true },
-                    { key: 'guideCustomers', label: '🛍️ Guiar a los clientes para comprar/reservar', enabled: true },
-                    { key: 'qualifyLeads', label: '🎯 Calificar y filtrar prospectos reales', enabled: true },
-                    { key: 'humanEscalation', label: '👤 Escalado a humanos cuando sea necesario', enabled: true },
-                    { key: 'salesIntegration', label: '📊 Integrarse con un equipo de ventas', enabled: true }
-                  ].map((feature) => (
-                    <div key={feature.key} className="flex items-center gap-2">
-                      <div className="text-sm font-medium text-green-700 dark:text-green-300">
-                        {feature.label}
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-
-              {/* Información del Negocio */}
-              <div>
-                <Label htmlFor="businessInfo">Información de tu Negocio</Label>
-                <Textarea
-                  id="businessInfo"
-                  value={formData.businessInfo}
-                  onChange={(e) => handleChange('businessInfo', e.target.value)}
-                  placeholder="Describe tu negocio: productos/servicios, horarios, ubicación, precios, promociones especiales..."
-                  rows={4}
-                  required
-                  className="placeholder:text-muted-foreground/40"
-                />
-                <p className="text-xs text-muted-foreground mt-1">
-                  Esta información será usada para entrenar a tu agente IA
-                </p>
-              </div>
-
-              {/* Audiencia Objetivo */}
-              <div>
-                <Label htmlFor="targetAudience">Audiencia Objetivo</Label>
-                <Input
-                  id="targetAudience"
-                  value={formData.targetAudience}
-                  onChange={(e) => handleChange('targetAudience', e.target.value)}
-                  placeholder="Ej: Familias con niños, profesionales jóvenes, empresas locales..."
-                  required
-                  className="placeholder:text-muted-foreground/40"
-                />
-              </div>
-
-              {/* Configuración de Escalado */}
-              <div className="border rounded-lg p-4">
-                <Label className="text-sm font-semibold">Escalado a Humanos</Label>
-                <div className="space-y-3 mt-2">
-                  <div>
-                    <Label htmlFor="escalationKeywords" className="text-xs">Palabras clave para transferir</Label>
-                    <Input
-                      id="escalationKeywords"
-                      value={formData.customConfig.escalationRules.keywords.join(', ')}
-                      onChange={(e) => {
-                        const keywords = e.target.value.split(',').map(k => k.trim());
-                        setFormData(prev => ({
-                          ...prev,
-                          customConfig: {
-                            ...prev.customConfig,
-                            escalationRules: {
-                              ...prev.customConfig.escalationRules,
-                              keywords
-                            }
-                          }
-                        }));
-                      }}
-                      placeholder="hablar con humano, quiero comprar, problema urgente"
-                      className="text-xs placeholder:text-muted-foreground/40"
-                    />
-                  </div>
-                  <div className="flex items-center space-x-2">
-                    <input
-                      type="checkbox"
-                      id="workingHours"
-                      checked={formData.customConfig.escalationRules.workingHours}
-                      onChange={(e) => {
-                        setFormData(prev => ({
-                          ...prev,
-                          customConfig: {
-                            ...prev.customConfig,
-                            escalationRules: {
-                              ...prev.customConfig.escalationRules,
-                              workingHours: e.target.checked
-                            }
-                          }
-                        }));
-                      }}
-                      className="rounded"
-                    />
-                    <Label htmlFor="workingHours" className="text-xs">
-                      Solo durante horario laboral
-                    </Label>
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            {/* Botones */}
-            <div className="flex gap-3">
-              <Button
-                type="button"
-                variant="outline"
-                onClick={handleBackButton}
-                className="flex-1"
-              >
-                Atrás
-              </Button>
-              <Button
-                type="button"
-                variant="outline"
-                onClick={() => {
-                  console.log('🚫 [CANCEL] Botón cancelar presionado desde business-config');
-                  // Si necesita confirmación para limpiar sesión conectada
-                  if (needsConfirmation()) {
-                    showConfirmationDialog('cancel');
-                    return;
-                  }
-                  
-                  // Limpiar sesión automáticamente (sin confirmación)
-                  if (shouldCleanupSession()) {
-                    console.log('🧹 [CANCEL] Limpiando sesión automáticamente desde business-config');
-                    cleanupSession(whatsappSession.sessionName);
-                  }
-                  
-                  onClose();
-                }}
-                className="flex-1"
-              >
-                Cancelar
-              </Button>
-              <Button
-                type="button"
-                onClick={() => {
-                  // Reset del flag de preservación cuando avanza a agent-config
-                  setPreserveBusinessConfig(false);
-                  console.log('➡️ [CONTINUE] Continuando a agent-config, limpiando flag de preservación');
-                  setCurrentStep('agent-config');
-                }}
-                disabled={!formData.businessType || !formData.businessInfo || !formData.targetAudience}
-                className="flex-1"
-              >
-                Continuar
-              </Button>
-            </div>
-          </div>
-        );
 
       case 'agent-config':
         return (

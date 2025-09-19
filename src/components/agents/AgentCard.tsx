@@ -378,7 +378,7 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
                   size="sm"
                   onClick={handleDisconnectTelegram}
                   disabled={isDisconnecting}
-                  className="flex items-center space-x-1 flex-1 border border-[#0088CC] text-[#0088CC] hover:bg-[#0088CC]/10 hover:border-[#0077B3] hover:text-[#0077B3] dark:border-[#64B5F6] dark:text-[#64B5F6] dark:hover:bg-[#0088CC]/20 dark:hover:border-[#0088CC] dark:hover:text-[#0088CC]"
+                  className="flex items-center space-x-1 flex-1 border-orange-200 text-orange-700 hover:bg-orange-50 hover:border-orange-300 hover:text-orange-800 dark:border-orange-800 dark:text-orange-400 dark:hover:bg-orange-950 dark:hover:border-orange-700 dark:hover:text-orange-300"
                 >
                   {isDisconnecting ? (
                     <Loader2 className="h-3 w-3 animate-spin" />
