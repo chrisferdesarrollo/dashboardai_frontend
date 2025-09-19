@@ -214,16 +214,19 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
   },
 
   updateAgentStatus: async (id, status) => {
-    console.log(`🔄 Actualizando estado del agente ${id} a: ${status}`);
+    console.log(`🔄 [AgentStore] updateAgentStatus iniciado - ID: ${id}, Status: ${status}`);
     set({ loading: true, error: null });
     try {
       const agent = get().agents.find(a => a.id === id);
+      console.log(`🔄 [AgentStore] Agente encontrado en store:`, agent);
       if (!agent) {
         throw new Error('Agente no encontrado');
       }
       
       // Llamar a la API para actualizar el estado en la base de datos
-      await agentService.updateAgentStatus(id, status);
+      console.log(`🔄 [AgentStore] Llamando agentService.updateAgentStatus...`);
+      const result = await agentService.updateAgentStatus(id, status);
+      console.log(`🔄 [AgentStore] Respuesta de API:`, result);
       
       // Actualizar el estado local después de la llamada exitosa a la API
       const agents = get().agents.map(a => 
@@ -235,9 +238,10 @@ export const useAgentStore = create<AgentStore>((set, get) => ({
             }
           : a
       );
+      console.log(`🔄 [AgentStore] Actualizando estado local - Agente ${id}:`, agents.find(a => a.id === id));
       set({ agents, loading: false });
       
-      console.log(`✅ Estado del agente ${id} actualizado localmente a: ${status}`);
+      console.log(`✅ [AgentStore] Estado del agente ${id} actualizado localmente a: ${status}`);
     } catch (error) {
       set({ error: 'Error al actualizar estado del agente', loading: false });
       console.error('❌ Error updating agent status:', error);

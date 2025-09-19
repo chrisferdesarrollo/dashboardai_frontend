@@ -256,10 +256,18 @@ export const agentService = {
   async updateAgentStatus(id: string, status: string): Promise<AgentResponse> {
     try {
       const agentApi = await getApiClient();
-      const response = await agentApi.put(`/agents/${id}/status`, { status });
+      console.log('🔄 [UPDATE-STATUS] Actualizando estado del agente:', { id, status });
+      
+      // Usar el endpoint unificado que acabamos de crear
+      const response = await agentApi.put(`/agents/${id}/status`, {
+        whatsappStatus: status, // Para agentes WhatsApp
+        telegramStatus: status  // Para agentes Telegram (cuando esté implementado)
+      });
+      
+      console.log('✅ [UPDATE-STATUS] Estado actualizado exitosamente:', response.data);
       return response.data;
     } catch (error: unknown) {
-      console.error('Error updating agent status:', error);
+      console.error('❌ [UPDATE-STATUS] Error updating agent status:', error);
       throw error;
     }
   },

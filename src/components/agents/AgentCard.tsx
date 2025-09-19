@@ -77,6 +77,8 @@ const platformConfig = {
 };
 
 export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: AgentCardProps) {
+  console.log('🔄 [AgentCard] Re-rendering:', { id: agent.id, status: agent.status, name: agent.name });
+  
   const [isConnecting, setIsConnecting] = useState(false);
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
@@ -104,6 +106,8 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
 
   // Función para desconectar WhatsApp
   const handleDisconnect = useCallback(async () => {
+    console.log('🔌 [AgentCard] handleDisconnect iniciado para agente:', { id: agent.id, status: agent.status });
+    
     if (!agent.sessionName || agent.platform !== 'whatsapp') {
       toast({
         title: "Error",
@@ -114,44 +118,51 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     }
 
     setIsDisconnecting(true);
+    
+    // Primero actualizar el estado en la base de datos
     try {
+      console.log('🔌 [AgentCard] Actualizando estado a inactive...');
+      await agentService.updateAgentStatus(agent.id, 'inactive');
+      console.log('🔌 [AgentCard] Estado actualizado en backend, llamando onStatusChange...');
+      onStatusChange?.(agent.id, 'inactive');
+      console.log('🔌 [AgentCard] onStatusChange llamado exitosamente');
+      
+      toast({
+        title: "Estado actualizado",
+        description: `Estado del agente ${agent.name} cambiado a desconectado`,
+        variant: "default",
+      });
+      
+    } catch (dbError) {
+      console.error('❌ [AgentCard] Error actualizando estado del agente en BD:', dbError);
+      toast({
+        title: "Error",
+        description: "No se pudo actualizar el estado del agente",
+        variant: "destructive",
+      });
+      setIsDisconnecting(false);
+      return;
+    }
+
+    // Luego intentar desconectar WhatsApp (opcional)
+    try {
+      console.log('🔌 [AgentCard] Intentando desconectar sesión de WhatsApp...');
       const result = await whatsappApi.disconnectWhatsAppSession(agent.sessionName);
+      console.log('🔌 [AgentCard] Resultado de desconexión WhatsApp:', result);
       
       if (result.success) {
         setConnectionStatus('disconnected');
-        
-        // 🆕 Actualizar estado del agente en la base de datos
-        try {
-          await agentService.updateAgentStatus(agent.id, 'inactive');
-          onStatusChange?.(agent.id, 'inactive');
-          
-          toast({
-            title: "Desconectado",
-            description: `WhatsApp desconectado para ${agent.name}`,
-            variant: "default",
-          });
-        } catch (dbError) {
-          console.error('Error actualizando estado del agente:', dbError);
-          toast({
-            title: "Parcialmente exitoso",
-            description: "WhatsApp desconectado, pero no se pudo actualizar el estado en la base de datos",
-            variant: "default",
-          });
-        }
+        console.log('✅ [AgentCard] WhatsApp desconectado exitosamente');
       } else {
-        throw new Error('No se pudo desconectar la sesión');
+        console.warn('⚠️ [AgentCard] WhatsApp no se pudo desconectar, pero estado actualizado en BD');
       }
-    } catch (error) {
-      console.error('Error desconectando WhatsApp:', error);
-      toast({
-        title: "Error de desconexión",
-        description: error instanceof Error ? error.message : "No se pudo desconectar de WhatsApp",
-        variant: "destructive",
-      });
-    } finally {
-      setIsDisconnecting(false);
+    } catch (whatsappError) {
+      console.warn('⚠️ [AgentCard] Error desconectando WhatsApp (estado ya actualizado en BD):', whatsappError);
+      // No mostramos error al usuario porque lo importante (actualizar estado) ya se hizo
     }
-  }, [agent.sessionName, agent.platform, agent.id, agent.name, onStatusChange]);
+
+    setIsDisconnecting(false);
+  }, [agent.sessionName, agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
 
   return (
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">

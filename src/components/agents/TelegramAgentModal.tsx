@@ -143,9 +143,10 @@ export function TelegramAgentModal({ isOpen, onClose, onBack, agent }: TelegramA
         description: formData.description,
         platform: 'telegram',
         prompt: formData.systemPrompt,
+        sessionName: formData.botUsername, // Mapear botUsername a sessionName para que el backend lo convierta a botName
         workflowId: `telegram_${Date.now()}`, // Generar ID temporal
         platformConfig: JSON.stringify({
-          botToken: formData.botToken,
+          botToken: formData.botToken, // Incluir el token en la configuración
           botUsername: formData.botUsername,
           businessType: formData.businessType,
           conversationalGoal: formData.conversationalGoal,

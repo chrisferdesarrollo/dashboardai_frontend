@@ -43,13 +43,15 @@ export function AgentList() {
 
   // 🆕 Función para manejar cambios de estado del agente
   const handleStatusChange = useCallback(async (agentId: string, newStatus: 'active' | 'inactive' | 'error') => {
+    console.log(`🔄 [AgentList] handleStatusChange llamado - ID: ${agentId}, Status: ${newStatus}`);
     try {
       // Actualizar el estado local inmediatamente para una respuesta rápida de la UI
+      console.log(`🔄 [AgentList] Llamando updateAgentStatus del store...`);
       await updateAgentStatus(agentId, newStatus);
       
-      console.log(`✅ Estado del agente ${agentId} actualizado a: ${newStatus}`);
+      console.log(`✅ [AgentList] Estado del agente ${agentId} actualizado a: ${newStatus}`);
     } catch (error) {
-      console.error('❌ Error actualizando estado del agente:', error);
+      console.error('❌ [AgentList] Error actualizando estado del agente:', error);
       toast({
         title: 'Error',
         description: 'No se pudo actualizar el estado del agente',
