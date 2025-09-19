@@ -14,6 +14,7 @@ import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { whatsappApi } from '@/services/whatsappApi';
+import { telegramApi } from '@/services/telegramApi';
 import { agentService } from '@/services/agentApi';
 import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
@@ -164,6 +165,120 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     setIsDisconnecting(false);
   }, [agent.sessionName, agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
 
+  // Función para conectar agente de Telegram
+  const handleConnectTelegram = useCallback(async () => {
+    console.log('🔌 [TELEGRAM-CONNECT] handleConnectTelegram iniciado para agente:', { id: agent.id, status: agent.status });
+    
+    if (agent.platform !== 'telegram') {
+      toast({
+        title: "Error",
+        description: "Esta función solo está disponible para agentes de Telegram",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsConnecting(true);
+    
+    try {
+      // Primero actualizar el estado en el backend
+      console.log('🔌 [TELEGRAM-CONNECT] Actualizando estado del agente en backend...');
+      await agentService.connectTelegramAgent(agent.id);
+      console.log('🔌 [TELEGRAM-CONNECT] Estado actualizado en backend, llamando onStatusChange...');
+      onStatusChange?.(agent.id, 'active');
+      console.log('🔌 [TELEGRAM-CONNECT] onStatusChange llamado exitosamente');
+      
+      // Luego activar el bot en el webhook de n8n
+      try {
+        console.log('🔌 [TELEGRAM-CONNECT] Obteniendo botToken del agente...');
+        const botToken = await agentService.getTelegramBotToken(agent.id);
+        console.log('🔌 [TELEGRAM-CONNECT] BotToken obtenido, activando bot en webhook...');
+        const result = await telegramApi.connectTelegramAgent(botToken);
+        console.log('🔌 [TELEGRAM-CONNECT] Resultado de activación del webhook:', result);
+        
+        toast({
+          title: "Agente conectado",
+          description: `${agent.name} se ha conectado exitosamente`,
+          variant: "default",
+        });
+      } catch (webhookError) {
+        console.warn('⚠️ [TELEGRAM-CONNECT] Error activando bot en webhook (estado ya actualizado):', webhookError);
+        toast({
+          title: "Agente conectado",
+          description: `${agent.name} se ha conectado (sin activación del bot)`,
+          variant: "default",
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ [TELEGRAM-CONNECT] Error conectando agente:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo conectar el agente de Telegram",
+        variant: "destructive",
+      });
+    } finally {
+      setIsConnecting(false);
+    }
+  }, [agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
+
+  // Función para desconectar agente de Telegram
+  const handleDisconnectTelegram = useCallback(async () => {
+    console.log('🔌 [TELEGRAM-DISCONNECT] handleDisconnectTelegram iniciado para agente:', { id: agent.id, status: agent.status });
+    
+    if (agent.platform !== 'telegram') {
+      toast({
+        title: "Error",
+        description: "Esta función solo está disponible para agentes de Telegram",
+        variant: "destructive",
+      });
+      return;
+    }
+
+    setIsDisconnecting(true);
+    
+    try {
+      // Primero actualizar el estado en el backend
+      console.log('🔌 [TELEGRAM-DISCONNECT] Actualizando estado del agente en backend...');
+      await agentService.disconnectTelegramAgent(agent.id);
+      console.log('🔌 [TELEGRAM-DISCONNECT] Estado actualizado en backend, llamando onStatusChange...');
+      onStatusChange?.(agent.id, 'inactive');
+      console.log('🔌 [TELEGRAM-DISCONNECT] onStatusChange llamado exitosamente');
+      
+      // Luego enviar comando /stop al webhook
+      try {
+        console.log('🔌 [TELEGRAM-DISCONNECT] Obteniendo botToken del agente...');
+        const botToken = await agentService.getTelegramBotToken(agent.id);
+        console.log('🔌 [TELEGRAM-DISCONNECT] BotToken obtenido, enviando comando /stop al webhook...');
+        const result = await telegramApi.disconnectTelegramAgent(botToken);
+        console.log('🔌 [TELEGRAM-DISCONNECT] Resultado de desconexión del webhook:', result);
+        
+        toast({
+          title: "Agente desconectado",
+          description: `${agent.name} se ha desconectado exitosamente`,
+          variant: "default",
+        });
+      } catch (webhookError) {
+        console.warn('⚠️ [TELEGRAM-DISCONNECT] Error enviando /stop al webhook (estado ya actualizado):', webhookError);
+        toast({
+          title: "Agente desconectado",
+          description: `${agent.name} se ha desconectado (sin notificación al bot)`,
+          variant: "default",
+        });
+      }
+      
+    } catch (error) {
+      console.error('❌ [TELEGRAM-DISCONNECT] Error desconectando agente:', error);
+      toast({
+        title: "Error",
+        description: "No se pudo desconectar el agente de Telegram",
+        variant: "destructive",
+      });
+    } finally {
+      setIsDisconnecting(false);
+    }
+  }, [agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
+
   return (
     <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">
       <CardHeader className="pb-3">
@@ -249,6 +364,43 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
                     <Wifi className="h-3 w-3" />
                   )}
                   <span>{isConnecting ? 'Conectando...' : 'Conectar WhatsApp'}</span>
+                </Button>
+              )}
+            </div>
+          )}
+          
+          {/* Botón de conexión para Telegram basado en el estado */}
+          {agent.platform === 'telegram' && (
+            <div className="flex items-center gap-2">
+              {agent.status === 'active' ? (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleDisconnectTelegram}
+                  disabled={isDisconnecting}
+                  className="flex items-center space-x-1 flex-1 border border-[#0088CC] text-[#0088CC] hover:bg-[#0088CC]/10 hover:border-[#0077B3] hover:text-[#0077B3] dark:border-[#64B5F6] dark:text-[#64B5F6] dark:hover:bg-[#0088CC]/20 dark:hover:border-[#0088CC] dark:hover:text-[#0088CC]"
+                >
+                  {isDisconnecting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <WifiOff className="h-3 w-3" />
+                  )}
+                  <span>{isDisconnecting ? 'Desconectando...' : 'Desconectar Telegram'}</span>
+                </Button>
+              ) : (
+                <Button
+                  variant="outline"
+                  size="sm"
+                  onClick={handleConnectTelegram}
+                  disabled={isConnecting}
+                  className="flex items-center space-x-1 flex-1 border border-[#0088CC] text-[#0088CC] hover:bg-[#0088CC]/10 hover:border-[#0077B3] hover:text-[#0077B3] dark:border-[#64B5F6] dark:text-[#64B5F6] dark:hover:bg-[#0088CC]/20 dark:hover:border-[#0088CC] dark:hover:text-[#0088CC]"
+                >
+                  {isConnecting ? (
+                    <Loader2 className="h-3 w-3 animate-spin" />
+                  ) : (
+                    <Wifi className="h-3 w-3" />
+                  )}
+                  <span>{isConnecting ? 'Conectando...' : 'Conectar Telegram'}</span>
                 </Button>
               )}
             </div>

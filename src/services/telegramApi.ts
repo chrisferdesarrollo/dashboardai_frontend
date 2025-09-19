@@ -40,6 +40,13 @@ export interface TelegramAgentConnectionRequest {
   operationType: 'connect';
 }
 
+export interface TelegramAgentDisconnectionRequest {
+  message: {
+    text: string;
+  };
+  botToken: string;
+}
+
 export interface TelegramBotInfo {
   id: number;
   is_bot: boolean;
@@ -423,6 +430,74 @@ class TelegramApi {
       
     } catch (error: unknown) {
       console.error('❌ [TELEGRAM-CONNECT-AGENT] Error conectando agente:', error);
+      
+      let errorMessage = 'Error de conexión con el servicio de agente de Telegram';
+      
+      if (error instanceof Error) {
+        errorMessage = error.message;
+      } else if (axios.isAxiosError(error)) {
+        if (error.response) {
+          errorMessage = `Error del servidor: ${error.response.status} - ${error.response.statusText}`;
+          console.error('Response data:', error.response.data);
+        } else if (error.request) {
+          errorMessage = 'No se pudo conectar con el servidor del agente';
+        }
+      }
+      
+      throw new Error(errorMessage);
+    }
+  }
+
+  /**
+   * Desconecta un agente de Telegram enviando comando /stop
+   * Esta función se ejecuta al presionar "Desconectar Telegram"
+   */
+  async disconnectTelegramAgent(botToken: string): Promise<TelegramBotResponse> {
+    try {
+      console.log('🔌 [TELEGRAM-DISCONNECT-AGENT] Desconectando agente de Telegram');
+      
+      // URL específica para desconectar el agente (según la imagen)
+      const disconnectWebhookUrl = 'https://n8n.topias.app/webhook/telegram-api';
+      
+      // Payload específico para desconectar agente
+      const payload: TelegramAgentDisconnectionRequest = { 
+        message: {
+          text: '/stop'
+        },
+        botToken: botToken
+      };
+      
+      // Crear cliente axios específico para esta URL
+      const disconnectClient = axios.create({
+        baseURL: disconnectWebhookUrl,
+        timeout: 30000,
+        headers: {
+          'Content-Type': 'application/json',
+        },
+      });
+      
+      console.log('📡 [TELEGRAM-DISCONNECT-AGENT] Enviando request a:', disconnectWebhookUrl);
+      console.log('📄 [TELEGRAM-DISCONNECT-AGENT] Payload:', payload);
+      console.log('🔍 [TELEGRAM-DISCONNECT-AGENT] URL completa:', `${disconnectWebhookUrl}`);
+      console.log('🔍 [TELEGRAM-DISCONNECT-AGENT] Headers:', {
+        'Content-Type': 'application/json',
+      });
+      
+      const response = await disconnectClient.post('', payload);
+      
+      console.log('✅ [TELEGRAM-DISCONNECT-AGENT] Agente desconectado exitosamente');
+      console.log('📋 [TELEGRAM-DISCONNECT-AGENT] Respuesta del servidor:', response.data);
+      console.log('📊 [TELEGRAM-DISCONNECT-AGENT] Status code:', response.status);
+      
+      return {
+        success: true,
+        message: 'Agente de Telegram desconectado exitosamente',
+        timestamp: new Date().toISOString(),
+        ...response.data
+      };
+      
+    } catch (error: unknown) {
+      console.error('❌ [TELEGRAM-DISCONNECT-AGENT] Error desconectando agente:', error);
       
       let errorMessage = 'Error de conexión con el servicio de agente de Telegram';
       

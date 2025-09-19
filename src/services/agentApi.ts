@@ -383,6 +383,58 @@ export const agentService = {
   async disconnectWhatsAppSession(agentId: string): Promise<void> {
     console.log('🔌 [DISCONNECT] Función de desconexión deshabilitada para agente:', agentId);
   },
+
+  /**
+   * Conectar agente de Telegram
+   */
+  async connectTelegramAgent(agentId: string): Promise<void> {
+    try {
+      console.log('🔌 [TELEGRAM-CONNECT] Conectando agente de Telegram:', agentId);
+      
+      const agentApi = await getApiClient();
+      await agentApi.post(`/agents/telegram/${agentId}/connect`);
+      
+      console.log('✅ [TELEGRAM-CONNECT] Agente conectado exitosamente');
+    } catch (error: unknown) {
+      console.error('❌ [TELEGRAM-CONNECT] Error conectando agente:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Desconectar agente de Telegram
+   */
+  async disconnectTelegramAgent(agentId: string): Promise<void> {
+    try {
+      console.log('🔌 [TELEGRAM-DISCONNECT] Desconectando agente de Telegram:', agentId);
+      
+      const agentApi = await getApiClient();
+      await agentApi.post(`/agents/telegram/${agentId}/disconnect`);
+      
+      console.log('✅ [TELEGRAM-DISCONNECT] Agente desconectado exitosamente');
+    } catch (error: unknown) {
+      console.error('❌ [TELEGRAM-DISCONNECT] Error desconectando agente:', error);
+      throw error;
+    }
+  },
+
+  /**
+   * Obtener el botToken de un agente de Telegram
+   */
+  async getTelegramBotToken(agentId: string): Promise<string> {
+    try {
+      console.log('🔑 [TELEGRAM-TOKEN] Obteniendo botToken para agente:', agentId);
+      
+      const agentApi = await getApiClient();
+      const response = await agentApi.get(`/agents/telegram/${agentId}/bot-token`);
+      
+      console.log('✅ [TELEGRAM-TOKEN] BotToken obtenido exitosamente');
+      return response.data.botToken;
+    } catch (error: unknown) {
+      console.error('❌ [TELEGRAM-TOKEN] Error obteniendo botToken:', error);
+      throw error;
+    }
+  },
 };
 
 /**
