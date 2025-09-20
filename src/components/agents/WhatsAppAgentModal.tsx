@@ -125,37 +125,6 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
 
   const isEditing = !!agent;
 
-  // Función para generar prompt simple basado en la configuración del usuario
-  const generateBusinessPrompt = (data: typeof formData) => {
-    const basePrompt = data.prompt.trim();
-
-    // Si no hay prompt personalizado, usar uno básico
-    if (!basePrompt) {
-      return `Eres un asistente de IA para WhatsApp. Tu objetivo es ayudar a los clientes de manera profesional y amigable.
-
-PERSONALIDAD:
-- Tono: ${data.customConfig.personality.tone}
-- Formalidad: ${data.customConfig.personality.formality}
-- Idioma: ${data.customConfig.personality.language}
-
-Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, sé ${data.customConfig.personality.formality} y responde en ${data.customConfig.personality.language}.`;
-    }
-
-    // Si hay prompt personalizado, solo agregar configuración de personalidad
-    const enhancedPrompt = `
-${basePrompt}
-
-PERSONALIDAD:
-- Tono: ${data.customConfig.personality.tone}
-- Formalidad: ${data.customConfig.personality.formality}
-- Idioma: ${data.customConfig.personality.language}
-
-Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, sé ${data.customConfig.personality.formality} y responde en ${data.customConfig.personality.language}.
-`;
-
-    return enhancedPrompt.trim();
-  };
-
   // Función para limpiar sesión cuando se cancela o cierra
   const cleanupSession = async (sessionName: string) => {
     try {
@@ -535,15 +504,12 @@ Siempre mantén un tono profesional pero ${data.customConfig.personality.tone}, 
     try {
       console.log('Creating WhatsApp agent');
       
-      // Generar prompt inteligente basado en la configuración de negocio
-      const enhancedPrompt = generateBusinessPrompt(formData);
-      
       // Preparar datos para enviar a la API
       const agentData: CreateAgentRequest = {
         name: formData.name.trim(),
         description: formData.description.trim(),
         platform: 'whatsapp',
-        prompt: enhancedPrompt,
+        prompt: formData.prompt.trim(), // Usar directamente el prompt del usuario
         sessionName: whatsappSession.sessionName, // ✅ IMPORTANTE: Enviar sessionName en el campo correcto para BD
         workflowId: whatsappSession.sessionName, // 🎯 MANTENER: Guardar sessionName también en workflowId para compatibilidad
         platformConfig: JSON.stringify({

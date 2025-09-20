@@ -191,10 +191,22 @@ export function WhatsAppConnectionModal({
   }, [isOpen, agent.sessionName, whatsappSession]);
 
   // Manejar cierre del modal
-  const handleClose = () => {
+  const handleClose = async () => {
     if (pollingInterval) {
       clearInterval(pollingInterval);
       setPollingInterval(null);
+    }
+    
+    // Si hay una sesión activa y no está conectada, desconectarla para limpiar recursos
+    if (whatsappSession && whatsappSession.sessionName && connectionStep !== 'connected') {
+      try {
+        console.log('🧹 [WHATSAPP-CANCEL] Desconectando sesión de WhatsApp:', whatsappSession.sessionName);
+        await whatsappApi.disconnectWhatsAppSession(whatsappSession.sessionName, 'disconnect');
+        console.log('✅ [WHATSAPP-CANCEL] Sesión desconectada exitosamente');
+      } catch (error) {
+        console.warn('⚠️ [WHATSAPP-CANCEL] Error desconectando sesión (continuando):', error);
+        // No mostrar error al usuario, es limpieza en background
+      }
     }
     
     // Reset states
