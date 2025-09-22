@@ -1,6 +1,66 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Conversation, ConversationStats, ConversationFilter, Message } from '@/types/conversation';
+import conversationApi, { ConversationLogResponse, ConversationSessionSummary } from '@/services/conversationApi';
+
+// Helper function para transformar logs de backend a conversaciones del frontend
+const transformLogsToConversations = (sessionSummaries: ConversationSessionSummary[], allLogs: ConversationLogResponse[]): Conversation[] => {
+  return sessionSummaries.map((summary, index) => {
+    // Obtener todos los logs de esta sesión
+    const sessionLogs = allLogs.filter(log => log.sessionName === summary.sessionName);
+    
+    // Ordenar por fecha de creación para obtener el último mensaje
+    const sortedLogs = sessionLogs.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+    const lastLog = sortedLogs[0];
+    
+    // Determinar el último mensaje (puede ser del usuario o de la IA)
+    let lastMessage: Message | undefined;
+    if (lastLog) {
+      // Crear mensaje basado en si es el último mensaje del usuario o de la IA
+      const isUserMessage = !!lastLog.userMessage;
+      lastMessage = {
+        id: `${lastLog.id}-${isUserMessage ? 'user' : 'ai'}`,
+        conversationId: `conv-${summary.sessionName}`,
+        content: isUserMessage ? lastLog.userMessage : lastLog.aiResponse || '',
+        type: 'text',
+        direction: isUserMessage ? 'incoming' : 'outgoing',
+        timestamp: new Date(lastLog.createdAt),
+        status: 'delivered'
+      };
+    }
+
+    // Generar ID único para la conversación
+    const conversationId = `conv-${summary.sessionName}-${index}`;
+    
+    // Detectar plataforma basada en el teléfono
+    const platform = lastLog?.userPhone?.includes('@c.us') ? 'whatsapp' : 'telegram';
+    
+    return {
+      id: conversationId,
+      agentId: 'agent-1', // TODO: obtener del sessionName o mapear desde agentes
+      agentName: 'Bot IA', // TODO: obtener nombre real del agente
+      contact: {
+        id: `contact-${summary.sessionName}`,
+        name: lastLog?.userName || 'Usuario anónimo',
+        phone: lastLog?.userPhone || '+00000000000',
+        platformId: lastLog?.userPhone || `${summary.sessionName}@platform`,
+        platform: platform,
+        isBlocked: false,
+        lastActivity: new Date(summary.lastActivity),
+        createdAt: new Date(summary.startTime)
+      },
+      lastMessage,
+      unreadCount: 0, // TODO: implementar lógica de mensajes no leídos
+      status: 'active' as const, // TODO: determinar estado real basado en la actividad reciente
+      tags: [], // TODO: implementar sistema de etiquetas
+      createdAt: new Date(summary.startTime),
+      updatedAt: new Date(summary.lastActivity),
+      platform: platform,
+      totalMessages: summary.messageCount,
+      averageResponseTime: 120 // TODO: calcular tiempo promedio real
+    } as Conversation;
+  });
+};
 
 interface ConversationState {
   // State
@@ -80,8 +140,20 @@ export const useConversationStore = create<ConversationState>()(
       fetchConversations: async () => {
         set({ loading: true, error: null });
         try {
-          // TODO: Implementar llamada a API
-          // Por ahora, datos mock
+          // Obtener datos reales del backend
+          const [sessionSummaries, allLogs] = await Promise.all([
+            conversationApi.getConversationsGroupedBySession(),
+            conversationApi.getAllConversationLogs()
+          ]);
+          
+          // Transformar datos del backend al formato del frontend
+          const conversations = transformLogsToConversations(sessionSummaries, allLogs);
+          
+          set({ conversations, loading: false });
+        } catch (error) {
+          console.error('Error fetching conversations:', error);
+          
+          // En caso de error, usar datos mock como fallback
           const mockConversations: Conversation[] = [
             {
               id: '1',
@@ -150,17 +222,61 @@ export const useConversationStore = create<ConversationState>()(
             }
           ];
           
-          set({ conversations: mockConversations, loading: false });
-        } catch (error) {
-          console.error('Error fetching conversations:', error);
-          set({ error: 'Error al cargar conversaciones', loading: false });
+          set({ 
+            conversations: mockConversations, 
+            loading: false,
+            error: error instanceof Error ? error.message : 'Error al cargar conversaciones'
+          });
         }
       },
 
       fetchMessages: async (conversationId: string) => {
         try {
-          // TODO: Implementar llamada a API
-          // Por ahora, datos mock
+          // Extraer sessionName del conversationId
+          const sessionName = conversationId.replace('conv-', '').split('-')[0];
+          
+          // Obtener logs reales de la sesión desde el backend
+          const logs = await conversationApi.getConversationLogsBySession(sessionName);
+          
+          // Transformar logs en mensajes del frontend
+          const messages: Message[] = [];
+          
+          logs.forEach(log => {
+            // Agregar mensaje del usuario si existe
+            if (log.userMessage) {
+              messages.push({
+                id: `${log.id}-user`,
+                conversationId,
+                content: log.userMessage,
+                type: 'text',
+                direction: 'incoming',
+                timestamp: new Date(log.createdAt),
+                status: 'delivered'
+              });
+            }
+            
+            // Agregar respuesta de la IA si existe
+            if (log.aiResponse) {
+              messages.push({
+                id: `${log.id}-ai`,
+                conversationId,
+                content: log.aiResponse,
+                type: 'text',
+                direction: 'outgoing',
+                timestamp: new Date(log.timestamp || log.createdAt),
+                status: 'read'
+              });
+            }
+          });
+          
+          // Ordenar mensajes por timestamp
+          messages.sort((a, b) => a.timestamp.getTime() - b.timestamp.getTime());
+          
+          get().setMessages(conversationId, messages);
+        } catch (error) {
+          console.error('Error fetching messages:', error);
+          
+          // Fallback a datos mock en caso de error
           const mockMessages: Message[] = [
             {
               id: 'msg-1-1',
@@ -192,8 +308,6 @@ export const useConversationStore = create<ConversationState>()(
           ];
           
           get().setMessages(conversationId, mockMessages);
-        } catch (error) {
-          console.error('Error fetching messages:', error);
           set({ error: 'Error al cargar mensajes' });
         }
       },

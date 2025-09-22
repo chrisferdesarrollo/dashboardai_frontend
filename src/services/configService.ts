@@ -39,10 +39,16 @@ class ConfigService {
     // Detectar si estamos en el VPS por la URL del navegador
     const isVPS = window.location.hostname === 'topias.app';
     
+    // En desarrollo, usar solo /api porque Vite proxy redirige a localhost:8080
+    const isDevelopment = import.meta.env.DEV;
+    
     let finalUrl;
     if (isVPS) {
       finalUrl = 'https://topias.app/api';
       console.log('🚀 [ConfigService] Detectado VPS, usando URL hardcodeada:', finalUrl);
+    } else if (isDevelopment) {
+      finalUrl = '/api';
+      console.log('🔧 [ConfigService] Modo desarrollo detectado, usando proxy:', finalUrl);
     } else {
       finalUrl = import.meta.env.VITE_API_BASE_URL || 'http://localhost:8080/api';
       console.log('🔧 [ConfigService] Usando configuración local:', finalUrl);
@@ -51,6 +57,7 @@ class ConfigService {
     console.log('🔧 [ConfigService] getBackendUrl():', {
       hostname: window.location.hostname,
       isVPS: isVPS,
+      isDevelopment: isDevelopment,
       VITE_API_BASE_URL: import.meta.env.VITE_API_BASE_URL,
       finalUrl: finalUrl
     });
