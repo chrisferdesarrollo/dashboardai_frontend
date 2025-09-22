@@ -32,8 +32,45 @@ const transformLogsToConversations = (sessionSummaries: ConversationSessionSumma
     // Generar ID único para la conversación
     const conversationId = `conv-${summary.sessionName}-${index}`;
     
-    // Detectar plataforma basada en el teléfono
-    const platform = lastLog?.userPhone?.includes('@c.us') ? 'whatsapp' : 'telegram';
+    // Detectar plataforma con lógica mejorada
+    let platform: 'whatsapp' | 'telegram' = 'whatsapp'; // Default más común
+    
+    // DEBUG: Agregar logs para debuggear
+    console.log('🔍 DEBUG Platform Detection for session:', summary.sessionName);
+    console.log('📱 lastLog?.platform:', lastLog?.platform);
+    console.log('📞 lastLog?.userPhone:', lastLog?.userPhone);
+    console.log('💬 lastLog?.sessionName:', lastLog?.sessionName);
+    
+    // 1. Si backend platform es válido y no es 'unknown', usarlo
+    if (lastLog?.platform && lastLog.platform !== 'unknown' && lastLog.platform !== 'UNKNOWN') {
+      platform = lastLog.platform as 'whatsapp' | 'telegram';
+      console.log('✅ Using backend platform:', platform);
+    } 
+    // 2. Detectar por patrón de sessionName (más confiable)
+    else if (lastLog?.sessionName) {
+      const sessionLower = lastLog.sessionName.toLowerCase();
+      
+      if (sessionLower.startsWith('agent_') || 
+          sessionLower.includes('whatsapp') || 
+          sessionLower.includes('wa_')) {
+        platform = 'whatsapp';
+        console.log('✅ Detected WhatsApp by session pattern');
+      } else if (sessionLower.startsWith('bot_') || 
+                 sessionLower.startsWith('token_') ||
+                 sessionLower.includes('telegram') || 
+                 sessionLower.includes('tg_')) {
+        platform = 'telegram';
+        console.log('✅ Detected Telegram by session pattern');
+      }
+    }
+    // 3. Detectar por formato de teléfono
+    else if (lastLog?.userPhone?.includes('@c.us')) {
+      platform = 'whatsapp';
+      console.log('✅ Detected WhatsApp by phone format');
+    }
+    
+    console.log('🎯 Final platform decision:', platform);
+    console.log('-------------------');
     
     return {
       id: conversationId,
@@ -84,14 +121,17 @@ interface ConversationState {
   setFilters: (filters: Partial<ConversationFilter>) => void;
   
   // Operaciones
-  fetchConversations: () => Promise<void>;
+  fetchConversations: (platform?: string) => Promise<void>;
   fetchMessages: (conversationId: string) => Promise<void>;
-  sendMessage: (conversationId: string, content: string) => Promise<void>;
+  sendMessage: (conversationId: string, content: string, platform?: string) => Promise<void>;
   markAsRead: (conversationId: string) => Promise<void>;
   updateConversationStatus: (conversationId: string, status: Conversation['status']) => Promise<void>;
   assignConversation: (conversationId: string, userId: string) => Promise<void>;
   addTag: (conversationId: string, tag: string) => Promise<void>;
   removeTag: (conversationId: string, tag: string) => Promise<void>;
+  
+  // Filtros
+  updateFilters: (newFilters: Partial<ConversationFilter>) => void;
   
   // Getters
   getFilteredConversations: () => Conversation[];
@@ -131,19 +171,22 @@ export const useConversationStore = create<ConversationState>()(
       setLoading: (loading) => set({ loading }),
       setError: (error) => set({ error }),
       setSearchTerm: (searchTerm) => set({ searchTerm }),
-      setFilters: (newFilters) => 
-        set((state) => ({
-          filters: { ...state.filters, ...newFilters }
-        })),
+      setFilters: (newFilters) => {
+        get().updateFilters(newFilters);
+      },
 
       // Operaciones asíncronas
-      fetchConversations: async () => {
+      fetchConversations: async (platform?: string) => {
         set({ loading: true, error: null });
         try {
+          // Usar el platform del parámetro o el del filtro actual
+          const currentFilters = get().filters;
+          const platformFilter = platform || currentFilters.platform;
+          
           // Obtener datos reales del backend
           const [sessionSummaries, allLogs] = await Promise.all([
             conversationApi.getConversationsGroupedBySession(),
-            conversationApi.getAllConversationLogs()
+            conversationApi.getAllConversationLogs(platformFilter !== 'all' ? platformFilter : undefined)
           ]);
           
           // Transformar datos del backend al formato del frontend
@@ -312,9 +355,20 @@ export const useConversationStore = create<ConversationState>()(
         }
       },
 
-      sendMessage: async (conversationId: string, content: string) => {
+      sendMessage: async (conversationId: string, content: string, platform?: string) => {
         try {
-          // TODO: Implementar envío real
+          // Extraer sessionName del conversationId
+          const sessionName = conversationId.replace('conv-', '').split('-')[0];
+          
+          // Determinar plataforma si no se proporciona
+          let detectedPlatform = platform;
+          if (!detectedPlatform) {
+            // Obtener la conversación actual para determinar la plataforma
+            const conversation = get().conversations.find(conv => conv.id === conversationId);
+            detectedPlatform = conversation?.platform || 'unknown';
+          }
+          
+          // Crear nuevo mensaje en el frontend
           const newMessage: Message = {
             id: `msg-${Date.now()}`,
             conversationId,
@@ -327,6 +381,16 @@ export const useConversationStore = create<ConversationState>()(
 
           const currentMessages = get().messages[conversationId] || [];
           get().setMessages(conversationId, [...currentMessages, newMessage]);
+
+          // Guardar el log en el backend
+          await conversationApi.createConversationLog({
+            sessionName,
+            userMessage: '', // Mensaje vacío ya que este es un mensaje saliente del bot
+            aiResponse: content,
+            userName: 'Bot',
+            platform: detectedPlatform
+          });
+
         } catch (error) {
           console.error('Error sending message:', error);
           set({ error: 'Error al enviar mensaje' });
@@ -490,6 +554,18 @@ export const useConversationStore = create<ConversationState>()(
           averageResponseTime,
           resolutionRate
         };
+      },
+
+      // Filtros
+      updateFilters: (newFilters: Partial<ConversationFilter>) => {
+        const currentFilters = get().filters;
+        const updatedFilters = { ...currentFilters, ...newFilters };
+        set({ filters: updatedFilters });
+        
+        // Si se actualiza el filtro de platform, recargar conversaciones
+        if (newFilters.platform !== undefined) {
+          get().fetchConversations(newFilters.platform);
+        }
       },
 
       getUnreadCount: () => {

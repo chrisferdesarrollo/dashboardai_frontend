@@ -41,6 +41,7 @@ export interface ConversationLogResponse {
   aiResponse: string;
   userName: string;
   userPhone?: string;
+  platform?: string;
   timestamp: string;
   createdAt: string;
 }
@@ -51,6 +52,7 @@ export interface CreateConversationLogRequest {
   aiResponse: string;
   userName: string;
   userPhone?: string;
+  platform?: string;
   timestamp?: string;
 }
 
@@ -70,12 +72,19 @@ interface ApiResponse<T> {
 
 export const conversationApi = {
   /**
-   * Obtener todos los logs de conversación
+   * Obtener todos los logs de conversación (con filtro opcional por plataforma)
    */
-  async getAllConversationLogs(): Promise<ConversationLogResponse[]> {
+  async getAllConversationLogs(platform?: string): Promise<ConversationLogResponse[]> {
     try {
       const client = await getApiClient();
-      const response = await client.get<ApiResponse<ConversationLogResponse[]>>('/conversation-logs');
+      
+      // Construir URL con query parameter si se especifica platform
+      let url = '/conversation-logs';
+      if (platform && platform !== 'all') {
+        url += `?platform=${encodeURIComponent(platform)}`;
+      }
+      
+      const response = await client.get<ApiResponse<ConversationLogResponse[]>>(url);
       
       if (response.data.success) {
         return response.data.data;
