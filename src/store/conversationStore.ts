@@ -1,6 +1,6 @@
 import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
-import { Conversation, ConversationStats, ConversationFilter, Message } from '@/types/conversation';
+import { Conversation, ConversationStats, ConversationFilter, Message, ContentSearchResult } from '@/types/conversation';
 import conversationApi, { ConversationLogResponse, ConversationSessionSummary } from '@/services/conversationApi';
 import agentApi from '@/services/agentApi';
 import { useAuthStore } from '@/store/authStore';
@@ -183,6 +183,11 @@ interface ConversationState {
   searchTerm: string;
   filters: ConversationFilter;
   
+  // Content search
+  contentSearchResults: ContentSearchResult[];
+  contentSearchLoading: boolean;
+  contentSearchQuery: string;
+  
   // Setters básicos
   setConversations: (conversations: Conversation[]) => void;
   setSelectedConversation: (conversation: Conversation | null) => void;
@@ -191,6 +196,11 @@ interface ConversationState {
   setError: (error: string | null) => void;
   setSearchTerm: (searchTerm: string) => void;
   setFilters: (filters: Partial<ConversationFilter>) => void;
+  
+  // Content search
+  searchContent: (query: string, filters?: Partial<ConversationFilter>) => Promise<void>;
+  clearContentSearch: () => void;
+  exportContentSearchResults: (format: 'csv' | 'json') => void;
   
   // Operaciones
   fetchConversations: (platform?: string) => Promise<void>;
@@ -221,6 +231,12 @@ export const useConversationStore = create<ConversationState>()(
       loading: false,
       error: null,
       searchTerm: '',
+      
+      // Content search state
+      contentSearchResults: [],
+      contentSearchLoading: false,
+      contentSearchQuery: '',
+      
       filters: {
         status: 'all',
         platform: 'all',
@@ -245,6 +261,165 @@ export const useConversationStore = create<ConversationState>()(
       setSearchTerm: (searchTerm) => set({ searchTerm }),
       setFilters: (newFilters) => {
         get().updateFilters(newFilters);
+      },
+
+      // Content search methods
+      searchContent: async (query: string, filters?: Partial<ConversationFilter>) => {
+        if (!query.trim()) {
+          set({ contentSearchResults: [], contentSearchQuery: '' });
+          return;
+        }
+
+        set({ contentSearchLoading: true, contentSearchQuery: query });
+        
+        try {
+          // Obtener todos los logs
+          const currentFilters = filters || get().filters;
+          const platformFilter = currentFilters.platform !== 'all' ? currentFilters.platform : undefined;
+          const allLogs = await conversationApi.getAllConversationLogs(platformFilter);
+          
+          // Filtrar logs que contengan el texto buscado
+          const searchResults: ContentSearchResult[] = [];
+          const queryLower = query.toLowerCase();
+          
+          for (const log of allLogs) {
+            const logDate = new Date(log.createdAt);
+            
+            // Aplicar filtros de fecha
+            if (logDate < currentFilters.dateRange.from || logDate > currentFilters.dateRange.to) {
+              continue;
+            }
+            
+            // Obtener nombre del agente
+            const agentName = await getAgentNameFromSession(log.sessionName);
+            
+            // Buscar en mensaje del usuario
+            if (log.userMessage && log.userMessage.toLowerCase().includes(queryLower)) {
+              searchResults.push({
+                id: `${log.id}-user`,
+                sessionName: log.sessionName,
+                content: log.userMessage,
+                type: 'user',
+                phone: log.userPhone || 'No disponible',
+                userName: log.userName || 'Usuario',
+                agentName,
+                platform: (log.platform as 'whatsapp' | 'telegram') || 'whatsapp',
+                timestamp: new Date(log.timestamp),
+                createdAt: new Date(log.createdAt),
+                matchedText: query
+              });
+            }
+            
+            // Buscar en respuesta de IA
+            if (log.aiResponse && log.aiResponse.toLowerCase().includes(queryLower)) {
+              searchResults.push({
+                id: `${log.id}-ai`,
+                sessionName: log.sessionName,
+                content: log.aiResponse,
+                type: 'ai',
+                phone: log.userPhone || 'No disponible',
+                userName: log.userName || 'Usuario',
+                agentName,
+                platform: (log.platform as 'whatsapp' | 'telegram') || 'whatsapp',
+                timestamp: new Date(log.timestamp),
+                createdAt: new Date(log.createdAt),
+                matchedText: query
+              });
+            }
+          }
+          
+          // Ordenar por fecha descendente
+          searchResults.sort((a, b) => b.createdAt.getTime() - a.createdAt.getTime());
+          
+          set({ 
+            contentSearchResults: searchResults,
+            contentSearchLoading: false 
+          });
+          
+        } catch (error) {
+          console.error('Error searching content:', error);
+          set({ 
+            contentSearchResults: [], 
+            contentSearchLoading: false,
+            error: 'Error al buscar contenido'
+          });
+        }
+      },
+
+      clearContentSearch: () => {
+        set({ 
+          contentSearchResults: [], 
+          contentSearchQuery: '',
+          contentSearchLoading: false 
+        });
+      },
+
+      exportContentSearchResults: (format: 'csv' | 'json') => {
+        const results = get().contentSearchResults;
+        if (results.length === 0) {
+          alert('No hay resultados para exportar');
+          return;
+        }
+
+        const formatPhoneNumber = (phone: string): string => {
+          if (!phone || phone === 'No disponible') return phone;
+          
+          // Si ya tiene +, retornarlo tal como está
+          if (phone.startsWith('+')) return phone;
+          
+          // Si empieza con 57 (Colombia), agregar +
+          if (phone.startsWith('57') && phone.length >= 10) {
+            return `+${phone}`;
+          }
+          
+          // Si no tiene +, agregarlo
+          return `+${phone}`;
+        };
+
+        if (format === 'csv') {
+          const headers = ['Fecha', 'Hora', 'Teléfono', 'Usuario', 'Agente', 'Plataforma', 'Tipo', 'Contenido', 'Búsqueda'];
+          const csvData = results.map(result => [
+            result.createdAt.toLocaleDateString('es-CO'),
+            result.createdAt.toLocaleTimeString('es-CO'),
+            formatPhoneNumber(result.phone),
+            result.userName,
+            result.agentName,
+            result.platform.charAt(0).toUpperCase() + result.platform.slice(1),
+            result.type === 'user' ? 'Usuario' : 'IA',
+            `"${result.content.replace(/"/g, '""')}"`,
+            `"${result.matchedText}"`
+          ]);
+          
+          const csvContent = [headers, ...csvData]
+            .map(row => row.join(','))
+            .join('\n');
+          
+          const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `busqueda_contenido_${new Date().toISOString().split('T')[0]}.csv`;
+          link.click();
+        } else {
+          const jsonData = results.map(result => ({
+            fecha: result.createdAt.toLocaleDateString('es-CO'),
+            hora: result.createdAt.toLocaleTimeString('es-CO'),
+            telefono: formatPhoneNumber(result.phone),
+            usuario: result.userName,
+            agente: result.agentName,
+            plataforma: result.platform.charAt(0).toUpperCase() + result.platform.slice(1),
+            tipo: result.type === 'user' ? 'Usuario' : 'IA',
+            contenido: result.content,
+            busqueda: result.matchedText,
+            timestamp: result.timestamp,
+            sessionName: result.sessionName
+          }));
+          
+          const blob = new Blob([JSON.stringify(jsonData, null, 2)], { type: 'application/json' });
+          const link = document.createElement('a');
+          link.href = URL.createObjectURL(blob);
+          link.download = `busqueda_contenido_${new Date().toISOString().split('T')[0]}.json`;
+          link.click();
+        }
       },
 
       // Operaciones asíncronas

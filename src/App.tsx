@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
 import Conversations from "./pages/Conversations";
+import DataExtraction from "./pages/DataExtraction";
 import Settings from "./pages/Settings";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
@@ -66,13 +67,11 @@ const App = () => {
               }
             />
             <Route
-              path="/executions"
+              path="/data-extraction"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <div className="p-8 text-center text-muted-foreground">
-                      Ejecuciones - Próximamente
-                    </div>
+                    <DataExtraction />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

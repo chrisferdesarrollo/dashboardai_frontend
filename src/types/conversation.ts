@@ -18,6 +18,21 @@ export interface Message {
   };
 }
 
+// Resultado de búsqueda de contenido en conversaciones
+export interface ContentSearchResult {
+  id: string;
+  sessionName: string;
+  content: string;
+  type: 'user' | 'ai';
+  phone: string;
+  userName: string;
+  agentName: string;
+  platform: 'whatsapp' | 'telegram';
+  timestamp: Date;
+  createdAt: Date;
+  matchedText: string; // Texto que coincidió con la búsqueda
+}
+
 export interface Contact {
   id: string;
   name?: string;

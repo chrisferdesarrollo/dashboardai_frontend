@@ -13,7 +13,8 @@ import {
   LogOut,
   Bell,
   HelpCircle,
-  MessageSquare
+  MessageSquare,
+  FileSpreadsheet
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
@@ -33,7 +34,7 @@ const navigation = [
     name: 'Automatización',
     items: [
       { name: 'Conversaciones', href: '/conversations', icon: MessageSquare },
-      { name: 'Ejecuciones', href: '/executions', icon: Activity },
+      { name: 'Extracción de Datos', href: '/data-extraction', icon: FileSpreadsheet },
     ]
   },
   {
