@@ -10,26 +10,42 @@ import {
   Clock,
   TrendingUp,
   AlertTriangle,
-  Play
+  Play,
+  MessageSquare
 } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
+import { useConversationStore } from '@/store/conversationStore';
 import { Agent } from '@/types/agent';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 
 export default function Dashboard() {
   const { agents, fetchAgents, loading } = useAgentStore();
+  const { conversations, fetchConversations, getConversationStats } = useConversationStore();
 
   useEffect(() => {
     fetchAgents();
-  }, [fetchAgents]);
+    fetchConversations();
+  }, [fetchAgents, fetchConversations]);
 
   // Cálculos para las métricas
   const totalAgents = agents.length;
   const activeAgents = agents.filter(a => a.status === 'active').length;
   const inactiveAgents = agents.filter(a => a.status === 'inactive').length;
   const errorAgents = agents.filter(a => a.status === 'error').length;
-  const totalExecutions = agents.reduce((sum, agent) => sum + agent.totalExecutions, 0);
+  
+  // Estadísticas de conversaciones
+  // Función para contar conversaciones de un agente específico
+  const getAgentConversationsCount = (agent: Agent) => {
+    return conversations.filter(conv => 
+      conv.agentName === agent.name || 
+      conv.agentId === agent.id ||
+      conv.agentName.toLowerCase().includes(agent.name.toLowerCase())
+    ).length;
+  };
+
+  const conversationStats = getConversationStats();
+  const totalConversations = conversations.length;
 
   // Agentes recientes (últimos 5)
   const recentAgents = agents
@@ -77,13 +93,13 @@ export default function Dashboard() {
 
         <Card className="border-border/50">
           <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-            <CardTitle className="text-sm font-medium">Ejecuciones</CardTitle>
-            <Activity className="h-4 w-4 text-muted-foreground" />
+            <CardTitle className="text-sm font-medium">Conversaciones</CardTitle>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">{totalExecutions}</div>
+            <div className="text-2xl font-bold">{totalConversations}</div>
             <p className="text-xs text-muted-foreground">
-              Total de ejecuciones
+              {conversationStats.active} activas, {conversationStats.resolved} resueltas
             </p>
           </CardContent>
         </Card>
@@ -209,7 +225,7 @@ export default function Dashboard() {
                       <div className="flex-1 min-w-0">
                         <p className="text-sm font-medium truncate">{agent.name}</p>
                         <div className="flex items-center space-x-2 text-xs text-muted-foreground">
-                          <span>{agent.totalExecutions} ejecuciones</span>
+                          <span>{getAgentConversationsCount(agent)} conversaciones</span>
                           {agent.lastExecution && (
                             <>
                               <span>•</span>

@@ -12,10 +12,12 @@ import {
   Activity,
   FileText,
   Copy,
-  Check
+  Check,
+  MessageSquare
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
+import { useConversationStore } from '@/store/conversationStore';
 
 interface AgentDetailModalProps {
   isOpen: boolean;
@@ -52,6 +54,19 @@ const platformConfig = {
 export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalProps) {
   const { toast } = useToast();
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  
+  // Obtener conversaciones del store
+  const { conversations } = useConversationStore();
+  
+  // Función para contar conversaciones del agente
+  const getAgentConversationsCount = () => {
+    if (!agent) return 0;
+    return conversations.filter(conv => 
+      conv.agentName === agent.name || 
+      conv.agentId === agent.id ||
+      conv.agentName.toLowerCase().includes(agent.name.toLowerCase())
+    ).length;
+  };
 
   // Debug: Log agent data
   console.log('🔍 [AgentDetailModal] Agent data:', agent);
@@ -136,10 +151,10 @@ export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalPro
                 <div className="space-y-3">
                   <div className="flex items-center justify-between p-3 bg-muted/50 rounded-lg">
                     <div className="flex items-center space-x-2">
-                      <Activity className="h-4 w-4 text-primary" />
-                      <span className="text-sm">Ejecuciones totales</span>
+                      <MessageSquare className="h-4 w-4 text-primary" />
+                      <span className="text-sm">Conversaciones totales</span>
                     </div>
-                    <span className="font-semibold">{agent.totalExecutions || 0}</span>
+                    <span className="font-semibold">{getAgentConversationsCount()}</span>
                   </div>
 
                   {agent.lastExecution && (

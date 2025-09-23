@@ -8,7 +8,8 @@ import {
   Activity,
   Wifi,
   WifiOff,
-  Loader2
+  Loader2,
+  MessageSquare
 } from 'lucide-react';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
@@ -19,6 +20,7 @@ import { agentService } from '@/services/agentApi';
 import { useState, useCallback } from 'react';
 import { toast } from '@/hooks/use-toast';
 import { WhatsAppConnectionModal } from './WhatsAppConnectionModal';
+import { useConversationStore } from '@/store/conversationStore';
 
 interface AgentCardProps {
   agent: Agent;
@@ -84,6 +86,18 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  
+  // Obtener conversaciones del store
+  const { conversations } = useConversationStore();
+  
+  // Función para contar conversaciones del agente
+  const getAgentConversationsCount = () => {
+    return conversations.filter(conv => 
+      conv.agentName === agent.name || 
+      conv.agentId === agent.id ||
+      conv.agentName.toLowerCase().includes(agent.name.toLowerCase())
+    ).length;
+  };
   
   const statusInfo = getStatusConfig(agent.status);
   const platformInfo = getPlatformConfig(agent.platform);
@@ -311,9 +325,9 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
         {/* Estadísticas */}
         <div className="grid grid-cols-2 gap-4 text-sm">
           <div className="flex items-center space-x-2">
-            <Activity className="h-4 w-4 text-muted-foreground" />
-            <span className="text-muted-foreground">Ejecuciones:</span>
-            <span className="font-medium">{agent.totalExecutions}</span>
+            <MessageSquare className="h-4 w-4 text-muted-foreground" />
+            <span className="text-muted-foreground">Conversaciones:</span>
+            <span className="font-medium">{getAgentConversationsCount()}</span>
           </div>
           
           {agent.lastExecution && (
