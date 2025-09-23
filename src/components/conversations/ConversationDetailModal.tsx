@@ -28,7 +28,7 @@ import { useConversationStore } from '@/store/conversationStore';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow, format } from 'date-fns';
 import { es } from 'date-fns/locale';
-import { cn } from '@/lib/utils';
+import { cn, formatColombianPhoneNumber } from '@/lib/utils';
 
 interface ConversationDetailModalProps {
   isOpen: boolean;
@@ -162,17 +162,12 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="relative">
-                <Avatar className="h-12 w-12">
-                  <AvatarImage src={conversation.contact.avatar} />
-                  <AvatarFallback className="bg-primary/10">
-                    {conversation.contact.name ? getInitials(conversation.contact.name) : 'U'}
-                  </AvatarFallback>
-                </Avatar>
-                {PlatformIcon && (
-                  <div className="absolute -bottom-1 -right-1">
-                    <PlatformIcon className={`h-5 w-5 ${platformInfo?.className}`} />
-                  </div>
-                )}
+                {/* Solo mostrar el icono de la plataforma, sin avatar */}
+                <div className="h-12 w-12 rounded-full bg-muted/20 flex items-center justify-center">
+                  {PlatformIcon && (
+                    <PlatformIcon className={`h-8 w-8 ${platformInfo?.className}`} />
+                  )}
+                </div>
               </div>
 
               <div>
@@ -261,112 +256,114 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-80 border-l bg-muted/20">
-            <div className="p-4 space-y-6">
-              {/* Actions */}
-              <div>
-                <h3 className="text-sm font-medium mb-3">Acciones</h3>
-                <div className="space-y-2">
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => handleStatusChange('resolved')}
-                    disabled={conversation.status === 'resolved'}
-                  >
-                    <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Marcar como resuelta
-                  </Button>
-                  <Button
-                    variant="outline"
-                    size="sm"
-                    className="w-full justify-start"
-                    onClick={() => handleStatusChange('transferred')}
-                    disabled={conversation.status === 'transferred'}
-                  >
-                    <ArrowUpRight className="mr-2 h-4 w-4" />
-                    Transferir a humano
-                  </Button>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Stats */}
-              <div>
-                <h3 className="text-sm font-medium mb-3">Estadísticas</h3>
-                <div className="space-y-2 text-sm">
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Total mensajes:</span>
-                    <span>{conversation.totalMessages}</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Tiempo de respuesta:</span>
-                    <span>{Math.round((conversation.averageResponseTime || 0) / 60)}min</span>
-                  </div>
-                  <div className="flex justify-between">
-                    <span className="text-muted-foreground">Creada:</span>
-                    <span>{format(conversation.createdAt, 'dd/MM/yyyy')}</span>
-                  </div>
-                </div>
-              </div>
-
-              <Separator />
-
-              {/* Tags */}
-              <div>
-                <h3 className="text-sm font-medium mb-3">Etiquetas</h3>
-                <div className="space-y-2">
-                  {conversation.tags.length > 0 && (
-                    <div className="flex flex-wrap gap-1 mb-2">
-                      {conversation.tags.map((tag) => (
-                        <Badge key={tag} variant="outline" className="text-xs">
-                          <Tag className="h-2 w-2 mr-1" />
-                          {tag}
-                        </Badge>
-                      ))}
-                    </div>
-                  )}
-                  
-                  <div className="flex space-x-2">
-                    <Input
-                      placeholder="Nueva etiqueta"
-                      value={newTag}
-                      onChange={(e) => setNewTag(e.target.value)}
-                      onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
-                      className="text-xs"
-                    />
-                    <Button size="sm" variant="outline" onClick={handleAddTag}>
-                      <Plus className="h-3 w-3" />
+          <div className="w-80 border-l bg-muted/20 flex flex-col">
+            <ScrollArea className="flex-1">
+              <div className="p-4 space-y-6">
+                {/* Actions */}
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Acciones</h3>
+                  <div className="space-y-2">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => handleStatusChange('resolved')}
+                      disabled={conversation.status === 'resolved'}
+                    >
+                      <CheckCircle2 className="mr-2 h-4 w-4" />
+                      Marcar como resuelta
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="w-full justify-start"
+                      onClick={() => handleStatusChange('transferred')}
+                      disabled={conversation.status === 'transferred'}
+                    >
+                      <ArrowUpRight className="mr-2 h-4 w-4" />
+                      Transferir a humano
                     </Button>
                   </div>
                 </div>
-              </div>
 
-              {/* Contact Info */}
-              <Separator />
-              <div>
-                <h3 className="text-sm font-medium mb-3">Información de contacto</h3>
-                <div className="space-y-2 text-sm">
-                  <div>
-                    <span className="text-muted-foreground">Nombre:</span>
-                    <p>{conversation.contact.name || 'No especificado'}</p>
+                <Separator />
+
+                {/* Stats */}
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Estadísticas</h3>
+                  <div className="space-y-2 text-sm">
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Total mensajes:</span>
+                      <span>{conversation.totalMessages}</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Tiempo de respuesta:</span>
+                      <span>{Math.round((conversation.averageResponseTime || 0) / 60)}min</span>
+                    </div>
+                    <div className="flex justify-between">
+                      <span className="text-muted-foreground">Creada:</span>
+                      <span>{format(conversation.createdAt, 'dd/MM/yyyy')}</span>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Teléfono:</span>
-                    <p>{conversation.contact.phone}</p>
+                </div>
+
+                <Separator />
+
+                {/* Tags */}
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Etiquetas</h3>
+                  <div className="space-y-2">
+                    {conversation.tags.length > 0 && (
+                      <div className="flex flex-wrap gap-1 mb-2">
+                        {conversation.tags.map((tag) => (
+                          <Badge key={tag} variant="outline" className="text-xs">
+                            <Tag className="h-2 w-2 mr-1" />
+                            {tag}
+                          </Badge>
+                        ))}
+                      </div>
+                    )}
+                    
+                    <div className="flex space-x-2">
+                      <Input
+                        placeholder="Nueva etiqueta"
+                        value={newTag}
+                        onChange={(e) => setNewTag(e.target.value)}
+                        onKeyPress={(e) => e.key === 'Enter' && handleAddTag()}
+                        className="text-xs"
+                      />
+                      <Button size="sm" variant="outline" onClick={handleAddTag}>
+                        <Plus className="h-3 w-3" />
+                      </Button>
+                    </div>
                   </div>
-                  <div>
-                    <span className="text-muted-foreground">Plataforma:</span>
-                    <p>{platformInfo?.label}</p>
-                  </div>
-                  <div>
-                    <span className="text-muted-foreground">Primera interacción:</span>
-                    <p>{format(conversation.contact.createdAt, "dd 'de' MMMM, yyyy", { locale: es })}</p>
+                </div>
+
+                {/* Contact Info */}
+                <Separator />
+                <div>
+                  <h3 className="text-sm font-medium mb-3">Información de contacto</h3>
+                  <div className="space-y-2 text-sm">
+                    <div>
+                      <span className="text-muted-foreground">Nombre:</span>
+                      <p>{conversation.contact.name || 'No especificado'}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Teléfono:</span>
+                      <p>{formatColombianPhoneNumber(conversation.contact.phone)}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Plataforma:</span>
+                      <p>{platformInfo?.label}</p>
+                    </div>
+                    <div>
+                      <span className="text-muted-foreground">Primera interacción:</span>
+                      <p>{format(conversation.contact.createdAt, "dd 'de' MMMM, yyyy", { locale: es })}</p>
+                    </div>
                   </div>
                 </div>
               </div>
-            </div>
+            </ScrollArea>
           </div>
         </div>
       </DialogContent>

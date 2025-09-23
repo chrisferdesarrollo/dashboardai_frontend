@@ -2,6 +2,91 @@ import { create } from 'zustand';
 import { devtools } from 'zustand/middleware';
 import { Conversation, ConversationStats, ConversationFilter, Message } from '@/types/conversation';
 import conversationApi, { ConversationLogResponse, ConversationSessionSummary } from '@/services/conversationApi';
+import agentApi from '@/services/agentApi';
+import { useAuthStore } from '@/store/authStore';
+
+// Cache para nombres de agentes para evitar múltiples llamadas
+const agentNameCache = new Map<string, string>();
+
+// Función para obtener el nombre del agente desde el backend
+const getAgentNameFromSession = async (sessionName: string): Promise<string> => {
+  console.log('🔍 [NUEVO] Buscando agente para sessionName:', sessionName);
+  
+  // Limpiar cache para forzar nueva búsqueda
+  agentNameCache.delete(sessionName);
+  
+  // Si ya tenemos el nombre en cache, devolverlo
+  if (agentNameCache.has(sessionName)) {
+    console.log('� [NUEVO] Nombre en cache:', agentNameCache.get(sessionName));
+    return agentNameCache.get(sessionName)!;
+  }
+
+  try {
+    console.log('� [NUEVO] Iniciando búsqueda de agentes...');
+    
+    // Obtener agentes del usuario actual
+    const authStore = useAuthStore.getState?.() || { user: null };
+    const currentUser = authStore.user;
+    
+    if (!currentUser?.id) {
+      console.warn('⚠️ [NUEVO] No hay usuario autenticado');
+      const fallbackName = sessionName.includes('agent_') ? 'WhatsApp Agent' : 'Telegram Bot';
+      agentNameCache.set(sessionName, fallbackName);
+      return fallbackName;
+    }
+    
+    console.log('👤 [NUEVO] Usuario autenticado:', currentUser.id);
+    const agentsResponse = await agentApi.getAgentsByUser(currentUser.id);
+    console.log('📊 [NUEVO] Respuesta de agentes:', agentsResponse);
+    
+    // El backend puede devolver agentes en 'data' o 'agents'
+    const agentsArray = agentsResponse.data || agentsResponse.agents;
+    console.log('📋 [NUEVO] Array de agentes extraído:', agentsArray);
+    
+    if (agentsResponse.success && agentsArray && agentsArray.length > 0) {
+      const firstAgent = agentsArray[0];
+      agentNameCache.set(sessionName, firstAgent.name);
+      return firstAgent.name;
+    }
+  } catch (error) {
+    console.warn('Error obteniendo nombre del agente:', error);
+  }
+  
+  // Fallback final
+  const fallbackName = sessionName.includes('agent_') ? 'WhatsApp Agent' : 'Telegram Bot';
+  agentNameCache.set(sessionName, fallbackName);
+  return fallbackName;
+};
+
+// Función síncrona que devuelve nombre por defecto y actualiza asíncronamente
+const getAgentNameFromSessionSync = (sessionName: string, forceRefresh?: () => void): string => {
+  // Si tenemos el nombre en cache, devolverlo
+  if (agentNameCache.has(sessionName)) {
+    return agentNameCache.get(sessionName)!;
+  }
+  
+  // Obtener nombre asíncronamente en background
+  getAgentNameFromSession(sessionName)
+    .then((resolvedName) => {
+      // Si se resolvió un nombre diferente al fallback, forzar refresco
+      if (forceRefresh && resolvedName !== `Agente ${sessionName.replace('agent_', '').slice(-4)}` && resolvedName !== 'Bot Telegram') {
+        forceRefresh();
+      }
+    })
+    .catch((error) => {
+      console.error('Error resolviendo nombre asíncronamente:', error);
+    });
+  
+  // Devolver nombre temporal mientras se resuelve
+  if (sessionName.startsWith('agent_')) {
+    const agentId = sessionName.replace('agent_', '');
+    return `Agente ${agentId.slice(-4)}`;
+  } else if (sessionName.startsWith('bot_')) {
+    return 'Bot Telegram';
+  }
+  
+  return 'Agente IA';
+};
 
 // Helper function para transformar logs de backend a conversaciones del frontend
 const transformLogsToConversations = (sessionSummaries: ConversationSessionSummary[], allLogs: ConversationLogResponse[]): Conversation[] => {
@@ -35,16 +120,9 @@ const transformLogsToConversations = (sessionSummaries: ConversationSessionSumma
     // Detectar plataforma con lógica mejorada
     let platform: 'whatsapp' | 'telegram' = 'whatsapp'; // Default más común
     
-    // DEBUG: Agregar logs para debuggear
-    console.log('🔍 DEBUG Platform Detection for session:', summary.sessionName);
-    console.log('📱 lastLog?.platform:', lastLog?.platform);
-    console.log('📞 lastLog?.userPhone:', lastLog?.userPhone);
-    console.log('💬 lastLog?.sessionName:', lastLog?.sessionName);
-    
     // 1. Si backend platform es válido y no es 'unknown', usarlo
     if (lastLog?.platform && lastLog.platform !== 'unknown' && lastLog.platform !== 'UNKNOWN') {
       platform = lastLog.platform as 'whatsapp' | 'telegram';
-      console.log('✅ Using backend platform:', platform);
     } 
     // 2. Detectar por patrón de sessionName (más confiable)
     else if (lastLog?.sessionName) {
@@ -54,28 +132,22 @@ const transformLogsToConversations = (sessionSummaries: ConversationSessionSumma
           sessionLower.includes('whatsapp') || 
           sessionLower.includes('wa_')) {
         platform = 'whatsapp';
-        console.log('✅ Detected WhatsApp by session pattern');
       } else if (sessionLower.startsWith('bot_') || 
                  sessionLower.startsWith('token_') ||
                  sessionLower.includes('telegram') || 
                  sessionLower.includes('tg_')) {
         platform = 'telegram';
-        console.log('✅ Detected Telegram by session pattern');
       }
     }
     // 3. Detectar por formato de teléfono
     else if (lastLog?.userPhone?.includes('@c.us')) {
       platform = 'whatsapp';
-      console.log('✅ Detected WhatsApp by phone format');
     }
-    
-    console.log('🎯 Final platform decision:', platform);
-    console.log('-------------------');
     
     return {
       id: conversationId,
       agentId: 'agent-1', // TODO: obtener del sessionName o mapear desde agentes
-      agentName: 'Bot IA', // TODO: obtener nombre real del agente
+      agentName: 'Cargando...', // Temporal mientras se resuelve
       contact: {
         id: `contact-${summary.sessionName}`,
         name: lastLog?.userName || 'Usuario anónimo',
@@ -193,6 +265,32 @@ export const useConversationStore = create<ConversationState>()(
           const conversations = transformLogsToConversations(sessionSummaries, allLogs);
           
           set({ conversations, loading: false });
+          
+          // Resolver nombres de agentes asíncronamente
+          try {
+            const conversationsWithNames = await Promise.all(
+              conversations.map(async (conv) => {
+                try {
+                  // Extraer sessionName del ID de conversación
+                  const sessionNameMatch = conv.id.match(/conv-(.+?)-\d+$/);
+                  const sessionName = sessionNameMatch ? sessionNameMatch[1] : '';
+                  
+                  if (sessionName) {
+                    const agentName = await getAgentNameFromSession(sessionName);
+                    return { ...conv, agentName };
+                  }
+                  return conv;
+                } catch (error) {
+                  console.error('Error resolviendo nombre para conversación:', conv.id, error);
+                  return conv;
+                }
+              })
+            );
+            
+            set({ conversations: conversationsWithNames });
+          } catch (error) {
+            console.error('Error resolviendo nombres de agentes:', error);
+          }
         } catch (error) {
           console.error('Error fetching conversations:', error);
           
