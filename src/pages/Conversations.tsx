@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, MoreVertical, MessageSquare, Users, CheckCircle2, Clock, ArrowUpRight, Phone, Tag, UserCheck } from 'lucide-react';
+import { Search, Filter, MoreVertical, MessageSquare, Users, CheckCircle2, Clock, ArrowUpRight, Phone, Tag, UserCheck, RefreshCw } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -224,6 +224,7 @@ export default function Conversations() {
     setFilters,
     loading,
     fetchConversations,
+    refreshConversations,
     error,
   } = useConversationStore();
 
@@ -283,6 +284,17 @@ export default function Conversations() {
           <p className="text-muted-foreground">
             Gestiona las conversaciones de tus agentes de IA
           </p>
+        </div>
+        
+        <div className="flex items-center space-x-2">
+          <Button
+            variant="outline"
+            size="icon"
+            onClick={refreshConversations}
+            disabled={loading}
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
       </div>
 

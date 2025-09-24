@@ -21,7 +21,8 @@ import {
   Download,
   Image as ImageIcon,
   FileText,
-  MapPin
+  MapPin,
+  RefreshCw
 } from 'lucide-react';
 import { Conversation, Message } from '@/types/conversation';
 import { useConversationStore } from '@/store/conversationStore';
@@ -107,6 +108,7 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
   const [newMessage, setNewMessage] = useState('');
   const [newTag, setNewTag] = useState('');
   const [isSending, setIsSending] = useState(false);
+  const [isRefreshing, setIsRefreshing] = useState(false);
 
   const conversationMessages = conversation ? messages[conversation.id] || [] : [];
   const platformInfo = conversation ? platformConfig[conversation.platform] : null;
@@ -143,6 +145,19 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
 
   const handleStatusChange = async (status: Conversation['status']) => {
     await updateConversationStatus(conversation.id, status);
+  };
+
+  const handleRefreshMessages = async () => {
+    if (!conversation || isRefreshing) return;
+    
+    setIsRefreshing(true);
+    try {
+      await fetchMessages(conversation.id);
+    } catch (error) {
+      console.error('Error refreshing messages:', error);
+    } finally {
+      setIsRefreshing(false);
+    }
   };
 
   const getInitials = (name: string) => {
@@ -197,6 +212,16 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
             </div>
 
             <div className="flex items-center space-x-2">
+              <Button
+                variant="outline"
+                size="icon"
+                onClick={handleRefreshMessages}
+                disabled={isRefreshing}
+                title="Actualizar mensajes"
+              >
+                <RefreshCw className={`h-4 w-4 ${isRefreshing ? 'animate-spin' : ''}`} />
+              </Button>
+
               <Badge 
                 variant={conversation.status === 'active' ? 'default' : 'outline'}
                 className={conversation.status === 'active' ? 'bg-green-500' : ''}

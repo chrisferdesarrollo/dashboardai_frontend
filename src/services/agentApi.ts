@@ -435,6 +435,44 @@ export const agentService = {
       throw error;
     }
   },
+
+  /**
+   * Obtener agente por name y plataforma (intenta endpoint específico y si no existe, filtra localmente)
+   */
+  async getAgentByNameAndPlatform(name: string, platform: 'whatsapp' | 'telegram', userId?: number): Promise<AgentResponse | null> {
+    try {
+      const agentApi = await getApiClient();
+      // Intentar un endpoint de búsqueda en el backend
+      try {
+        const url = `/agents/search?name=${encodeURIComponent(name)}&platform=${encodeURIComponent(platform)}`;
+        const response = await agentApi.get(url);
+        if (response.data && response.data.success && response.data.data) {
+          // Si backend devuelve un único agente en data
+          const agentData = Array.isArray(response.data.data) ? response.data.data[0] : response.data.data;
+          return agentData || null;
+        }
+      } catch (err) {
+        // Si falla, lo ignoramos y caemos al fallback de filtrar localmente
+        console.debug('No hay endpoint search disponible o falló. Fallback a getAgentsByUser.', err);
+      }
+
+      // Fallback: obtener todos los agentes del usuario (si userId provisto), o todos los agentes y filtrar
+      if (typeof userId === 'number') {
+        const agentsResp = await this.getAgentsByUser(userId);
+        const agentsArray = agentsResp.data || agentsResp.agents || [];
+        const matched = (agentsArray as AgentResponse[]).find(a => a.name === name && a.platform === platform);
+        return matched || null;
+      } else {
+        const allResp = await this.getAgents();
+        const agentsArray = allResp.data || allResp.agents || [];
+        const matched = (agentsArray as AgentResponse[]).find(a => a.name === name && a.platform === platform);
+        return matched || null;
+      }
+    } catch (error) {
+      console.error('Error en getAgentByNameAndPlatform:', error);
+      return null;
+    }
+  },
 };
 
 /**
