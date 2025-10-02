@@ -32,6 +32,7 @@ import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ConversationDetailModal } from '@/components/conversations/ConversationDetailModal';
+import { formatColombianPhoneNumber } from '@/lib/utils';
 
 const statusConfig = {
   active: {
@@ -93,16 +94,8 @@ function ConversationCard({ conversation, onSelect }: { conversation: Conversati
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className="relative">
-              <Avatar className="h-10 w-10">
-                <AvatarImage src={conversation.contact.avatar} />
-                <AvatarFallback className="bg-primary/10">
-                  {/* Initials removed as requested */}
-                </AvatarFallback>
-              </Avatar>
-              <div className="absolute -bottom-1 -right-1">
-                <PlatformIcon className={`h-4 w-4 ${platformInfo.className}`} />
-              </div>
+            <div className="flex-shrink-0">
+              <PlatformIcon size={20} className={platformInfo.className} />
             </div>
             
             <div className="flex-1 min-w-0">
@@ -118,9 +111,7 @@ function ConversationCard({ conversation, onSelect }: { conversation: Conversati
               </div>
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <Phone className="h-3 w-3" />
-                <span>{conversation.contact.phone}</span>
-                <span>•</span>
-                <span>{conversation.agentName}</span>
+                <span>{formatColombianPhoneNumber(conversation.contact.phone?.replace(/@s\.whatsapp\.net$/, ''))}</span>
               </div>
             </div>
           </div>
@@ -293,7 +284,7 @@ export default function Conversations() {
             onClick={refreshConversations}
             disabled={loading}
           >
-            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+            <RefreshCw className={`h-3 w-3 ${loading ? 'animate-spin' : ''}`} />
           </Button>
         </div>
       </div>

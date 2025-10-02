@@ -171,9 +171,9 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
 
   return (
     <Dialog open={isOpen} onOpenChange={onClose}>
-      <DialogContent className="max-w-4xl max-h-[90vh] p-0">
+      <DialogContent className="max-w-4xl max-h-[80vh] p-0 flex flex-col">
         {/* Header */}
-        <DialogHeader className="p-6 pb-4">
+        <DialogHeader className="p-6 pb-4 flex-shrink-0">
           <div className="flex items-center justify-between">
             <div className="flex items-center space-x-4">
               <div className="relative">
@@ -241,11 +241,11 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
           </div>
         </DialogHeader>
 
-        <div className="flex flex-1 h-[600px]">
+        <div className="flex flex-1 overflow-hidden">
           {/* Chat Area */}
-          <div className="flex-1 flex flex-col">
+          <div className="flex-1 flex flex-col overflow-hidden">
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4">
+            <ScrollArea className="flex-1 p-4 overflow-hidden">
               <div className="space-y-2">
                 {conversationMessages.length > 0 ? (
                   conversationMessages.map((message) => (
@@ -261,7 +261,7 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
             </ScrollArea>
 
             {/* Message Input */}
-            <div className="border-t p-4">
+            <div className="border-t p-4 flex-shrink-0">
               <div className="flex space-x-2">
                 <Input
                   placeholder="Escribe un mensaje..."
@@ -281,8 +281,8 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
           </div>
 
           {/* Right Sidebar */}
-          <div className="w-80 border-l bg-muted/20 flex flex-col">
-            <ScrollArea className="flex-1">
+          <div className="w-80 border-l bg-muted/20 flex flex-col overflow-hidden">
+            <ScrollArea className="flex-1 overflow-hidden">
               <div className="p-4 space-y-6">
                 {/* Actions */}
                 <div>

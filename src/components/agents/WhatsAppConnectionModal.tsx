@@ -278,8 +278,8 @@ export function WhatsAppConnectionModal({
                           className="w-48 h-48 border rounded-lg"
                         />
                         {connectionChecking && (
-                          <div className="absolute inset-0 bg-background/80 flex items-center justify-center rounded-lg">
-                            <Loader2 className="h-6 w-6 animate-spin text-primary" />
+                          <div className="absolute bottom-2 right-2 bg-primary rounded-full p-1">
+                            <Loader2 className="h-4 w-4 animate-spin text-primary-foreground" />
                           </div>
                         )}
                       </div>
