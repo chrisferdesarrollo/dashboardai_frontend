@@ -146,36 +146,40 @@ const transformLogsToConversations = (sessionSummaries: ConversationSessionSumma
     const conversationId = `conv-${summary.sessionName}-${index}`;
     
     // Detectar plataforma con lógica mejorada
-    let platform: 'whatsapp' | 'telegram' = 'whatsapp'; // Default más común
+    let platform: 'whatsapp' | 'telegram' = summary.platform as 'whatsapp' | 'telegram' || 'whatsapp';
     
-    // 1. Si backend platform es válido y no es 'unknown', usarlo
-    if (lastLog?.platform && lastLog.platform !== 'unknown' && lastLog.platform !== 'UNKNOWN') {
-      platform = lastLog.platform as 'whatsapp' | 'telegram';
-    } 
-    // 2. Detectar por patrón de sessionName (más confiable)
-    else if (lastLog?.sessionName) {
-      const sessionLower = lastLog.sessionName.toLowerCase();
-      
-      if (sessionLower.startsWith('agent_') || 
-          sessionLower.includes('whatsapp') || 
-          sessionLower.includes('wa_')) {
-        platform = 'whatsapp';
-      } else if (sessionLower.startsWith('bot_') || 
-                 sessionLower.startsWith('token_') ||
-                 sessionLower.includes('telegram') || 
-                 sessionLower.includes('tg_')) {
-        platform = 'telegram';
+    // Fallback para casos donde la plataforma viene como string no válido
+    if (platform !== 'whatsapp' && platform !== 'telegram') {
+      // 1. Si backend platform es válido y no es 'unknown', usarlo
+      if (lastLog?.platform && lastLog.platform !== 'unknown' && lastLog.platform !== 'UNKNOWN') {
+        platform = lastLog.platform as 'whatsapp' | 'telegram';
+      } 
+      // 2. Detectar por patrón de sessionName (más confiable)
+      else if (lastLog?.sessionName) {
+        const sessionLower = lastLog.sessionName.toLowerCase();
+        
+        if (sessionLower.startsWith('agent_') || 
+            sessionLower.includes('whatsapp') || 
+            sessionLower.includes('wa_')) {
+          platform = 'whatsapp';
+        } else if (sessionLower.startsWith('bot_') || 
+                   sessionLower.startsWith('token_') ||
+                   sessionLower.startsWith('telegram_agent_') ||
+                   sessionLower.includes('telegram') || 
+                   sessionLower.includes('tg_')) {
+          platform = 'telegram';
+        }
       }
-    }
-    // 3. Detectar por formato de teléfono
-    else if (lastLog?.userPhone?.includes('@c.us')) {
-      platform = 'whatsapp';
+      // 3. Detectar por formato de teléfono
+      else if (lastLog?.userPhone?.includes('@c.us')) {
+        platform = 'whatsapp';
+      }
     }
     
     return {
       id: conversationId,
       agentId: 'agent-1', // TODO: obtener del sessionName o mapear desde agentes
-      agentName: 'Cargando...', // Temporal mientras se resuelve
+      agentName: summary.agentName || 'Agente sin nombre', // Usar el nombre del agente del backend
       contact: {
         id: `contact-${summary.sessionName}`,
         name: lastLog?.userName || 'Usuario anónimo',

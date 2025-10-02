@@ -88,13 +88,13 @@ function ConversationCard({ conversation, onSelect }: { conversation: Conversati
 
   return (
     <Card 
-      className="hover:shadow-md transition-all duration-200 cursor-pointer border-l-4 border-l-transparent hover:border-l-primary"
+      className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent border hover:border-primary/20"
       onClick={() => onSelect(conversation)}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="flex items-center space-x-3">
-            <div className="flex-shrink-0">
+            <div className="flex-shrink-0 transition-transform duration-300 group-hover:scale-110">
               <PlatformIcon size={20} className={platformInfo.className} />
             </div>
             
@@ -112,6 +112,8 @@ function ConversationCard({ conversation, onSelect }: { conversation: Conversati
               <div className="flex items-center space-x-2 text-xs text-muted-foreground">
                 <Phone className="h-3 w-3" />
                 <span>{formatColombianPhoneNumber(conversation.contact.phone?.replace(/@s\.whatsapp\.net$/, ''))}</span>
+                <span>•</span>
+                <span>{conversation.agentName}</span>
               </div>
             </div>
           </div>

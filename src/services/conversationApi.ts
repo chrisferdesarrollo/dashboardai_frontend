@@ -61,6 +61,8 @@ export interface ConversationSessionSummary {
   messageCount: number;
   startTime: string;
   lastActivity: string;
+  agentName: string;
+  platform: string;
 }
 
 // Wrapper types para las respuestas del backend
@@ -176,10 +178,10 @@ export const conversationApi = {
   /**
    * Obtener estadísticas de conversaciones por sesión
    */
-  async getConversationSessionsStats(): Promise<any[]> {
+  async getConversationSessionsStats(): Promise<ConversationSessionSummary[]> {
     try {
       const client = await getApiClient();
-      const response = await client.get<ApiResponse<any[]>>('/conversation-logs/sessions/stats');
+      const response = await client.get<ApiResponse<ConversationSessionSummary[]>>('/conversation-logs/sessions/stats');
       
       if (response.data.success) {
         return response.data.data;
@@ -256,13 +258,8 @@ export const conversationApi = {
     try {
       const statsData = await this.getConversationSessionsStats();
       
-      // Transformar los datos del backend en el formato esperado
-      return statsData.map((stat: any[]) => ({
-        sessionName: stat[0] as string,
-        messageCount: stat[1] as number,
-        startTime: stat[2] as string,
-        lastActivity: stat[3] as string,
-      }));
+      // Ya no necesitamos transformar los datos porque vienen en el formato correcto del backend
+      return statsData;
     } catch (error) {
       console.error('Error getting conversations grouped by session:', error);
       throw error;

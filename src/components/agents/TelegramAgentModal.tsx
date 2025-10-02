@@ -131,6 +131,9 @@ export function TelegramAgentModal({
       const botId = botValidation.botInfo?.id?.toString() || Date.now().toString();
       const botName = botValidation.botInfo?.username || botValidation.botInfo?.first_name || `bot_${botId}`;
       
+      // Generar sessionName único para Telegram (similar a WhatsApp)
+      const sessionName = `telegram_agent_${Date.now()}`;
+      
       const platformConfig = {
         botToken: formData.botToken,
         botId: botId,
@@ -148,7 +151,7 @@ export function TelegramAgentModal({
         description: formData.description,
         platform: 'telegram' as const,
         prompt: formData.systemPrompt,
-        sessionName: botName, // Usar el nombre real del bot en lugar de bot_${botId}
+        sessionName: sessionName,
         workflowId: `telegram_${Date.now()}`,
         platformConfig: JSON.stringify(platformConfig),
       };

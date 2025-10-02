@@ -192,7 +192,7 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
                 <div className="flex items-center space-x-4 text-sm text-muted-foreground">
                   <div className="flex items-center space-x-1">
                     <Phone className="h-3 w-3" />
-                    <span>{conversation.contact.phone}</span>
+                    <span>{formatColombianPhoneNumber(conversation.contact.phone?.replace(/@s\.whatsapp\.net$/, ''))}</span>
                   </div>
                   <div className="flex items-center space-x-1">
                     <Bot className="h-3 w-3" />

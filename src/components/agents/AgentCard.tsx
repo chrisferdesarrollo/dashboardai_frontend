@@ -294,12 +294,14 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
   }, [agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
 
   return (
-    <Card className="group hover:shadow-soft transition-all duration-200 border-border/50 hover:border-primary/20">
+    <Card className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 hover:scale-[1.02] hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent border hover:border-primary/20">
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
           <div className="space-y-1 flex-1">
             <div className="flex items-center gap-2">
-              <PlatformIcon className={platformInfo.className} size={20} />
+              <div className="transition-transform duration-300 group-hover:scale-110">
+                <PlatformIcon className={platformInfo.className} size={20} />
+              </div>
               <CardTitle className="text-lg leading-none hover:text-primary cursor-pointer transition-colors"
                         onClick={() => onView(agent)}>
                 {agent.name}
