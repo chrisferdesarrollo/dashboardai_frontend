@@ -5,7 +5,7 @@ import {
   Settings, 
   Activity, 
   Users,
-  Database,
+  Brain,
   BarChart3,
   Zap,
   ChevronDown,
@@ -40,7 +40,7 @@ const navigation = [
   {
     name: 'Datos',
     items: [
-      { name: 'Base de Datos', href: '/database', icon: Database },
+      { name: 'Base de Conocimientos', href: '/knowledge-base', icon: Brain },
       { name: 'Analíticas', href: '/analytics', icon: BarChart3 },
     ]
   },

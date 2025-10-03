@@ -14,6 +14,7 @@ import Agents from "./pages/Agents";
 import Conversations from "./pages/Conversations";
 import DataExtraction from "./pages/DataExtraction";
 import Settings from "./pages/Settings";
+import KnowledgeBase from "./pages/KnowledgeBase";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -82,6 +83,16 @@ const App = () => {
                 <ProtectedRoute>
                   <DashboardLayout>
                     <Conversations />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/knowledge-base"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <KnowledgeBase />
                   </DashboardLayout>
                 </ProtectedRoute>
               }
