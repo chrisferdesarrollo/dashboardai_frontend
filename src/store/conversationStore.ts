@@ -521,6 +521,9 @@ export const useConversationStore = create<ConversationState>()(
 
           set({ conversations, loading: false });
 
+          // NOTA: Comentado temporalmente porque el backend ahora proporciona el agentName correcto
+          // Ya no necesitamos resolver nombres de agentes asíncronamente porque vienen del backend
+          /*
           // Resolver nombres de agentes asíncronamente
           try {
             const conversationsWithNames = await Promise.all(
@@ -586,6 +589,7 @@ export const useConversationStore = create<ConversationState>()(
           } catch (err) {
             console.error('Error resolviendo nombres de agentes:', err);
           }
+          */
 
         } catch (error) {
           console.error('Error cargando conversaciones:', error);
