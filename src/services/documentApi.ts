@@ -14,9 +14,7 @@ export interface DocumentResponse {
   id: string;
   name: string;
   description?: string;
-  originalFilename: string;
   fileType: string;
-  fileSize: number;
   tags?: string[];
   agentId?: string;
   uploadDate: string;
@@ -101,13 +99,12 @@ class DocumentApi {
   }
 
   /**
-   * Obtener todos los documentos con paginación
+   * Obtener todos los documentos (sin paginación)
    */
-  async getAllDocuments(page: number = 0, size: number = 20): Promise<PagedDocumentsResponse> {
+  async getAllDocuments(): Promise<DocumentResponse[]> {
     const response = await axios.get(
       `${API_BASE_URL}/documents`,
       {
-        params: { page, size },
         headers: this.getAuthHeaders(),
       }
     );

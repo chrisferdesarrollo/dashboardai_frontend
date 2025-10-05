@@ -2,9 +2,7 @@ export interface Document {
   id: string;
   name: string;
   description?: string;
-  originalFilename: string;
   fileType: string;
-  fileSize: number;
   tags?: string[];
   agentId?: string;
   uploadDate: string;
@@ -50,7 +48,7 @@ export const SUPPORTED_FILE_TYPES = [
 
 export const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv'];
 
-export const MAX_FILE_SIZE = 10 * 1024 * 1024; // 10MB
+export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
 
 export const PROCESSING_STATUS_LABELS = {
   PENDING: 'Pendiente',

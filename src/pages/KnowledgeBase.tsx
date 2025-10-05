@@ -23,9 +23,12 @@ import { Badge } from '@/components/ui/badge';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
 import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog';
 import { DropdownMenu, DropdownMenuContent, DropdownMenuItem, DropdownMenuTrigger } from '@/components/ui/dropdown-menu';
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select';
 import { Label } from '@/components/ui/label';
 import { useToast } from '@/hooks/use-toast';
+import { useAuth } from '@/hooks/useAuth';
 import { documentApi, DocumentResponse } from '@/services/documentApi';
+import { agentService, AgentResponse } from '@/services/agentApi';
 import { 
   Document, 
   DocumentUpload, 
@@ -37,12 +40,14 @@ import {
 } from '@/types/document';
 
 const KnowledgeBase: React.FC = () => {
+  const { user } = useAuth();
   const [documents, setDocuments] = useState<DocumentResponse[]>([]);
+  const [agents, setAgents] = useState<AgentResponse[]>([]);
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [loading, setLoading] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
-  const [selectedAgent, setSelectedAgent] = useState<string>('');
+  const [selectedAgent, setSelectedAgent] = useState<string>('none');
   const [uploadDialogOpen, setUploadDialogOpen] = useState(false);
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
@@ -55,18 +60,17 @@ const KnowledgeBase: React.FC = () => {
     name: '',
     description: '',
     tags: '',
+    selectedAgent: 'none',
     agentId: '',
     file: null as File | null
   });
 
   // Cargar documentos y estadísticas
-  const loadDocuments = useCallback(async (page: number = 0) => {
+  const loadDocuments = useCallback(async () => {
     setLoading(true);
     try {
-      const response = await documentApi.getAllDocuments(page, 20);
-      setDocuments(response.content);
-      setTotalPages(response.totalPages);
-      setCurrentPage(page);
+      const documentsData = await documentApi.getAllDocuments();
+      setDocuments(documentsData);
     } catch (error) {
       console.error('Error cargando documentos:', error);
       toast({
@@ -88,10 +92,30 @@ const KnowledgeBase: React.FC = () => {
     }
   }, []);
 
+  // Cargar agentes disponibles
+  const loadAgents = useCallback(async () => {
+    try {
+      if (!user?.id) {
+        console.warn('No hay usuario autenticado para cargar agentes');
+        return;
+      }
+      
+      const response = await agentService.getAgentsByUser(user.id);
+      if (response.success && response.data) {
+        setAgents(response.data);
+      } else if (response.agents) {
+        setAgents(response.agents);
+      }
+    } catch (error) {
+      console.error('Error cargando agentes:', error);
+    }
+  }, [user?.id]);
+
   useEffect(() => {
     loadDocuments();
     loadStats();
-  }, [loadDocuments, loadStats]);
+    loadAgents();
+  }, [loadDocuments, loadStats, loadAgents]);
 
   // Configuración del drag and drop manual
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -179,6 +203,15 @@ const KnowledgeBase: React.FC = () => {
     }
   };
 
+  // Manejar selección de agente
+  const handleAgentSelection = (agentId: string) => {
+    setUploadForm(prev => ({
+      ...prev,
+      selectedAgent: agentId,
+      agentId: agentId === 'none' ? '' : agentId
+    }));
+  };
+
   // Manejar subida de documento
   const handleUpload = async () => {
     if (!uploadForm.file || !uploadForm.name.trim()) {
@@ -194,12 +227,15 @@ const KnowledgeBase: React.FC = () => {
     try {
       const tags = uploadForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
       
+      // El agentId ya viene validado de la selección
+      const validAgentId = uploadForm.agentId && uploadForm.agentId.trim() ? uploadForm.agentId.trim() : undefined;
+      
       await documentApi.uploadDocument({
         file: uploadForm.file,
         name: uploadForm.name.trim(),
         description: uploadForm.description.trim() || undefined,
         tags: tags.length > 0 ? tags : undefined,
-        agentId: uploadForm.agentId || undefined,
+        agentId: validAgentId,
       });
 
       toast({
@@ -212,13 +248,14 @@ const KnowledgeBase: React.FC = () => {
         name: '',
         description: '',
         tags: '',
+        selectedAgent: 'none',
         agentId: '',
         file: null
       });
       setUploadDialogOpen(false);
 
       // Recargar documentos y estadísticas
-      loadDocuments(currentPage);
+      loadDocuments();
       loadStats();
 
     } catch (error: unknown) {
@@ -252,7 +289,7 @@ const KnowledgeBase: React.FC = () => {
         title: 'Éxito',
         description: 'Documento eliminado exitosamente',
       });
-      loadDocuments(currentPage);
+      loadDocuments();
       loadStats();
     } catch (error: unknown) {
       console.error('Error eliminando documento:', error);
@@ -419,13 +456,23 @@ const KnowledgeBase: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="agentId">ID del Agente (opcional)</Label>
-                <Input
-                  id="agentId"
-                  value={uploadForm.agentId}
-                  onChange={(e) => setUploadForm(prev => ({ ...prev, agentId: e.target.value }))}
-                  placeholder="ID del agente específico para entrenar"
-                />
+                <Label htmlFor="agentId">Agente (opcional)</Label>
+                <Select
+                  value={uploadForm.selectedAgent}
+                  onValueChange={handleAgentSelection}
+                >
+                  <SelectTrigger>
+                    <SelectValue placeholder="Selecciona un agente específico" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="none">Sin agente específico</SelectItem>
+                    {agents.map((agent) => (
+                      <SelectItem key={agent.id} value={agent.id}>
+                        {agent.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
             </div>
 
@@ -550,10 +597,6 @@ const KnowledgeBase: React.FC = () => {
                         {PROCESSING_STATUS_LABELS[doc.processingStatus as keyof typeof PROCESSING_STATUS_LABELS]}
                       </Badge>
                     </div>
-                    
-                    <p className="text-sm text-muted-foreground mb-2">
-                      {doc.originalFilename} • {formatFileSize(doc.fileSize)}
-                    </p>
                     
                     {doc.description && (
                       <p className="text-sm mb-3">{doc.description}</p>
