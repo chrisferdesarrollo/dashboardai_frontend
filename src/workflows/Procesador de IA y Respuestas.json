@@ -1,0 +1,792 @@
+{
+  "name": "Procesador de IA y Respuestas",
+  "nodes": [
+    {
+      "parameters": {
+        "inputSource": "passthrough"
+      },
+      "type": "n8n-nodes-base.executeWorkflowTrigger",
+      "typeVersion": 1.1,
+      "position": [
+        -704,
+        -352
+      ],
+      "id": "9b7fa284-2cb0-4bf0-b1cf-d39ff8081b23",
+      "name": "When Executed by Another Workflow"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('When Executed by Another Workflow').item.json.chat_id }}_buffer"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -448
+      ],
+      "id": "9c1e1f85-4cc8-4b0a-8bc8-9bd4788dfe4e",
+      "name": "🗑️ Eliminar Buffer",
+      "credentials": {
+        "redis": {
+          "id": "xYXuM65QNn0EHLWG",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "prepare-split-data",
+              "name": "message_array",
+              "value": "={{ $('🗑️ Eliminar Buffer').item.json.cached_buffer }}",
+              "type": "array"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        640,
+        -448
+      ],
+      "id": "060b52af-fded-4f5c-9af2-eefdbf04c651",
+      "name": "📂 Preparar Split"
+    },
+    {
+      "parameters": {
+        "fieldToSplitOut": "message_array",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.splitOut",
+      "typeVersion": 1,
+      "position": [
+        864,
+        -448
+      ],
+      "id": "6d9c1f77-9bd0-436a-a8c0-4371f2646c03",
+      "name": "📋 Split Out"
+    },
+    {
+      "parameters": {
+        "mode": "raw",
+        "jsonOutput": "={{ typeof $json.message_array === 'string' ? JSON.parse($json.message_array) : $json.message_array }}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1088,
+        -448
+      ],
+      "id": "1a6cb714-74ce-4eac-b89e-e6c75d5d5b79",
+      "name": "🔄 JSON Parse"
+    },
+    {
+      "parameters": {
+        "sortFieldsUi": {
+          "sortField": [
+            {
+              "fieldName": "date_time"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.sort",
+      "typeVersion": 1,
+      "position": [
+        1312,
+        -448
+      ],
+      "id": "8da62bae-c38f-4969-8a31-afe78e6f603a",
+      "name": "📋 Ordenar"
+    },
+    {
+      "parameters": {
+        "fieldsToAggregate": {
+          "fieldToAggregate": [
+            {
+              "fieldToAggregate": "user_message",
+              "renameField": true,
+              "outputFieldName": "message"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.aggregate",
+      "typeVersion": 1,
+      "position": [
+        1536,
+        -448
+      ],
+      "id": "a9279170-35d1-48c7-bf69-188cdd029f02",
+      "name": "📊 Agregar"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "chat-input-id",
+              "name": "chat_input",
+              "value": "={{ $json.message.join('\\n') }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        1760,
+        -448
+      ],
+      "id": "c909c968-0360-45d8-b898-f3575a18b7bb",
+      "name": "💬 Chat Input"
+    },
+    {
+      "parameters": {
+        "operation": "delete",
+        "key": "={{ $('When Executed by Another Workflow').item.json.chat_id }}_buffer"
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        1984,
+        -448
+      ],
+      "id": "6d69e23d-9051-4b5b-85f5-17cff529592d",
+      "name": "🗑️ Limpiar Buffer Final",
+      "credentials": {
+        "redis": {
+          "id": "xYXuM65QNn0EHLWG",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "promptType": "define",
+        "text": "={{ $json.chat_input }}",
+        "options": {
+          "systemMessage": "={{ $('🔄 JSON Parse').first().json.prompt }} Eres un asistente inteligente especializado en responder preguntas. \n\nIMPORTANTE: Siempre que recibas una consulta del usuario, DEBES buscar primero información relevante en la base de conocimiento usando las herramientas disponibles antes de responder.\n\nPasos a seguir:\n1. Analiza la pregunta del usuario\n2. Busca información relacionada en la base de conocimiento\n3. Utiliza esa información para dar una respuesta completa y precisa\n4. Si no encuentras información relevante, responde basándote en tu conocimiento general\n\nResponde de manera clara y útil."
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.agent",
+      "typeVersion": 2.2,
+      "position": [
+        2240,
+        -448
+      ],
+      "id": "789d96ea-15b8-479a-a4f3-0f677ec888a6",
+      "name": "🤖 Agente IA"
+    },
+    {
+      "parameters": {
+        "model": {
+          "__rl": true,
+          "mode": "list",
+          "value": "gpt-4o-mini"
+        },
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.lmChatOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2128,
+        -240
+      ],
+      "id": "7d9a1390-eabb-40d1-a6c9-616165e92f42",
+      "name": "🧠 OpenAI Model",
+      "credentials": {
+        "openAiApi": {
+          "id": "PWqlTZrw3hMhkLMV",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('🔄 JSON Parse').first().json.bot_token }}/sendMessage",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $('When Executed by Another Workflow').item.json.chat_id }}\",\n  \"text\": \"{{ $('Limpiar respuesta').item.json.clean_output }}\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4,
+      "position": [
+        2928,
+        -544
+      ],
+      "id": "aa9bcd6c-e3f4-4dbb-95c7-56ce89ce92f4",
+      "name": "📨 Enviar a Telegram"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "https://topias.app/api/conversation-logs",
+        "sendHeaders": true,
+        "headerParameters": {
+          "parameters": [
+            {
+              "name": "Content-Type",
+              "value": "application/json"
+            }
+          ]
+        },
+        "sendBody": true,
+        "bodyParameters": {
+          "parameters": [
+            {
+              "name": "sessionName",
+              "value": "={{ $('📋 Ordenar').last().json.session_name }}"
+            },
+            {
+              "name": "userMessage",
+              "value": "={{ $('💬 Chat Input').item.json.chat_input }}"
+            },
+            {
+              "name": "aiResponse",
+              "value": "={{ $('🤖 Agente IA').item.json.output }}"
+            },
+            {
+              "name": "userPhone",
+              "value": "={{ $('🔄 JSON Parse').first().json.user_name }}"
+            },
+            {
+              "name": "platform",
+              "value": "={{ $('🔄 JSON Parse').first().json.platform }}"
+            },
+            {
+              "name": "userName",
+              "value": "={{ $('🔄 JSON Parse').first().json.user_name }}"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        2704,
+        -352
+      ],
+      "id": "c3d9f7fe-e7e7-46f6-a652-a00bb69286e6",
+      "name": "💾 Guardar Conversación"
+    },
+    {
+      "parameters": {
+        "operation": "get",
+        "propertyName": "message",
+        "key": "={{ $json.chat_id }}_buffer",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.redis",
+      "typeVersion": 1,
+      "position": [
+        -480,
+        -352
+      ],
+      "id": "f552c7b2-6ef5-4fd6-8f4b-6aab859e9dc7",
+      "name": "Get Message",
+      "credentials": {
+        "redis": {
+          "id": "xYXuM65QNn0EHLWG",
+          "name": "Redis account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "rules": {
+          "values": [
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "leftValue": "={{ JSON.parse($json.cached_buffer.last()).message_id }}",
+                    "rightValue": "={{ $json.message_id }}",
+                    "operator": {
+                      "type": "string",
+                      "operation": "notEquals"
+                    },
+                    "id": "7860274d-6513-44dd-87a3-689b9a2226a8"
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Ignorar"
+            },
+            {
+              "conditions": {
+                "options": {
+                  "caseSensitive": true,
+                  "leftValue": "",
+                  "typeValidation": "strict",
+                  "version": 2
+                },
+                "conditions": [
+                  {
+                    "id": "02775179-f3b8-4ca7-9735-7a7d34b354c3",
+                    "leftValue": "={{ JSON.parse($json.cached_buffer.last()).date_time }}",
+                    "rightValue": "={{ $now.minus(5, 'seconds') }}",
+                    "operator": {
+                      "type": "dateTime",
+                      "operation": "before"
+                    }
+                  }
+                ],
+                "combinator": "and"
+              },
+              "renameOutput": true,
+              "outputKey": "Continuar"
+            }
+          ]
+        },
+        "options": {
+          "fallbackOutput": "extra",
+          "renameFallbackOutput": "Esperar"
+        }
+      },
+      "type": "n8n-nodes-base.switch",
+      "typeVersion": 3.2,
+      "position": [
+        -32,
+        -464
+      ],
+      "id": "4ee508d6-16df-4344-b961-7f822b3396d7",
+      "name": "Switch"
+    },
+    {
+      "parameters": {
+        "amount": 8
+      },
+      "type": "n8n-nodes-base.wait",
+      "typeVersion": 1.1,
+      "position": [
+        192,
+        -256
+      ],
+      "id": "334aa6d1-9831-4a1a-a35b-229a442d4b1f",
+      "name": "Wait",
+      "webhookId": "cf267b4f-584b-418e-ad2c-87e70039b504"
+    },
+    {
+      "parameters": {},
+      "type": "n8n-nodes-base.noOp",
+      "typeVersion": 1,
+      "position": [
+        192,
+        -640
+      ],
+      "id": "3f2d3103-7a52-4048-969c-9a116e7e157c",
+      "name": "No Operation, do nothing"
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "e96b37e6-cb6d-4e6c-a38e-f9a8351f8eeb",
+              "name": "cached_buffer",
+              "value": "={{ Array.isArray($json.message) ? $json.message : [$json.message] }}",
+              "type": "array"
+            },
+            {
+              "id": "1c2c4164-1529-45f1-a8d1-ff383ebbc414",
+              "name": "chat_id",
+              "value": "={{ $('When Executed by Another Workflow').item.json.chat_id }}",
+              "type": "string"
+            },
+            {
+              "id": "2f3e5a7b-8c9d-4e5f-a1b2-c3d4e5f6a7b8",
+              "name": "original_message",
+              "value": "={{ $json.message }}",
+              "type": "array"
+            },
+            {
+              "id": "0229abb1-5e31-4fc1-a379-ab32b93b91a0",
+              "name": "message_id",
+              "value": "={{ $('When Executed by Another Workflow').item.json.message_id }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        -256,
+        -448
+      ],
+      "id": "3abc58d1-03cb-4915-9c36-ff08435df5a3",
+      "name": "💾 Cache1"
+    },
+    {
+      "parameters": {
+        "options": {}
+      },
+      "type": "@n8n/n8n-nodes-langchain.embeddingsOpenAi",
+      "typeVersion": 1.2,
+      "position": [
+        2384,
+        -16
+      ],
+      "id": "b2043105-562e-4555-b2cf-58cfe46c2904",
+      "name": "Embeddings OpenAI1",
+      "credentials": {
+        "openAiApi": {
+          "id": "PWqlTZrw3hMhkLMV",
+          "name": "OpenAi Credencial"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "mode": "retrieve-as-tool",
+        "toolDescription": "Busca información relevante en la base de conocimiento vectorial. Usa esta herramienta cuando necesites encontrar información específica para responder preguntas del usuario.",
+        "tableName": "documents_vectors",
+        "options": {
+          "metadata": {
+            "metadataValues": [
+              {
+                "name": "sessionName",
+                "value": "={{ $('🔄 JSON Parse').first().json.session_name }}"
+              }
+            ]
+          }
+        }
+      },
+      "type": "@n8n/n8n-nodes-langchain.vectorStorePGVector",
+      "typeVersion": 1.3,
+      "position": [
+        2336,
+        -224
+      ],
+      "id": "db932411-8ae7-4f12-8a68-5aaabcc116c5",
+      "name": "Postgres PGVector Store",
+      "credentials": {
+        "postgres": {
+          "id": "2jgJ1dmT0FIwSPPe",
+          "name": "Postgres account"
+        }
+      }
+    },
+    {
+      "parameters": {
+        "assignments": {
+          "assignments": [
+            {
+              "id": "10318613-915a-4301-816f-988d29119d40",
+              "name": "clean_output",
+              "value": "={{ JSON.stringify($json.output.replace(/\\\\n/g, '\\n').replace(/\\\\\\\"/g, '\"').replace(/\\\\\\'/g, \"'\")).slice(1, -1) }}",
+              "type": "string"
+            }
+          ]
+        },
+        "options": {}
+      },
+      "type": "n8n-nodes-base.set",
+      "typeVersion": 3.4,
+      "position": [
+        2704,
+        -544
+      ],
+      "id": "e416f14e-feca-4f5c-802f-21fb21ef7d07",
+      "name": "Limpiar respuesta"
+    },
+    {
+      "parameters": {
+        "method": "POST",
+        "url": "=https://api.telegram.org/bot{{ $('When Executed by Another Workflow').item.json.bot_token }}/sendChatAction",
+        "sendBody": true,
+        "specifyBody": "json",
+        "jsonBody": "={\n  \"chat_id\": \"{{ $json.chat_id }}\",\n  \"action\": \"typing\"\n}",
+        "options": {}
+      },
+      "type": "n8n-nodes-base.httpRequest",
+      "typeVersion": 4.2,
+      "position": [
+        416,
+        -448
+      ],
+      "id": "e148d1dc-5db5-408e-9f44-17fc4230a51e",
+      "name": "Typing Action"
+    }
+  ],
+  "pinData": {
+    "When Executed by Another Workflow": [
+      {
+        "json": {
+          "session_name": "telegram_agent_1759792626336",
+          "user_message": "tienes información del hombre más rico de babilonia?",
+          "user_name": "TobiNeo",
+          "platform": "telegram",
+          "prompt": "prueba",
+          "bot_token": "8416094651:AAHQOaL1C4JMfIzHImbZfbP52QZiqDx_pRk",
+          "chat_id": "944943726",
+          "date_time": "2025-10-06T19:18:34.000-04:00",
+          "message_id": "14"
+        }
+      }
+    ]
+  },
+  "connections": {
+    "When Executed by Another Workflow": {
+      "main": [
+        [
+          {
+            "node": "Get Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗑️ Eliminar Buffer": {
+      "main": [
+        [
+          {
+            "node": "Typing Action",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📂 Preparar Split": {
+      "main": [
+        [
+          {
+            "node": "📋 Split Out",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Split Out": {
+      "main": [
+        [
+          {
+            "node": "🔄 JSON Parse",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🔄 JSON Parse": {
+      "main": [
+        [
+          {
+            "node": "📋 Ordenar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📋 Ordenar": {
+      "main": [
+        [
+          {
+            "node": "📊 Agregar",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "📊 Agregar": {
+      "main": [
+        [
+          {
+            "node": "💬 Chat Input",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💬 Chat Input": {
+      "main": [
+        [
+          {
+            "node": "🗑️ Limpiar Buffer Final",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🗑️ Limpiar Buffer Final": {
+      "main": [
+        [
+          {
+            "node": "🤖 Agente IA",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🤖 Agente IA": {
+      "main": [
+        [
+          {
+            "node": "💾 Guardar Conversación",
+            "type": "main",
+            "index": 0
+          },
+          {
+            "node": "Limpiar respuesta",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "🧠 OpenAI Model": {
+      "ai_languageModel": [
+        [
+          {
+            "node": "🤖 Agente IA",
+            "type": "ai_languageModel",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Get Message": {
+      "main": [
+        [
+          {
+            "node": "💾 Cache1",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Switch": {
+      "main": [
+        [
+          {
+            "node": "No Operation, do nothing",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "🗑️ Eliminar Buffer",
+            "type": "main",
+            "index": 0
+          }
+        ],
+        [
+          {
+            "node": "Wait",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Wait": {
+      "main": [
+        [
+          {
+            "node": "Get Message",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "💾 Cache1": {
+      "main": [
+        [
+          {
+            "node": "Switch",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Embeddings OpenAI1": {
+      "ai_embedding": [
+        [
+          {
+            "node": "Postgres PGVector Store",
+            "type": "ai_embedding",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Postgres PGVector Store": {
+      "ai_tool": [
+        [
+          {
+            "node": "🤖 Agente IA",
+            "type": "ai_tool",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Limpiar respuesta": {
+      "main": [
+        [
+          {
+            "node": "📨 Enviar a Telegram",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    },
+    "Typing Action": {
+      "main": [
+        [
+          {
+            "node": "📂 Preparar Split",
+            "type": "main",
+            "index": 0
+          }
+        ]
+      ]
+    }
+  },
+  "active": false,
+  "settings": {
+    "executionOrder": "v1"
+  },
+  "versionId": "e3751d3b-27b3-4d06-82bb-b7850e710fff",
+  "meta": {
+    "templateCredsSetupCompleted": true,
+    "instanceId": "db078367977c660c16a1c612ae34f7838cdff67adc48ffb2c195264933d37659"
+  },
+  "id": "6yGR1tP1iHk8xs1L",
+  "tags": []
+}
