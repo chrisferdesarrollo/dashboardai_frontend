@@ -14,7 +14,11 @@ import {
   XCircle,
   Clock,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  RefreshCw,
+  Bot,
+  MessageCircle,
+  Phone
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -29,6 +33,7 @@ import { useToast } from '@/hooks/use-toast';
 import { useAuth } from '@/hooks/useAuth';
 import { documentApi, DocumentResponse } from '@/services/documentApi';
 import { agentService, AgentResponse } from '@/services/agentApi';
+import { DeleteDocumentDialog } from '@/components/knowledge-base/DeleteDocumentDialog';
 import { 
   Document, 
   DocumentUpload, 
@@ -45,6 +50,7 @@ const KnowledgeBase: React.FC = () => {
   const [agents, setAgents] = useState<AgentResponse[]>([]);
   const [stats, setStats] = useState<DocumentStats | null>(null);
   const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
   const [uploading, setUploading] = useState(false);
   const [searchTerm, setSearchTerm] = useState('');
   const [selectedAgent, setSelectedAgent] = useState<string>('none');
@@ -52,6 +58,8 @@ const KnowledgeBase: React.FC = () => {
   const [currentPage, setCurrentPage] = useState(0);
   const [totalPages, setTotalPages] = useState(0);
   const [isDragActive, setIsDragActive] = useState(false);
+  const [documentToDelete, setDocumentToDelete] = useState<DocumentResponse | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
 
@@ -68,14 +76,17 @@ const KnowledgeBase: React.FC = () => {
   // Cargar documentos y estadísticas
   const loadDocuments = useCallback(async () => {
     setLoading(true);
+    setError(null);
     try {
       const documentsData = await documentApi.getAllDocuments();
       setDocuments(documentsData);
     } catch (error) {
       console.error('Error cargando documentos:', error);
+      const errorMessage = error instanceof Error ? error.message : 'No se pudieron cargar los documentos';
+      setError(errorMessage);
       toast({
         title: 'Error',
-        description: 'No se pudieron cargar los documentos',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -111,11 +122,50 @@ const KnowledgeBase: React.FC = () => {
     }
   }, [user?.id]);
 
-  useEffect(() => {
-    loadDocuments();
-    loadStats();
-    loadAgents();
+  // Función para refrescar todos los datos
+  const refreshData = useCallback(async () => {
+    await Promise.all([loadDocuments(), loadStats(), loadAgents()]);
   }, [loadDocuments, loadStats, loadAgents]);
+
+  // Función para obtener el agente asociado a un documento
+  const getAgentForDocument = useCallback((document: DocumentResponse): AgentResponse | null => {
+    if (!document.agentId) return null;
+    return agents.find(agent => agent.id === document.agentId) || null;
+  }, [agents]);
+
+  // Función para obtener el ícono y color de la plataforma
+  const getPlatformInfo = useCallback((platform: 'whatsapp' | 'telegram') => {
+    switch (platform) {
+      case 'whatsapp':
+        return {
+          icon: <MessageCircle className="h-4 w-4 text-green-600" />,
+          color: 'text-green-600',
+          bgColor: 'bg-green-50 border-green-200',
+          badgeColor: 'text-green-700 border-green-300',
+          name: 'WhatsApp'
+        };
+      case 'telegram':
+        return {
+          icon: <Phone className="h-4 w-4 text-blue-600" />,
+          color: 'text-blue-600', 
+          bgColor: 'bg-blue-50 border-blue-200',
+          badgeColor: 'text-blue-700 border-blue-300',
+          name: 'Telegram'
+        };
+      default:
+        return {
+          icon: <Bot className="h-4 w-4 text-gray-600" />,
+          color: 'text-gray-600',
+          bgColor: 'bg-gray-50 border-gray-200',
+          badgeColor: 'text-gray-700 border-gray-300',
+          name: 'Bot'
+        };
+    }
+  }, []);
+
+  useEffect(() => {
+    refreshData();
+  }, [refreshData]);
 
   // Configuración del drag and drop manual
   const handleDragOver = useCallback((e: React.DragEvent) => {
@@ -255,8 +305,7 @@ const KnowledgeBase: React.FC = () => {
       setUploadDialogOpen(false);
 
       // Recargar documentos y estadísticas
-      loadDocuments();
-      loadStats();
+      await refreshData();
 
     } catch (error: unknown) {
       console.error('Error subiendo documento:', error);
@@ -278,19 +327,22 @@ const KnowledgeBase: React.FC = () => {
   };
 
   // Manejar eliminación de documento
-  const handleDelete = async (id: string) => {
-    if (!confirm('¿Estás seguro de que quieres eliminar este documento?')) {
-      return;
-    }
+  const handleDelete = (document: DocumentResponse) => {
+    setDocumentToDelete(document);
+  };
 
+  const confirmDeleteDocument = async () => {
+    if (!documentToDelete) return;
+    
+    setIsDeleting(true);
     try {
-      await documentApi.deleteDocument(id);
+      await documentApi.deleteDocument(documentToDelete.id);
       toast({
-        title: 'Éxito',
-        description: 'Documento eliminado exitosamente',
+        title: 'Documento eliminado',
+        description: `El documento "${documentToDelete.name}" ha sido eliminado exitosamente.`,
       });
-      loadDocuments();
-      loadStats();
+      setDocumentToDelete(null);
+      await refreshData();
     } catch (error: unknown) {
       console.error('Error eliminando documento:', error);
       const errorMessage = error instanceof Error && 'response' in error && 
@@ -301,10 +353,12 @@ const KnowledgeBase: React.FC = () => {
         : 'Error al eliminar el documento';
         
       toast({
-        title: 'Error',
+        title: 'Error al eliminar',
         description: errorMessage,
         variant: 'destructive',
       });
+    } finally {
+      setIsDeleting(false);
     }
   };
 
@@ -316,15 +370,18 @@ const KnowledgeBase: React.FC = () => {
     }
 
     setLoading(true);
+    setError(null);
     try {
       const results = await documentApi.searchDocuments(searchTerm);
       setDocuments(results);
       setTotalPages(1);
     } catch (error) {
       console.error('Error buscando documentos:', error);
+      const errorMessage = error instanceof Error ? error.message : 'Error al buscar documentos';
+      setError(errorMessage);
       toast({
         title: 'Error',
-        description: 'Error al buscar documentos',
+        description: errorMessage,
         variant: 'destructive',
       });
     } finally {
@@ -353,6 +410,12 @@ const KnowledgeBase: React.FC = () => {
       default:
         return <Clock className="h-4 w-4" />;
     }
+  };
+
+  // Función para obtener el agente asociado a un documento
+  const getDocumentAgent = (doc: DocumentResponse) => {
+    if (!doc.agentId) return null;
+    return agents.find(agent => agent.id === doc.agentId) || null;
   };
 
   return (
@@ -560,6 +623,9 @@ const KnowledgeBase: React.FC = () => {
           <Button onClick={handleSearch} variant="outline" size="icon">
             <Search className="h-4 w-4" />
           </Button>
+          <Button onClick={refreshData} variant="outline" size="icon" disabled={loading}>
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </Button>
         </div>
         <Button variant="outline" className="gap-2">
           <Filter className="h-4 w-4" />
@@ -568,27 +634,68 @@ const KnowledgeBase: React.FC = () => {
       </div>
 
       {/* Lista de documentos */}
-      <div className="space-y-4">
-        {loading ? (
-          <div className="flex items-center justify-center py-8">
-            <Loader2 className="h-8 w-8 animate-spin" />
+      {loading ? (
+        <div className="grid grid-cols-1 gap-4">
+          {[...Array(6)].map((_, i) => (
+            <div key={i} className="h-32 bg-card border border-border rounded-lg animate-pulse" />
+          ))}
+        </div>
+      ) : error ? (
+        <div className="text-center py-12">
+          <div className="mx-auto h-24 w-24 text-muted-foreground mb-4">
+            <FileText className="h-full w-full" />
           </div>
-        ) : documents.length === 0 ? (
-          <Card>
-            <CardContent className="flex flex-col items-center justify-center py-8">
-              <FileText className="h-12 w-12 text-muted-foreground mb-4" />
-              <p className="text-lg font-medium">No hay documentos</p>
-              <p className="text-muted-foreground">Sube tu primer documento para comenzar</p>
-            </CardContent>
-          </Card>
-        ) : (
-          documents.map((doc) => (
-            <Card key={doc.id}>
-              <CardContent className="p-6">
-                <div className="flex items-start justify-between">
-                  <div className="flex-1">
-                    <div className="flex items-center gap-2 mb-2">
-                      <h3 className="text-lg font-semibold">{doc.name}</h3>
+          <h3 className="text-lg font-medium mb-2">Error al cargar documentos</h3>
+          <p className="text-muted-foreground mb-4">{error}</p>
+          <Button onClick={refreshData}>
+            <RefreshCw className="mr-2 h-4 w-4" />
+            Reintentar
+          </Button>
+        </div>
+      ) : documents.length === 0 ? (
+        <div className="text-center py-12">
+          <div className="mx-auto h-24 w-24 text-muted-foreground mb-4">
+            <FileText className="h-full w-full" />
+          </div>
+          <h3 className="text-lg font-medium mb-2">No hay documentos</h3>
+          <p className="text-muted-foreground mb-4">
+            {searchTerm 
+              ? 'No se encontraron documentos que coincidan con tu búsqueda' 
+              : 'Sube tu primer documento para comenzar a entrenar tus agentes de IA'}
+          </p>
+          {!searchTerm && (
+            <Button onClick={() => setUploadDialogOpen(true)}>
+              <Upload className="mr-2 h-4 w-4" />
+              Subir Documento
+            </Button>
+          )}
+        </div>
+      ) : (
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-4">
+          {documents.map((doc) => {
+            const associatedAgent = getDocumentAgent(doc);
+            return (
+              <Card key={doc.id} className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 hover:scale-[1.02] hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent border hover:border-primary/20">
+                <CardHeader className="pb-3">
+                  <div className="flex items-start justify-between">
+                    <div className="space-y-1 flex-1">
+                      <div className="flex items-center gap-2">
+                        <FileText className="h-5 w-5 text-primary transition-transform duration-300 group-hover:scale-110" />
+                        <CardTitle className="text-lg leading-none hover:text-primary cursor-pointer transition-colors line-clamp-1">
+                          {doc.name}
+                        </CardTitle>
+                      </div>
+                      {doc.description && (
+                        <p className="text-sm text-muted-foreground line-clamp-2">
+                          {doc.description}
+                        </p>
+                      )}
+                      <div className="flex items-center gap-1 text-xs text-muted-foreground">
+                        <span>Subido {new Date(doc.uploadDate).toLocaleDateString('es-ES')}</span>
+                      </div>
+                    </div>
+                    
+                    <div className="flex items-center space-x-2">
                       <Badge 
                         variant="secondary" 
                         className={`${PROCESSING_STATUS_COLORS[doc.processingStatus as keyof typeof PROCESSING_STATUS_COLORS]} gap-1`}
@@ -597,70 +704,96 @@ const KnowledgeBase: React.FC = () => {
                         {PROCESSING_STATUS_LABELS[doc.processingStatus as keyof typeof PROCESSING_STATUS_LABELS]}
                       </Badge>
                     </div>
-                    
-                    {doc.description && (
-                      <p className="text-sm mb-3">{doc.description}</p>
-                    )}
-                    
-                    {doc.tags && doc.tags.length > 0 && (
-                      <div className="flex gap-1 flex-wrap mb-3">
-                        {doc.tags.map((tag, index) => (
-                          <Badge key={index} variant="outline" className="text-xs">
-                            <Tag className="h-3 w-3 mr-1" />
-                            {tag}
-                          </Badge>
-                        ))}
+                  </div>
+                </CardHeader>
+
+                <CardContent className="space-y-3">
+                  {/* Información del agente asociado */}
+                  {associatedAgent ? (
+                    <div className={`flex items-center gap-2 p-2 rounded-md ${getPlatformInfo(associatedAgent.platform).bgColor}`}>
+                      {getPlatformInfo(associatedAgent.platform).icon}
+                      <span className="text-sm text-muted-foreground">Usado por agente:</span>
+                      <span className="text-sm font-medium text-primary">{associatedAgent.name}</span>
+                      <div className="ml-auto">
+                        <Badge 
+                          variant="outline" 
+                          className={`text-xs ${getPlatformInfo(associatedAgent.platform).badgeColor}`}
+                        >
+                          {associatedAgent.platform === 'whatsapp' ? 'WhatsApp' : 'Telegram'}
+                        </Badge>
                       </div>
-                    )}
-                    
-                    <p className="text-xs text-muted-foreground">
-                      Subido el {new Date(doc.uploadDate).toLocaleDateString('es-ES', {
-                        year: 'numeric',
-                        month: 'long',
-                        day: 'numeric',
+                    </div>
+                  ) : (
+                    <div className="flex items-center gap-2 p-2 bg-muted/30 rounded-md">
+                      <FileText className="h-4 w-4 text-muted-foreground" />
+                      <span className="text-sm text-muted-foreground">Disponible para todos los agentes</span>
+                    </div>
+                  )}
+
+                  {/* Tags */}
+                  {doc.tags && doc.tags.length > 0 && (
+                    <div className="flex gap-1 flex-wrap">
+                      {doc.tags.slice(0, 3).map((tag, index) => (
+                        <Badge key={index} variant="outline" className="text-xs">
+                          <Tag className="h-3 w-3 mr-1" />
+                          {tag}
+                        </Badge>
+                      ))}
+                      {doc.tags.length > 3 && (
+                        <Badge variant="outline" className="text-xs">
+                          +{doc.tags.length - 3} más
+                        </Badge>
+                      )}
+                    </div>
+                  )}
+
+                  {/* Acciones */}
+                  <div className="flex items-center justify-between pt-2">
+                    <div className="text-xs text-muted-foreground">
+                      {new Date(doc.uploadDate).toLocaleDateString('es-ES', {
                         hour: '2-digit',
                         minute: '2-digit'
                       })}
-                    </p>
+                    </div>
+                    
+                    <DropdownMenu>
+                      <DropdownMenuTrigger asChild>
+                        <Button variant="ghost" size="sm" className="h-8 w-8 p-0">
+                          <MoreVertical className="h-4 w-4" />
+                        </Button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="end">
+                        <DropdownMenuItem>
+                          <Edit className="h-4 w-4 mr-2" />
+                          Editar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem>
+                          <Download className="h-4 w-4 mr-2" />
+                          Descargar
+                        </DropdownMenuItem>
+                        <DropdownMenuItem 
+                          onClick={() => handleDelete(doc)}
+                          className="text-red-600"
+                        >
+                          <Trash2 className="h-4 w-4 mr-2" />
+                          Eliminar
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
                   </div>
-                  
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" size="icon">
-                        <MoreVertical className="h-4 w-4" />
-                      </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem>
-                        <Edit className="h-4 w-4 mr-2" />
-                        Editar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem>
-                        <Download className="h-4 w-4 mr-2" />
-                        Descargar
-                      </DropdownMenuItem>
-                      <DropdownMenuItem 
-                        onClick={() => handleDelete(doc.id)}
-                        className="text-red-600"
-                      >
-                        <Trash2 className="h-4 w-4 mr-2" />
-                        Eliminar
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
-                </div>
-              </CardContent>
-            </Card>
-          ))
-        )}
-      </div>
+                </CardContent>
+              </Card>
+            );
+          })}
+        </div>
+      )}
 
       {/* Paginación */}
       {totalPages > 1 && (
         <div className="flex justify-center gap-2">
           <Button
             variant="outline"
-            onClick={() => loadDocuments(currentPage - 1)}
+            onClick={() => setCurrentPage(prev => Math.max(0, prev - 1))}
             disabled={currentPage === 0}
           >
             Anterior
@@ -670,13 +803,23 @@ const KnowledgeBase: React.FC = () => {
           </span>
           <Button
             variant="outline"
-            onClick={() => loadDocuments(currentPage + 1)}
+            onClick={() => setCurrentPage(prev => Math.min(totalPages - 1, prev + 1))}
             disabled={currentPage >= totalPages - 1}
           >
             Siguiente
           </Button>
         </div>
       )}
+
+      {/* Diálogo de eliminación */}
+      <DeleteDocumentDialog
+        document={documentToDelete}
+        agent={documentToDelete ? getAgentForDocument(documentToDelete) : null}
+        isOpen={!!documentToDelete}
+        onClose={() => setDocumentToDelete(null)}
+        onConfirm={confirmDeleteDocument}
+        isDeleting={isDeleting}
+      />
     </div>
   );
 };
