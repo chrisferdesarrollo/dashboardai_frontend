@@ -1,6 +1,37 @@
 import axios from 'axios';
+import configService from './configService';
 
-const API_BASE_URL = import.meta.env.VITE_API_URL || 'http://localhost:8080/api';
+// Función para crear cliente API con configuración dinámica
+const createApiClient = async () => {
+  const config = await configService.getBackendConfig();
+  return axios.create({
+    baseURL: config.apiUrl,
+    headers: {
+      'Content-Type': 'application/json',
+    },
+  });
+};
+
+// Función para obtener cliente API actualizado
+const getApiClient = async () => {
+  const client = await createApiClient();
+  
+  // Interceptor para agregar token de autenticación si está disponible
+  client.interceptors.request.use(
+    (config) => {
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    },
+    (error) => {
+      return Promise.reject(error);
+    }
+  );
+
+  return client;
+};
 
 export interface DocumentUploadRequest {
   file: File;
@@ -57,17 +88,11 @@ export interface PagedDocumentsResponse {
 }
 
 class DocumentApi {
-  private getAuthHeaders() {
-    const token = localStorage.getItem('token');
-    return {
-      'Authorization': token ? `Bearer ${token}` : '',
-    };
-  }
-
   /**
    * Subir un nuevo documento
    */
   async uploadDocument(request: DocumentUploadRequest): Promise<DocumentUploadResponse> {
+    const client = await getApiClient();
     const formData = new FormData();
     formData.append('file', request.file);
     formData.append('name', request.name);
@@ -84,12 +109,11 @@ class DocumentApi {
       formData.append('agentId', request.agentId);
     }
 
-    const response = await axios.post(
-      `${API_BASE_URL}/documents/upload`,
+    const response = await client.post(
+      '/documents/upload',
       formData,
       {
         headers: {
-          ...this.getAuthHeaders(),
           'Content-Type': 'multipart/form-data',
         },
       }
@@ -102,13 +126,8 @@ class DocumentApi {
    * Obtener todos los documentos (sin paginación)
    */
   async getAllDocuments(): Promise<DocumentResponse[]> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get('/documents');
     return response.data;
   }
 
@@ -116,13 +135,8 @@ class DocumentApi {
    * Obtener documento por ID
    */
   async getDocumentById(id: string): Promise<DocumentResponse> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents/${id}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get(`/documents/${id}`);
     return response.data;
   }
 
@@ -130,13 +144,8 @@ class DocumentApi {
    * Obtener documentos por agente
    */
   async getDocumentsByAgent(agentId: string): Promise<DocumentResponse[]> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents/agent/${agentId}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get(`/documents/agent/${agentId}`);
     return response.data;
   }
 
@@ -144,28 +153,18 @@ class DocumentApi {
    * Buscar documentos por término
    */
   async searchDocuments(query: string): Promise<DocumentResponse[]> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents/search`,
-      {
-        params: { query },
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get('/documents/search', {
+      params: { query },
+    });
     return response.data;
   }
-
   /**
    * Obtener documentos por tag
    */
   async getDocumentsByTag(tag: string): Promise<DocumentResponse[]> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents/tag/${tag}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get(`/documents/tag/${tag}`);
     return response.data;
   }
 
@@ -173,17 +172,8 @@ class DocumentApi {
    * Actualizar metadatos del documento
    */
   async updateDocument(id: string, request: UpdateDocumentRequest): Promise<DocumentResponse> {
-    const response = await axios.put(
-      `${API_BASE_URL}/documents/${id}`,
-      request,
-      {
-        headers: {
-          ...this.getAuthHeaders(),
-          'Content-Type': 'application/json',
-        },
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.put(`/documents/${id}`, request);
     return response.data;
   }
 
@@ -191,13 +181,8 @@ class DocumentApi {
    * Eliminar documento
    */
   async deleteDocument(id: string): Promise<{ message: string }> {
-    const response = await axios.delete(
-      `${API_BASE_URL}/documents/${id}`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.delete(`/documents/${id}`);
     return response.data;
   }
 
@@ -205,13 +190,8 @@ class DocumentApi {
    * Obtener estadísticas de documentos
    */
   async getDocumentStats(): Promise<DocumentStats> {
-    const response = await axios.get(
-      `${API_BASE_URL}/documents/stats`,
-      {
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.get('/documents/stats');
     return response.data;
   }
 
@@ -219,15 +199,10 @@ class DocumentApi {
    * Actualizar estado de procesamiento (para uso interno/N8N)
    */
   async updateProcessingStatus(id: string, status: string): Promise<{ message: string }> {
-    const response = await axios.put(
-      `${API_BASE_URL}/documents/${id}/status`,
-      null,
-      {
-        params: { status },
-        headers: this.getAuthHeaders(),
-      }
-    );
-
+    const client = await getApiClient();
+    const response = await client.put(`/documents/${id}/status`, null, {
+      params: { status },
+    });
     return response.data;
   }
 }
