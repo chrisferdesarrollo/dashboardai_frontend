@@ -60,40 +60,83 @@ const messageTypeIcons = {
 
 function MessageBubble({ message }: { message: Message }) {
   const isOutgoing = message.direction === 'outgoing';
-  const Icon = messageTypeIcons[message.type];
+  const isFromUser = !isOutgoing; // El mensaje entrante es del usuario
 
   return (
     <div className={cn(
-      "flex w-full mb-4",
+      "flex w-full mb-3",
       isOutgoing ? "justify-end" : "justify-start"
     )}>
       <div className={cn(
-        "max-w-[70%] rounded-lg px-3 py-2 shadow-sm",
-        isOutgoing 
-          ? "bg-primary text-primary-foreground" 
-          : "bg-muted"
+        "flex items-end space-x-2 max-w-[80%]",
+        isOutgoing ? "flex-row-reverse space-x-reverse" : "flex-row"
       )}>
-        <div className="flex items-start space-x-2">
-          <Icon className="h-4 w-4 mt-0.5 flex-shrink-0" />
-          <div className="flex-1">
-            <div className="text-sm">{message.content}</div>
+        {/* Avatar */}
+        <Avatar className="h-7 w-7 flex-shrink-0 mb-1">
+          <AvatarFallback className={cn(
+            "text-xs",
+            isFromUser 
+              ? "bg-blue-100 dark:bg-blue-900 text-blue-600 dark:text-blue-300"
+              : "bg-green-100 dark:bg-green-900 text-green-600 dark:text-green-300"
+          )}>
+            {isFromUser ? <User className="h-3 w-3" /> : <Bot className="h-3 w-3" />}
+          </AvatarFallback>
+        </Avatar>
+        
+        {/* Nube del mensaje */}
+        <div className="relative">
+          {/* Cola de la nube - posicionada para "nacer" del avatar */}
+          <div className={cn(
+            "absolute bottom-2 w-4 h-4 transform",
+            isFromUser 
+              ? "left-[-8px] bg-background/95 dark:bg-card/95 border-l border-b border-border dark:border-border rotate-45"
+              : "right-[-8px] bg-green-100/95 dark:bg-green-950/30 border-r border-b border-green-200 dark:border-green-800/50 rotate-45"
+          )} />
+          
+          {/* Contenido de la nube */}
+          <div className={cn(
+            "relative rounded-2xl px-4 py-3 shadow-sm border backdrop-blur-sm",
+            isFromUser 
+              ? "bg-background/95 dark:bg-card/95 border-border dark:border-border rounded-bl-sm" // Usuario: esquina inferior izquierda más cuadrada
+              : "bg-green-100/95 dark:bg-green-950/30 border-green-200 dark:border-green-800/50 rounded-br-sm" // Agente: esquina inferior derecha más cuadrada
+          )}>
+            {/* Contenido del mensaje */}
+            <div className="text-sm leading-relaxed text-foreground mb-1">
+              {message.content}
+            </div>
+            
+            {/* Metadata del mensaje */}
             {message.metadata && (
-              <div className="text-xs opacity-70 mt-1">
-                {message.metadata.fileName && `📎 ${message.metadata.fileName}`}
-                {message.metadata.location && `📍 Ubicación compartida`}
+              <div className="text-xs text-muted-foreground mt-2 p-2 bg-muted/30 rounded-md">
+                {message.metadata.fileName && (
+                  <div className="flex items-center space-x-1">
+                    <FileText className="h-3 w-3" />
+                    <span>{message.metadata.fileName}</span>
+                  </div>
+                )}
+                {message.metadata.location && (
+                  <div className="flex items-center space-x-1">
+                    <MapPin className="h-3 w-3" />
+                    <span>Ubicación compartida</span>
+                  </div>
+                )}
               </div>
             )}
+            
+            {/* Timestamp y estado */}
             <div className={cn(
-              "text-xs mt-1 flex items-center space-x-1",
-              isOutgoing ? "text-primary-foreground/70" : "text-muted-foreground"
+              "flex items-center mt-1 space-x-1",
+              isOutgoing ? "justify-end" : "justify-start"
             )}>
-              <span>{format(message.timestamp, 'HH:mm')}</span>
+              <span className="text-xs text-muted-foreground/70">
+                {format(message.timestamp, 'HH:mm')}
+              </span>
               {isOutgoing && (
-                <span className="ml-1">
-                  {message.status === 'sent' && '✓'}
-                  {message.status === 'delivered' && '✓✓'}
-                  {message.status === 'read' && '✓✓'}
-                </span>
+                <div className="text-xs">
+                  {message.status === 'sent' && <span className="text-muted-foreground/60">✓</span>}
+                  {message.status === 'delivered' && <span className="text-blue-500">✓✓</span>}
+                  {message.status === 'read' && <span className="text-green-500">✓✓</span>}
+                </div>
               )}
             </div>
           </div>
@@ -245,36 +288,46 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
           {/* Chat Area */}
           <div className="flex-1 flex flex-col overflow-hidden">
             {/* Messages */}
-            <ScrollArea className="flex-1 p-4 overflow-hidden">
-              <div className="space-y-2">
+            <ScrollArea className="flex-1 p-6 overflow-hidden bg-gradient-to-b from-background to-muted/10">
+              <div className="space-y-4">
                 {conversationMessages.length > 0 ? (
                   conversationMessages.map((message) => (
                     <MessageBubble key={message.id} message={message} />
                   ))
                 ) : (
-                  <div className="text-center py-8">
-                    <MessageSquare className="h-12 w-12 mx-auto text-muted-foreground mb-2" />
-                    <p className="text-muted-foreground">No hay mensajes aún</p>
+                  <div className="text-center py-12">
+                    <MessageSquare className="h-16 w-16 mx-auto text-muted-foreground/50 mb-4" />
+                    <p className="text-muted-foreground text-lg">No hay mensajes aún</p>
+                    <p className="text-muted-foreground/70 text-sm mt-1">
+                      Los mensajes aparecerán aquí cuando se inicie la conversación
+                    </p>
                   </div>
                 )}
               </div>
             </ScrollArea>
 
             {/* Message Input */}
-            <div className="border-t p-4 flex-shrink-0">
-              <div className="flex space-x-2">
+            <div className="border-t bg-background/95 backdrop-blur-sm p-4 flex-shrink-0">
+              <div className="flex space-x-3">
                 <Input
                   placeholder="Escribe un mensaje..."
                   value={newMessage}
                   onChange={(e) => setNewMessage(e.target.value)}
-                  onKeyPress={(e) => e.key === 'Enter' && handleSendMessage()}
+                  onKeyPress={(e) => e.key === 'Enter' && !e.shiftKey && handleSendMessage()}
                   disabled={isSending}
+                  className="flex-1"
                 />
                 <Button 
                   onClick={handleSendMessage}
                   disabled={!newMessage.trim() || isSending}
+                  size="icon"
+                  className="px-4"
                 >
-                  <Send className="h-4 w-4" />
+                  {isSending ? (
+                    <RefreshCw className="h-4 w-4 animate-spin" />
+                  ) : (
+                    <Send className="h-4 w-4" />
+                  )}
                 </Button>
               </div>
             </div>

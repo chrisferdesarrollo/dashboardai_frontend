@@ -58,8 +58,8 @@ export const PROCESSING_STATUS_LABELS = {
 };
 
 export const PROCESSING_STATUS_COLORS = {
-  PENDING: 'text-yellow-600 bg-yellow-100',
-  PROCESSING: 'text-blue-600 bg-blue-100',
-  COMPLETED: 'text-green-600 bg-green-100',
-  FAILED: 'text-red-600 bg-red-100'
+  PENDING: 'text-yellow-700 bg-yellow-100 dark:text-yellow-400 dark:bg-yellow-900/30',
+  PROCESSING: 'text-blue-700 bg-blue-100 dark:text-blue-400 dark:bg-blue-900/30',
+  COMPLETED: 'text-green-700 bg-green-100 dark:text-green-400 dark:bg-green-900/30',
+  FAILED: 'text-red-700 bg-red-100 dark:text-red-400 dark:bg-red-900/30'
 };
