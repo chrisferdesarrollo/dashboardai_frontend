@@ -13,6 +13,7 @@ import {
   MessageSquare,
   FileSpreadsheet
 } from 'lucide-react';
+import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { cn } from '@/lib/utils';
 import { useAuthStore } from '@/store/authStore';
 import { useState, useEffect, useRef } from 'react';
@@ -178,9 +179,12 @@ export function Sidebar() {
           {isMobile ? (
             /* Avatar simple para móvil - sin funcionalidad */
             <div className="flex items-center justify-center p-2">
-              <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                {user?.username?.charAt(0).toUpperCase() || 'U'}
-              </div>
+              <Avatar className="h-8 w-8">
+                <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
+                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                  {user?.username?.charAt(0).toUpperCase() || 'U'}
+                </AvatarFallback>
+              </Avatar>
             </div>
           ) : !isExpanded ? (
             /* Avatar simple para modo colapsado */
@@ -189,9 +193,12 @@ export function Sidebar() {
                 onClick={() => setIsUserMenuOpen(!isUserMenuOpen)}
                 className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-accent/50 transition-colors"
               >
-                <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                  {user?.username?.charAt(0).toUpperCase() || 'U'}
-                </div>
+                <Avatar className="h-8 w-8">
+                  <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
+                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                    {user?.username?.charAt(0).toUpperCase() || 'U'}
+                  </AvatarFallback>
+                </Avatar>
               </button>
               
               {/* Tooltip para usuario colapsado */}
@@ -204,9 +211,12 @@ export function Sidebar() {
                 <div className="absolute bottom-full left-full ml-2 mb-3 w-56 bg-popover border border-border rounded-lg shadow-lg z-50">
                   <div className="p-3 border-b border-border">
                     <div className="flex items-center space-x-3">
-                      <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                        {user?.username?.charAt(0).toUpperCase() || 'U'}
-                      </div>
+                      <Avatar className="h-8 w-8">
+                        <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
+                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                          {user?.username?.charAt(0).toUpperCase() || 'U'}
+                        </AvatarFallback>
+                      </Avatar>
                       <div>
                         <p className="text-sm font-medium text-foreground">{user?.username || 'Usuario'}</p>
                         <p className="text-xs text-muted-foreground">{user?.email || 'usuario@email.com'}</p>
@@ -242,9 +252,12 @@ export function Sidebar() {
                 className="w-full flex items-center justify-between px-3 py-2 text-sm rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <div className="flex items-center space-x-3">
-                  <div className="h-8 w-8 bg-gradient-to-br from-purple-500 to-pink-500 rounded-full flex items-center justify-center text-white text-xs font-medium">
-                    {user?.username?.charAt(0).toUpperCase() || 'U'}
-                  </div>
+                  <Avatar className="h-8 w-8">
+                    <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
+                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                      {user?.username?.charAt(0).toUpperCase() || 'U'}
+                    </AvatarFallback>
+                  </Avatar>
                   <div className={cn(
                     "text-left transition-opacity duration-300",
                     isExpanded ? "opacity-100" : "opacity-0"

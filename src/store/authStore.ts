@@ -8,6 +8,7 @@ interface AuthStore extends AuthState {
   signup: (data: SignupRequest) => Promise<SignupResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
+  updateUser: (userData: Partial<User>) => void;
   setLoading: (loading: boolean) => void;
 }
 
@@ -137,6 +138,19 @@ export const useAuthStore = create<AuthStore>()(
         } catch (error) {
           console.error('❌ AuthStore: Error en refreshUser:', error);
           get().logout();
+        }
+      },
+
+      updateUser: (userData: Partial<User>) => {
+        const currentUser = get().user;
+        if (currentUser) {
+          set({
+            user: {
+              ...currentUser,
+              ...userData,
+            },
+          });
+          console.log('✅ AuthStore: Usuario actualizado:', userData);
         }
       },
     }),

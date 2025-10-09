@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import { useState, useEffect } from 'react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
@@ -18,24 +18,22 @@ import {
   Shield,
   Save,
   Eye,
-  EyeOff,
-  Upload
+  EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
 
 const DEFAULT_AVATARS = [
-  'https://images.unsplash.com/photo-1472099645785-5658abf4ff4e?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1494790108755-2616b612b786?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1500648767791-00dcc994a43e?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1438761681033-6461ffad8d80?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1507003211169-0a1dd7228f2d?w=150&h=150&fit=crop&crop=face',
-  'https://images.unsplash.com/photo-1534528741775-53994a69daeb?w=150&h=150&fit=crop&crop=face',
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent1&backgroundColor=1e40af,3b82f6&size=150', // Azul corporativo
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent2&backgroundColor=7c3aed,a855f7&size=150', // Morado tech
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent3&backgroundColor=0891b2,06b6d4&size=150', // Cyan profesional
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent4&backgroundColor=059669,10b981&size=150', // Verde empresarial
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent5&backgroundColor=dc2626,ef4444&size=150', // Rojo corporativo
+  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent6&backgroundColor=ea580c,f97316&size=150', // Naranja profesional
 ];
 
 export default function UserProfile() {
-  const { user, refreshUser } = useAuthStore();
+  const { user, refreshUser, updateUser } = useAuthStore();
   const { toast } = useToast();
-  const fileInputRef = useRef<HTMLInputElement>(null);
   
   // Estados para los formularios
   const [email, setEmail] = useState(user?.email || '');
@@ -44,7 +42,6 @@ export default function UserProfile() {
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
   const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
-  const [customAvatar, setCustomAvatar] = useState<string | null>(null);
   const [showEmailPassword, setShowEmailPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -62,15 +59,31 @@ export default function UserProfile() {
         const profile = await userProfileService.getUserProfile();
         // Actualizar el estado local con los datos del perfil
         setEmail(profile.email);
+        
+        // Actualizar la información completa del usuario en el store
+        updateUser({
+          id: profile.id,
+          username: profile.username,
+          email: profile.email,
+          roles: profile.roles,
+          emailVerified: profile.emailVerified,
+          createdAt: profile.createdAt,
+          avatar: profile.avatar,
+        });
       } catch (error) {
         console.error('Error al cargar perfil:', error);
+        toast({
+          title: "Error",
+          description: "No se pudo cargar la información del perfil",
+          variant: "destructive",
+        });
       }
     };
 
     if (user) {
       loadUserProfile();
     }
-  }, [user]);
+  }, [user, updateUser, toast]);
 
   if (!user) return null;
 
@@ -191,26 +204,10 @@ export default function UserProfile() {
 
   const handleAvatarSelect = (avatarUrl: string) => {
     setSelectedAvatar(avatarUrl);
-    setCustomAvatar(null);
-  };
-
-  const handleCustomAvatarUpload = (event: React.ChangeEvent<HTMLInputElement>) => {
-    const file = event.target.files?.[0];
-    if (file) {
-      const reader = new FileReader();
-      reader.onload = (e) => {
-        const result = e.target?.result as string;
-        setCustomAvatar(result);
-        setSelectedAvatar(null);
-      };
-      reader.readAsDataURL(file);
-    }
   };
 
   const handleAvatarUpdate = async () => {
-    const avatarToUpdate = customAvatar || selectedAvatar;
-    
-    if (!avatarToUpdate) {
+    if (!selectedAvatar) {
       toast({
         title: "Error",
         description: "Selecciona un avatar primero",
@@ -221,18 +218,12 @@ export default function UserProfile() {
 
     setIsUpdatingAvatar(true);
     try {
-      if (customAvatar) {
-        // Convertir base64 a File
-        const response = await fetch(customAvatar);
-        const blob = await response.blob();
-        const file = new File([blob], 'avatar.jpg', { type: 'image/jpeg' });
-        
-        await userProfileService.updateAvatar({ avatarFile: file });
-      } else if (selectedAvatar) {
-        await userProfileService.updateAvatar({ avatarUrl: selectedAvatar });
-      }
+      const result = await userProfileService.updateAvatar({ avatarUrl: selectedAvatar });
       
-      // Actualizar el usuario en el store
+      // Actualizar el avatar en el store inmediatamente
+      updateUser({ avatar: result.avatarUrl });
+      
+      // También refrescar el usuario completo
       await refreshUser();
       
       toast({
@@ -252,20 +243,24 @@ export default function UserProfile() {
   };
 
   const getCurrentAvatar = () => {
-    if (customAvatar) return customAvatar;
     if (selectedAvatar) return selectedAvatar;
     return null; // Usará el fallback del Avatar component
   };
 
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'No disponible';
-    return new Date(dateString).toLocaleDateString('es-ES', {
-      year: 'numeric',
-      month: 'long',
-      day: 'numeric',
-      hour: '2-digit',
-      minute: '2-digit'
-    });
+    
+    try {
+      const date = new Date(dateString);
+      return date.toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
+    } catch (error) {
+      console.error('Error al formatear fecha:', error);
+      return 'Fecha inválida';
+    }
   };
 
   return (
@@ -383,36 +378,9 @@ export default function UserProfile() {
                   </div>
                 </div>
 
-                <div>
-                  <Label className="text-sm font-medium">O sube tu propia imagen</Label>
-                  <div className="flex items-center gap-4 mt-2">
-                    <Button
-                      variant="outline"
-                      onClick={() => fileInputRef.current?.click()}
-                      className="flex items-center gap-2"
-                    >
-                      <Upload className="h-4 w-4" />
-                      Subir imagen
-                    </Button>
-                    {customAvatar && (
-                      <Avatar className="h-12 w-12">
-                        <AvatarImage src={customAvatar} />
-                        <AvatarFallback>U</AvatarFallback>
-                      </Avatar>
-                    )}
-                  </div>
-                  <input
-                    ref={fileInputRef}
-                    type="file"
-                    accept="image/*"
-                    onChange={handleCustomAvatarUpload}
-                    className="hidden"
-                  />
-                </div>
-
                 <Button
                   onClick={handleAvatarUpdate}
-                  disabled={!selectedAvatar && !customAvatar || isUpdatingAvatar}
+                  disabled={!selectedAvatar || isUpdatingAvatar}
                   className="w-full"
                 >
                   {isUpdatingAvatar ? (
