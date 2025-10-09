@@ -13,8 +13,8 @@ import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
 import Conversations from "./pages/Conversations";
 import DataExtraction from "./pages/DataExtraction";
-import Settings from "./pages/Settings";
 import KnowledgeBase from "./pages/KnowledgeBase";
+import UserProfile from "./pages/UserProfile";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
@@ -110,11 +110,11 @@ const App = () => {
               }
             />
             <Route
-              path="/settings"
+              path="/profile"
               element={
                 <ProtectedRoute>
                   <DashboardLayout>
-                    <Settings />
+                    <UserProfile />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

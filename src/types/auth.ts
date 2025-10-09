@@ -44,6 +44,8 @@ export interface User {
   email: string;
   roles: string[];
   emailVerified?: boolean;
+  createdAt?: string;
+  avatar?: string;
 }
 
 export interface AuthState {

@@ -2,9 +2,7 @@ import { NavLink } from 'react-router-dom';
 import { 
   Bot, 
   Home, 
-  Settings, 
   Activity, 
-  Users,
   Brain,
   BarChart3,
   Zap,
@@ -12,7 +10,6 @@ import {
   User,
   LogOut,
   Bell,
-  HelpCircle,
   MessageSquare,
   FileSpreadsheet
 } from 'lucide-react';
@@ -47,8 +44,7 @@ const navigation = [
   {
     name: 'Configuración',
     items: [
-      { name: 'Configuración', href: '/settings', icon: Settings },
-      { name: 'Usuarios', href: '/users', icon: Users },
+      { name: 'Mi Perfil', href: '/profile', icon: User },
     ]
   }
 ];
@@ -177,21 +173,6 @@ export function Sidebar() {
 
       {/* Área inferior */}
       <div className="border-t border-border/60">
-        {/* Estado de conexión - solo en desktop expandido */}
-        {!isMobile && isExpanded && (
-          <div className="px-6 py-3 border-b border-border/60">
-            <div className="flex items-center justify-between">
-              <div className="flex items-center space-x-2 text-sm">
-                <div className="h-2 w-2 bg-emerald-500 rounded-full animate-pulse"></div>
-                <span className="text-muted-foreground text-xs whitespace-nowrap">Backend Conectado</span>
-              </div>
-              <button className="text-muted-foreground hover:text-foreground transition-colors">
-                <HelpCircle className="h-4 w-4" />
-              </button>
-            </div>
-          </div>
-        )}
-
         {/* Usuario */}
         <div className="p-3" ref={userMenuRef}>
           {isMobile ? (

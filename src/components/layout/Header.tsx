@@ -1,4 +1,4 @@
-import { Bell, Settings, User, LogOut, Bot, Menu } from 'lucide-react';
+import { Bell, User, LogOut, Bot, Menu } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -66,11 +66,6 @@ export function Header() {
           {/* Toggle de tema */}
           <ThemeToggle />
 
-          {/* Configuración */}
-          <Button variant="ghost" size="icon">
-            <Settings className="h-5 w-5" />
-          </Button>
-
           {/* Usuario */}
           <DropdownMenu>
             <DropdownMenuTrigger asChild>
@@ -99,10 +94,6 @@ export function Header() {
               <DropdownMenuItem>
                 <User className="mr-2 h-4 w-4" />
                 <span>Perfil</span>
-              </DropdownMenuItem>
-              <DropdownMenuItem>
-                <Settings className="mr-2 h-4 w-4" />
-                <span>Configuración</span>
               </DropdownMenuItem>
               <DropdownMenuSeparator />
               <DropdownMenuItem 
