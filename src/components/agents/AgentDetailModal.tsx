@@ -2,6 +2,7 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle } from '@/components/u
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
 import { Separator } from '@/components/ui/separator';
+import { Textarea } from '@/components/ui/textarea';
 import { Agent } from '@/types/agent';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow, format } from 'date-fns';
@@ -13,11 +14,15 @@ import {
   FileText,
   Copy,
   Check,
-  MessageSquare
+  MessageSquare,
+  Edit3,
+  Save,
+  X
 } from 'lucide-react';
 import { useState } from 'react';
 import { useToast } from '@/hooks/use-toast';
 import { useConversationStore } from '@/store/conversationStore';
+import { agentService } from '@/services/agentApi';
 
 interface AgentDetailModalProps {
   isOpen: boolean;
@@ -54,6 +59,9 @@ const platformConfig = {
 export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalProps) {
   const { toast } = useToast();
   const [copiedPrompt, setCopiedPrompt] = useState(false);
+  const [isEditingPrompt, setIsEditingPrompt] = useState(false);
+  const [editedPrompt, setEditedPrompt] = useState('');
+  const [isSavingPrompt, setIsSavingPrompt] = useState(false);
   
   // Obtener conversaciones del store
   const { conversations } = useConversationStore();
@@ -101,6 +109,45 @@ export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalPro
         description: 'No se pudo copiar el prompt',
         variant: 'destructive',
       });
+    }
+  };
+
+  const handleEditPrompt = () => {
+    setEditedPrompt(agent.prompt || '');
+    setIsEditingPrompt(true);
+  };
+
+  const handleCancelEdit = () => {
+    setIsEditingPrompt(false);
+    setEditedPrompt('');
+  };
+
+  const handleSavePrompt = async () => {
+    if (!agent) return;
+    
+    setIsSavingPrompt(true);
+    try {
+      await agentService.updateAgent(agent.id, {
+        prompt: editedPrompt
+      });
+      
+      // Actualizar el agente localmente
+      agent.prompt = editedPrompt;
+      
+      setIsEditingPrompt(false);
+      toast({
+        title: 'Prompt actualizado',
+        description: 'El prompt del agente se ha actualizado correctamente',
+      });
+    } catch (error) {
+      console.error('Error updating agent prompt:', error);
+      toast({
+        title: 'Error',
+        description: 'No se pudo actualizar el prompt del agente',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsSavingPrompt(false);
     }
   };
 
@@ -207,30 +254,83 @@ export function AgentDetailModal({ isOpen, onClose, agent }: AgentDetailModalPro
                 <FileText className="h-4 w-4" />
                 Prompt del Agente
               </h3>
-              <Button
-                variant="outline"
-                size="sm"
-                onClick={handleCopyPrompt}
-                className="flex items-center gap-2"
-              >
-                {copiedPrompt ? (
+              <div className="flex items-center gap-2">
+                {!isEditingPrompt && (
                   <>
-                    <Check className="h-3 w-3" />
-                    Copiado
-                  </>
-                ) : (
-                  <>
-                    <Copy className="h-3 w-3" />
-                    Copiar
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleEditPrompt}
+                      className="flex items-center gap-2"
+                    >
+                      <Edit3 className="h-3 w-3" />
+                      Editar
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCopyPrompt}
+                      className="flex items-center gap-2"
+                    >
+                      {copiedPrompt ? (
+                        <>
+                          <Check className="h-3 w-3" />
+                          Copiado
+                        </>
+                      ) : (
+                        <>
+                          <Copy className="h-3 w-3" />
+                          Copiar
+                        </>
+                      )}
+                    </Button>
                   </>
                 )}
-              </Button>
+                {isEditingPrompt && (
+                  <>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={handleCancelEdit}
+                      className="flex items-center gap-2"
+                    >
+                      <X className="h-3 w-3" />
+                      Cancelar
+                    </Button>
+                    <Button
+                      size="sm"
+                      onClick={handleSavePrompt}
+                      disabled={isSavingPrompt}
+                      className="flex items-center gap-2"
+                    >
+                      <Save className="h-3 w-3" />
+                      {isSavingPrompt ? 'Guardando...' : 'Guardar'}
+                    </Button>
+                  </>
+                )}
+              </div>
             </div>
-            <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border">
-              <pre className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
-                {agent.prompt || 'Sin prompt configurado'}
-              </pre>
-            </div>
+            
+            {isEditingPrompt ? (
+              <div className="space-y-3">
+                <Textarea
+                  value={editedPrompt}
+                  onChange={(e) => setEditedPrompt(e.target.value)}
+                  placeholder="Escribe aquí el prompt del agente..."
+                  className="min-h-[200px] font-mono text-sm"
+                  disabled={isSavingPrompt}
+                />
+                <p className="text-xs text-muted-foreground">
+                  Define cómo debe comportarse y responder tu agente de IA.
+                </p>
+              </div>
+            ) : (
+              <div className="bg-slate-50 dark:bg-slate-900/50 p-4 rounded-lg border">
+                <pre className="text-sm whitespace-pre-wrap font-mono leading-relaxed">
+                  {agent.prompt || 'Sin prompt configurado'}
+                </pre>
+              </div>
+            )}
           </div>
 
           {/* Configuración de plataforma (si existe) */}

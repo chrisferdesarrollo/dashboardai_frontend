@@ -251,6 +251,24 @@ export const agentService = {
   },
 
   /**
+   * Actualizar un agente
+   */
+  async updateAgent(id: string, data: { name?: string; description?: string; prompt?: string; sessionName?: string; platformConfig?: string }): Promise<AgentResponse> {
+    try {
+      const agentApi = await getApiClient();
+      console.log('🔄 [UPDATE-AGENT] Actualizando agente:', { id, data });
+      
+      const response = await agentApi.put(`/agents/${id}`, data);
+      
+      console.log('✅ [UPDATE-AGENT] Agente actualizado exitosamente:', response.data);
+      return response.data;
+    } catch (error: unknown) {
+      console.error('❌ [UPDATE-AGENT] Error updating agent:', error);
+      throw error;
+    }
+  },
+
+  /**
    * Actualizar estado de un agente
    */
   async updateAgentStatus(id: string, status: string): Promise<AgentResponse> {

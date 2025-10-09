@@ -69,11 +69,13 @@ export default function Dashboard() {
   return (
     <div className="space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
-        <p className="text-muted-foreground">
-          Resumen general de tus agentes de IA y n8n
-        </p>
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Dashboard</h1>
+          <p className="text-muted-foreground">
+            Resumen general de tus agentes de IA y n8n
+          </p>
+        </div>
       </div>
 
       {/* Métricas principales */}

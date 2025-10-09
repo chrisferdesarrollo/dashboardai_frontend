@@ -9,19 +9,24 @@ import { ProtectedRoute } from "@/components/auth/ProtectedRoute";
 import { EmailVerification } from "@/components/auth/EmailVerification";
 import { ThemeProvider } from "@/components/theme-provider";
 import { useAuthStore } from "@/store/authStore";
+import { useAgentNotifications } from "@/hooks/useAgentNotifications";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
 import Conversations from "./pages/Conversations";
 import DataExtraction from "./pages/DataExtraction";
 import KnowledgeBase from "./pages/KnowledgeBase";
 import UserProfile from "./pages/UserProfile";
+import Notifications from "./pages/Notifications";
 import AuthPage from "./pages/Auth";
 import NotFound from "./pages/NotFound";
 
 const queryClient = new QueryClient();
 
-const App = () => {
+const AppContent = () => {
   const { refreshUser, isAuthenticated } = useAuthStore();
+  
+  // Activar las notificaciones de agentes
+  useAgentNotifications();
 
   useEffect(() => {
     // Verificar autenticación al cargar la app
@@ -98,6 +103,16 @@ const App = () => {
               }
             />
             <Route
+              path="/notifications"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <Notifications />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
               path="/analytics"
               element={
                 <ProtectedRoute>
@@ -126,6 +141,16 @@ const App = () => {
         </BrowserRouter>
         </TooltipProvider>
       </ThemeProvider>
+    </QueryClientProvider>
+  );
+};
+
+const App = () => {
+  return (
+    <QueryClientProvider client={queryClient}>
+      <AppContent />
+      <Toaster />
+      <Sonner />
     </QueryClientProvider>
   );
 };
