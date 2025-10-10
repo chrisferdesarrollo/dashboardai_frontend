@@ -3,7 +3,6 @@ import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { Label } from '@/components/ui/label';
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
-import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { Badge } from '@/components/ui/badge';
 import { Separator } from '@/components/ui/separator';
 import { useToast } from '@/hooks/use-toast';
@@ -13,7 +12,6 @@ import {
   User, 
   Mail, 
   Lock, 
-  Camera, 
   Calendar,
   Shield,
   Save,
@@ -21,15 +19,6 @@ import {
   EyeOff
 } from 'lucide-react';
 import { cn } from '@/lib/utils';
-
-const DEFAULT_AVATARS = [
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent1&backgroundColor=1e40af,3b82f6&size=150', // Azul corporativo
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent2&backgroundColor=7c3aed,a855f7&size=150', // Morado tech
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent3&backgroundColor=0891b2,06b6d4&size=150', // Cyan profesional
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent4&backgroundColor=059669,10b981&size=150', // Verde empresarial
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent5&backgroundColor=dc2626,ef4444&size=150', // Rojo corporativo
-  'https://api.dicebear.com/7.x/identicon/svg?seed=AIAgent6&backgroundColor=ea580c,f97316&size=150', // Naranja profesional
-];
 
 export default function UserProfile() {
   const { user, refreshUser, updateUser } = useAuthStore();
@@ -41,7 +30,6 @@ export default function UserProfile() {
   const [currentPassword, setCurrentPassword] = useState('');
   const [newPassword, setNewPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
-  const [selectedAvatar, setSelectedAvatar] = useState<string | null>(null);
   const [showEmailPassword, setShowEmailPassword] = useState(false);
   const [showCurrentPassword, setShowCurrentPassword] = useState(false);
   const [showNewPassword, setShowNewPassword] = useState(false);
@@ -50,7 +38,6 @@ export default function UserProfile() {
   // Estados de carga
   const [isUpdatingEmail, setIsUpdatingEmail] = useState(false);
   const [isUpdatingPassword, setIsUpdatingPassword] = useState(false);
-  const [isUpdatingAvatar, setIsUpdatingAvatar] = useState(false);
 
   // Cargar perfil completo al montar el componente
   useEffect(() => {
@@ -83,7 +70,8 @@ export default function UserProfile() {
     if (user) {
       loadUserProfile();
     }
-  }, [user, updateUser, toast]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []); // Solo ejecutar una vez al montar el componente
 
   if (!user) return null;
 
@@ -202,51 +190,6 @@ export default function UserProfile() {
     }
   };
 
-  const handleAvatarSelect = (avatarUrl: string) => {
-    setSelectedAvatar(avatarUrl);
-  };
-
-  const handleAvatarUpdate = async () => {
-    if (!selectedAvatar) {
-      toast({
-        title: "Error",
-        description: "Selecciona un avatar primero",
-        variant: "destructive",
-      });
-      return;
-    }
-
-    setIsUpdatingAvatar(true);
-    try {
-      const result = await userProfileService.updateAvatar({ avatarUrl: selectedAvatar });
-      
-      // Actualizar el avatar en el store inmediatamente
-      updateUser({ avatar: result.avatarUrl });
-      
-      // También refrescar el usuario completo
-      await refreshUser();
-      
-      toast({
-        title: "Avatar actualizado",
-        description: "Tu avatar ha sido actualizado correctamente",
-      });
-    } catch (error) {
-      const errorMessage = error instanceof Error ? error.message : "No se pudo actualizar el avatar";
-      toast({
-        title: "Error",
-        description: errorMessage,
-        variant: "destructive",
-      });
-    } finally {
-      setIsUpdatingAvatar(false);
-    }
-  };
-
-  const getCurrentAvatar = () => {
-    if (selectedAvatar) return selectedAvatar;
-    return null; // Usará el fallback del Avatar component
-  };
-
   const formatDate = (dateString?: string) => {
     if (!dateString) return 'No disponible';
     
@@ -285,12 +228,11 @@ export default function UserProfile() {
             </CardHeader>
             <CardContent className="space-y-4">
               <div className="flex flex-col items-center space-y-4">
-                <Avatar className="h-24 w-24">
-                  <AvatarImage src={getCurrentAvatar() || undefined} />
-                  <AvatarFallback className="text-lg">
+                <div className="h-24 w-24 rounded-full bg-blue-100 text-blue-800 border-2 border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 flex items-center justify-center">
+                  <span className="text-3xl font-bold">
                     {user.username?.charAt(0).toUpperCase() || 'U'}
-                  </AvatarFallback>
-                </Avatar>
+                  </span>
+                </div>
                 
                 <div className="text-center">
                   <h3 className="font-semibold text-lg">{user.username}</h3>
@@ -343,58 +285,8 @@ export default function UserProfile() {
 
           {/* Formularios de Actualización */}
           <div className="md:col-span-2 space-y-6">
-            {/* Actualizar Avatar */}
-            <Card>
-              <CardHeader>
-                <CardTitle className="flex items-center gap-2">
-                  <Camera className="h-5 w-5" />
-                  Avatar
-                </CardTitle>
-                <CardDescription>
-                  Selecciona un avatar predeterminado o sube tu propia imagen
-                </CardDescription>
-              </CardHeader>
-              <CardContent className="space-y-4">
-                <div>
-                  <Label className="text-sm font-medium">Avatares predeterminados</Label>
-                  <div className="grid grid-cols-6 gap-3 mt-2">
-                    {DEFAULT_AVATARS.map((avatar, index) => (
-                      <button
-                        key={index}
-                        onClick={() => handleAvatarSelect(avatar)}
-                        className={cn(
-                          "relative rounded-full overflow-hidden border-2 transition-all hover:scale-105",
-                          selectedAvatar === avatar
-                            ? "border-primary ring-2 ring-primary/20"
-                            : "border-border hover:border-primary/50"
-                        )}
-                      >
-                        <Avatar className="h-12 w-12">
-                          <AvatarImage src={avatar} />
-                          <AvatarFallback>A</AvatarFallback>
-                        </Avatar>
-                      </button>
-                    ))}
-                  </div>
-                </div>
-
-                <Button
-                  onClick={handleAvatarUpdate}
-                  disabled={!selectedAvatar || isUpdatingAvatar}
-                  className="w-full"
-                >
-                  {isUpdatingAvatar ? (
-                    "Actualizando..."
-                  ) : (
-                    <>
-                      <Save className="h-4 w-4 mr-2" />
-                      Actualizar Avatar
-                    </>
-                  )}
-                </Button>
-              </CardContent>
-            </Card>
-
+            {/* Avatar section temporarily disabled */}
+            
             {/* Actualizar Email */}
             <Card>
               <CardHeader>
@@ -447,7 +339,7 @@ export default function UserProfile() {
                 <Button
                   onClick={handleEmailUpdate}
                   disabled={email === user.email || !emailCurrentPassword || isUpdatingEmail}
-                  className="w-full"
+                  className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800"
                 >
                   {isUpdatingEmail ? (
                     "Actualizando..."
@@ -554,7 +446,7 @@ export default function UserProfile() {
                 <Button
                   onClick={handlePasswordUpdate}
                   disabled={!currentPassword || !newPassword || !confirmPassword || isUpdatingPassword}
-                  className="w-full"
+                  className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800"
                 >
                   {isUpdatingPassword ? (
                     "Actualizando..."

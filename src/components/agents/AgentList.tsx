@@ -130,7 +130,7 @@ export function AgentList() {
             <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
           </Button>
           
-          <Button onClick={handleCreateAgent} className="flex items-center space-x-2">
+          <Button onClick={handleCreateAgent} className="flex items-center space-x-2 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800">
             <Plus className="h-4 w-4" />
             <span>Nuevo Agente</span>
           </Button>
@@ -182,7 +182,7 @@ export function AgentList() {
               : 'Crea tu primer agente para empezar'}
           </p>
           {(!searchTerm && statusFilter === 'all') && (
-            <Button onClick={handleCreateAgent}>
+            <Button onClick={handleCreateAgent} className="bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800">
               <Plus className="mr-2 h-4 w-4" />
               Crear Agente
             </Button>

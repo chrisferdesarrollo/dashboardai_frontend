@@ -245,7 +245,7 @@ export function AgentModal({ isOpen, onClose, agent }: AgentModalProps) {
             >
               Cancelar
             </Button>
-            <Button type="submit" disabled={loading}>
+            <Button type="submit" disabled={loading} className="bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800">
               {loading ? 'Guardando...' : (isEditing ? 'Actualizar' : 'Crear')}
             </Button>
           </div>

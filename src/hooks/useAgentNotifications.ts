@@ -18,8 +18,34 @@ export const useAgentNotifications = () => {
   // Función para crear notificación de nuevo mensaje desde conversation log
   const createMessageNotification = useCallback((log: ConversationLogResponse) => {
     // Obtener el agente correspondiente si existe
-    const agent = agents.find(a => a.id === log.agentId);
-    const agentName = agent?.name || 'Agente';
+    let agentName = 'Agente';
+    
+    if (log.agentId) {
+      // Buscar por ID exacto
+      const agent = agents.find(a => a.id === log.agentId);
+      if (agent) {
+        agentName = agent.name;
+      } else {
+        // Si no se encuentra por ID, intentar usar el sessionName como fallback
+        // Ejemplo: "session_whatsapp_123" -> buscar agente que contenga "whatsapp"
+        const sessionLower = log.sessionName.toLowerCase();
+        const agentBySession = agents.find(a => 
+          sessionLower.includes(a.name.toLowerCase()) || 
+          sessionLower.includes(a.platform.toLowerCase())
+        );
+        if (agentBySession) {
+          agentName = agentBySession.name;
+        }
+      }
+    }
+    
+    // Log para debugging
+    console.log('📨 Creando notificación para agente:', {
+      agentId: log.agentId,
+      agentName,
+      sessionName: log.sessionName,
+      totalAgents: agents.length
+    });
     
     // Crear mensaje preview desde el user message
     const messagePreview = log.userMessage 

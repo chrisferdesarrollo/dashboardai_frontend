@@ -701,11 +701,30 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
                   </>
                 ) : (
                   <Card>
-                    <CardContent className="p-6 text-center">
-                      <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center mb-4">
-                        <CheckCircle className="h-8 w-8 text-green-600" />
+                    <CardContent className="p-8 text-center">
+                      {/* Logo animado con efecto de éxito */}
+                      <div className="relative mx-auto w-28 h-28 flex items-center justify-center mb-6">
+                        {/* Anillo de fondo pulsante */}
+                        <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-200 dark:border-green-800 success-ring" />
+                        
+                        {/* Logo con animación de éxito */}
+                        <div className="relative z-10">
+                          <img 
+                            src="/iconoTopias.png" 
+                            alt="TopIA's Success" 
+                            className="h-16 w-16 object-contain logo-success"
+                          />
+                        </div>
+                        
+                        {/* Icono de check pequeño en la esquina */}
+                        <div className="absolute -bottom-1 -right-1 w-9 h-9 bg-green-500 rounded-full flex items-center justify-center border-4 border-background shadow-lg">
+                          <CheckCircle className="h-5 w-5 text-white" />
+                        </div>
                       </div>
-                      <h4 className="font-semibold text-green-600 mb-2">¡WhatsApp conectado!</h4>
+                      
+                      <h4 className="text-xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent mb-2">
+                        ¡WhatsApp conectado!
+                      </h4>
                       <p className="text-sm text-muted-foreground">
                         Tu cuenta se ha vinculado exitosamente
                       </p>
@@ -826,7 +845,7 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
               <Button 
                 type="submit" 
                 disabled={isLoading}
-                className="flex-1"
+                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800"
               >
                 {isLoading ? (
                   <>
@@ -843,13 +862,32 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
 
       case 'completed':
         return (
-          <div className="text-center space-y-6">
-            <div className="mx-auto w-16 h-16 bg-green-100 dark:bg-green-900 rounded-full flex items-center justify-center">
-              <CheckCircle className="h-8 w-8 text-green-600" />
+          <div className="text-center space-y-6 py-4">
+            {/* Logo animado con efecto de éxito */}
+            <div className="relative mx-auto w-32 h-32 flex items-center justify-center">
+              {/* Anillo de fondo pulsante */}
+              <div className="absolute inset-0 rounded-full bg-gradient-to-br from-green-100 to-emerald-100 dark:from-green-900/30 dark:to-emerald-900/30 border-2 border-green-200 dark:border-green-800 success-ring" />
+              
+              {/* Logo con animación de éxito */}
+              <div className="relative z-10">
+                <img 
+                  src="/iconoTopias.png" 
+                  alt="TopIA's Success" 
+                  className="h-20 w-20 object-contain logo-success"
+                />
+              </div>
+              
+              {/* Icono de check pequeño en la esquina */}
+              <div className="absolute -bottom-1 -right-1 w-10 h-10 bg-green-500 rounded-full flex items-center justify-center border-4 border-background shadow-lg">
+                <CheckCircle className="h-6 w-6 text-white" />
+              </div>
             </div>
-            <div>
-              <h3 className="text-lg font-semibold mb-2">¡Agente creado exitosamente!</h3>
-              <p className="text-muted-foreground">
+            
+            <div className="space-y-2">
+              <h3 className="text-2xl font-bold bg-gradient-to-r from-green-600 to-emerald-600 dark:from-green-400 dark:to-emerald-400 bg-clip-text text-transparent">
+                ¡Agente creado exitosamente!
+              </h3>
+              <p className="text-muted-foreground text-base">
                 Tu agente de WhatsApp está listo para usar
               </p>
             </div>

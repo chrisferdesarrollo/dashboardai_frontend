@@ -55,12 +55,49 @@ export function Sidebar() {
   const { isMobileExpanded, setIsMobileExpanded } = useSidebarContext();
   const [isUserMenuOpen, setIsUserMenuOpen] = useState(false);
   const [isHovered, setIsHovered] = useState(false);
+  const [avatarUrl, setAvatarUrl] = useState<string | undefined>(undefined);
   const userMenuRef = useRef<HTMLDivElement>(null);
   const sidebarRef = useRef<HTMLDivElement>(null);
   const isMobile = useMobile();
 
   // El sidebar se expande con hover solo en desktop, en móvil con estado separado
   const isExpanded = isMobile ? isMobileExpanded : isHovered;
+
+  // Construir URL del avatar desde el backend
+  useEffect(() => {
+    const buildAvatarUrl = async () => {
+      if (user?.avatar) {
+        console.log('🔍 [Sidebar] Avatar raw value:', user.avatar);
+        
+        // Verificar si ya es una URL completa
+        if (user.avatar.startsWith('http://') || user.avatar.startsWith('https://')) {
+          console.log('✅ [Sidebar] Avatar es URL completa:', user.avatar);
+          setAvatarUrl(user.avatar);
+        } else if (user.avatar.startsWith('/')) {
+          // Si comienza con /, es una ruta relativa del backend
+          const backendUrl = import.meta.env.DEV 
+            ? 'http://localhost:8080' 
+            : window.location.origin;
+          const fullUrl = `${backendUrl}${user.avatar}`;
+          console.log('🔨 [Sidebar] Avatar URL construida (con /):', fullUrl);
+          setAvatarUrl(fullUrl);
+        } else {
+          // Si no tiene /, asumimos que es solo el nombre del archivo
+          const backendUrl = import.meta.env.DEV 
+            ? 'http://localhost:8080' 
+            : window.location.origin;
+          const fullUrl = `${backendUrl}/uploads/avatars/${user.avatar}`;
+          console.log('🔨 [Sidebar] Avatar URL construida (sin /):', fullUrl);
+          setAvatarUrl(fullUrl);
+        }
+      } else {
+        console.log('❌ [Sidebar] No hay avatar en user');
+        setAvatarUrl(undefined);
+      }
+    };
+
+    buildAvatarUrl();
+  }, [user?.avatar]);
 
   // Cerrar menú de usuario al hacer click fuera
   useEffect(() => {
@@ -180,8 +217,8 @@ export function Sidebar() {
             /* Avatar simple para móvil - sin funcionalidad */
             <div className="flex items-center justify-center p-2">
               <Avatar className="h-8 w-8">
-                <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
-                <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                <AvatarImage src={avatarUrl} alt={user?.username} />
+                <AvatarFallback className="bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 text-xs font-semibold">
                   {user?.username?.charAt(0).toUpperCase() || 'U'}
                 </AvatarFallback>
               </Avatar>
@@ -194,8 +231,8 @@ export function Sidebar() {
                 className="w-full flex items-center justify-center p-2 rounded-lg hover:bg-accent/50 transition-colors"
               >
                 <Avatar className="h-8 w-8">
-                  <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
-                  <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                  <AvatarImage src={avatarUrl} alt={user?.username} />
+                  <AvatarFallback className="bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 text-xs font-semibold">
                     {user?.username?.charAt(0).toUpperCase() || 'U'}
                   </AvatarFallback>
                 </Avatar>
@@ -212,8 +249,8 @@ export function Sidebar() {
                   <div className="p-3 border-b border-border">
                     <div className="flex items-center space-x-3">
                       <Avatar className="h-8 w-8">
-                        <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
-                        <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                        <AvatarImage src={avatarUrl} alt={user?.username} />
+                        <AvatarFallback className="bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 text-xs font-semibold">
                           {user?.username?.charAt(0).toUpperCase() || 'U'}
                         </AvatarFallback>
                       </Avatar>
@@ -253,8 +290,8 @@ export function Sidebar() {
               >
                 <div className="flex items-center space-x-3">
                   <Avatar className="h-8 w-8">
-                    <AvatarImage src={user?.avatar || undefined} alt={user?.username} />
-                    <AvatarFallback className="bg-gradient-to-br from-purple-500 to-pink-500 text-white text-xs font-medium">
+                    <AvatarImage src={avatarUrl} alt={user?.username} />
+                    <AvatarFallback className="bg-blue-100 text-blue-800 border border-blue-200 dark:bg-blue-900/50 dark:text-blue-300 dark:border-blue-800 text-xs font-semibold">
                       {user?.username?.charAt(0).toUpperCase() || 'U'}
                     </AvatarFallback>
                   </Avatar>

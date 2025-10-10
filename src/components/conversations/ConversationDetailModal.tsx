@@ -306,8 +306,8 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
               </div>
             </ScrollArea>
 
-            {/* Message Input */}
-            <div className="border-t bg-background/95 backdrop-blur-sm p-4 flex-shrink-0">
+            {/* Message Input - Deshabilitado */}
+            {/* <div className="border-t bg-background/95 backdrop-blur-sm p-4 flex-shrink-0">
               <div className="flex space-x-3">
                 <Input
                   placeholder="Escribe un mensaje..."
@@ -330,7 +330,7 @@ export function ConversationDetailModal({ isOpen, onClose, conversation }: Conve
                   )}
                 </Button>
               </div>
-            </div>
+            </div> */}
           </div>
 
           {/* Right Sidebar */}

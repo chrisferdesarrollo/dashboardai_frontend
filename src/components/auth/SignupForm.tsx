@@ -283,7 +283,7 @@ export const SignupForm = ({ onSwitchToLogin }: SignupFormProps) => {
         <CardFooter className="flex flex-col space-y-4">
           <Button 
             type="submit" 
-            className="w-full" 
+            className="w-full bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800" 
             disabled={isLoading || !!success}
           >
             {isLoading ? (

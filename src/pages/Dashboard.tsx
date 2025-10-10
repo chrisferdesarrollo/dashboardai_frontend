@@ -1,4 +1,4 @@
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card';
 import { Badge } from '@/components/ui/badge';
 import { Button } from '@/components/ui/button';
@@ -15,6 +15,7 @@ import {
 } from 'lucide-react';
 import { useAgentStore } from '@/store/agentStore';
 import { useConversationStore } from '@/store/conversationStore';
+import { AgentCreationFlow } from '@/components/agents/AgentCreationFlow';
 import { Agent } from '@/types/agent';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
@@ -22,6 +23,7 @@ import { es } from 'date-fns/locale';
 export default function Dashboard() {
   const { agents, fetchAgents, loading } = useAgentStore();
   const { conversations, fetchConversations, getConversationStats } = useConversationStore();
+  const [isModalOpen, setIsModalOpen] = useState(false);
 
   useEffect(() => {
     fetchAgents();
@@ -212,7 +214,10 @@ export default function Dashboard() {
               <div className="text-center py-8">
                 <Bot className="h-12 w-12 text-muted-foreground mx-auto mb-4" />
                 <p className="text-muted-foreground">No hay agentes creados</p>
-                <Button className="mt-4" onClick={() => window.location.href = '/agents'}>
+                <Button 
+                  className="mt-4 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800" 
+                  onClick={() => setIsModalOpen(true)}
+                >
                   <Play className="mr-2 h-4 w-4" />
                   Crear Agente
                 </Button>
@@ -256,6 +261,12 @@ export default function Dashboard() {
           </CardContent>
         </Card>
       </div>
+
+      {/* Modal de creación de agente */}
+      <AgentCreationFlow
+        isOpen={isModalOpen}
+        onClose={() => setIsModalOpen(false)}
+      />
     </div>
   );
 }

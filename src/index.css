@@ -125,6 +125,21 @@ All colors MUST be HSL.
 
   body {
     @apply bg-background text-foreground;
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    font-feature-settings: 'ss01' on, 'cv01' on, 'cv02' on;
+  }
+
+  h1, h2, h3, h4, h5, h6 {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+    font-weight: 700;
+    letter-spacing: -0.02em;
+    font-feature-settings: 'ss01' on, 'cv01' on;
+  }
+
+  button, input, select, textarea {
+    font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
   }
 }
 
@@ -162,4 +177,142 @@ All colors MUST be HSL.
 
 .scrollbar-hide::-webkit-scrollbar {
   display: none; /* Safari and Chrome */
+}
+/* Animaci�n de luz brillante para el logo */
+@keyframes logo-glow-pulse {
+  0%, 100% {
+    filter: drop-shadow(0 0 4px rgba(59, 130, 246, 0.8)) 
+            drop-shadow(0 0 8px rgba(59, 130, 246, 0.6))
+            drop-shadow(0 0 12px rgba(59, 130, 246, 0.4))
+            drop-shadow(0 0 16px rgba(59, 130, 246, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 12px rgba(59, 130, 246, 1)) 
+            drop-shadow(0 0 20px rgba(59, 130, 246, 0.9))
+            drop-shadow(0 0 28px rgba(59, 130, 246, 0.7))
+            drop-shadow(0 0 36px rgba(59, 130, 246, 0.5))
+            drop-shadow(0 0 44px rgba(59, 130, 246, 0.3));
+  }
+}
+
+@keyframes logo-shine {
+  0% {
+    filter: brightness(1) contrast(1);
+  }
+  50% {
+    filter: brightness(1.5) contrast(1.2) saturate(1.3);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+  }
+}
+
+.logo-animated {
+  animation: logo-glow-pulse 6s ease-in-out infinite, 
+             logo-shine 6s ease-in-out infinite;
+  transition: transform 0.3s ease;
+}
+
+.logo-animated:hover {
+  transform: scale(1.08);
+  animation: logo-glow-pulse 2s ease-in-out infinite, 
+             logo-shine 2s ease-in-out infinite;
+}
+
+/* Animación de éxito para el logo */
+@keyframes success-bounce {
+  0% {
+    transform: scale(0);
+    opacity: 0;
+  }
+  50% {
+    transform: scale(1.15);
+  }
+  70% {
+    transform: scale(0.95);
+  }
+  100% {
+    transform: scale(1);
+    opacity: 1;
+  }
+}
+
+@keyframes success-glow {
+  0%, 100% {
+    filter: drop-shadow(0 0 8px rgba(34, 197, 94, 0.6)) 
+            drop-shadow(0 0 16px rgba(34, 197, 94, 0.4))
+            drop-shadow(0 0 24px rgba(34, 197, 94, 0.3));
+  }
+  50% {
+    filter: drop-shadow(0 0 16px rgba(34, 197, 94, 0.9)) 
+            drop-shadow(0 0 28px rgba(34, 197, 94, 0.7))
+            drop-shadow(0 0 40px rgba(34, 197, 94, 0.5))
+            drop-shadow(0 0 52px rgba(34, 197, 94, 0.3));
+  }
+}
+
+@keyframes success-pulse-ring {
+  0% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+  50% {
+    transform: scale(1.05);
+    opacity: 0.9;
+  }
+  100% {
+    transform: scale(0.95);
+    opacity: 0.7;
+  }
+}
+
+@keyframes success-shine {
+  0% {
+    filter: brightness(1) contrast(1);
+  }
+  50% {
+    filter: brightness(1.3) contrast(1.1) saturate(1.2);
+  }
+  100% {
+    filter: brightness(1) contrast(1);
+  }
+}
+
+.logo-success {
+  animation: success-bounce 0.6s cubic-bezier(0.68, -0.55, 0.265, 1.55) forwards,
+             success-glow 2s ease-in-out infinite 0.6s,
+             success-shine 2s ease-in-out infinite 0.6s;
+}
+
+.success-ring {
+  animation: success-pulse-ring 2s ease-in-out infinite;
+}
+
+/* Logotipo tipográfico TopIA's */
+.brand-logo {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+  font-weight: 700;
+  font-size: 1.75rem;
+  letter-spacing: 0.02em;
+  line-height: 1;
+  text-transform: uppercase;
+  color: hsl(0 0% 95%);
+  font-feature-settings: 'ss01' on, 'cv01' on;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+.brand-logo-apostrophe {
+  text-transform: none;
+  font-weight: 600;
+}
+
+/* Versión para tema claro */
+:root .brand-logo {
+  color: hsl(240 10% 3.9%);
+}
+
+/* Versión para tema oscuro */
+.dark .brand-logo {
+  color: hsl(0 0% 95%);
 }

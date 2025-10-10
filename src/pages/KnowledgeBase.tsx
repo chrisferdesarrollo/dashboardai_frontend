@@ -9,7 +9,6 @@ import {
   Trash2,
   Edit,
   Tag,
-  Brain,
   CheckCircle,
   XCircle,
   Clock,
@@ -514,19 +513,16 @@ const KnowledgeBase: React.FC = () => {
     <div className="flex-1 space-y-6 p-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div className="flex items-center gap-3">
-          <Brain className="h-8 w-8 text-primary" />
-          <div>
-            <h1 className="text-3xl font-bold tracking-tight">Base de Conocimientos</h1>
-            <p className="text-muted-foreground">
-              Gestiona documentos y entrena tus agentes de IA con conocimiento vectorizado
-            </p>
-          </div>
+        <div>
+          <h1 className="text-3xl font-bold tracking-tight">Base de Conocimientos</h1>
+          <p className="text-muted-foreground">
+            Gestiona documentos y entrena tus agentes de IA con conocimiento vectorizado
+          </p>
         </div>
         
         <Dialog open={uploadDialogOpen} onOpenChange={setUploadDialogOpen}>
           <DialogTrigger asChild>
-            <Button className="gap-2">
+            <Button className="gap-2 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800">
               <Upload className="h-4 w-4" />
               Subir Documento
             </Button>
@@ -642,7 +638,7 @@ const KnowledgeBase: React.FC = () => {
               <Button
                 onClick={handleUpload}
                 disabled={uploading || !uploadForm.file || !uploadForm.name.trim()}
-                className="flex-1"
+                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800"
               >
                 {uploading ? (
                   <>
@@ -875,7 +871,7 @@ const KnowledgeBase: React.FC = () => {
                 : 'Sube tu primer documento para comenzar a entrenar tus agentes de IA'}
           </p>
           {!searchTerm && (
-            <Button onClick={() => setUploadDialogOpen(true)}>
+            <Button onClick={() => setUploadDialogOpen(true)} className="bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800">
               <Upload className="mr-2 h-4 w-4" />
               Subir Documento
             </Button>
