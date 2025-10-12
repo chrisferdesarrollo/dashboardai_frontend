@@ -288,6 +288,24 @@ export const conversationApi = {
       console.error('Error searching conversations:', error);
       throw error;
     }
+  },
+
+  /**
+   * Eliminar una conversación completa (todos los logs de una sesión)
+   */
+  async deleteConversation(sessionName: string): Promise<void> {
+    try {
+      const client = await getApiClient();
+      
+      const response = await client.delete(`/conversation-logs/session/${encodeURIComponent(sessionName)}`);
+      
+      if (!response.data.success && response.data.success !== undefined) {
+        throw new Error(response.data.error || 'Error al eliminar la conversación');
+      }
+    } catch (error) {
+      console.error('Error deleting conversation:', error);
+      throw error;
+    }
   }
 };
 

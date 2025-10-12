@@ -244,6 +244,7 @@ interface ConversationState {
   assignConversation: (conversationId: string, userId: string) => Promise<void>;
   addTag: (conversationId: string, tag: string) => Promise<void>;
   removeTag: (conversationId: string, tag: string) => Promise<void>;
+  deleteConversation: (sessionName: string) => Promise<void>;
   
   // Filtros
   updateFilters: (newFilters: Partial<ConversationFilter>) => void;
@@ -700,6 +701,43 @@ export const useConversationStore = create<ConversationState>()(
         set((state) => ({
           conversations: state.conversations.map(c => c.id === conversationId ? { ...c, tags: c.tags.filter(t => t !== tag) } : c)
         }));
+      },
+
+      deleteConversation: async (conversationId: string) => {
+        try {
+          console.log('🗑️ Deleting conversation with ID:', conversationId);
+          
+          // Encontrar la conversación en el estado para obtener el sessionName real
+          const state = get();
+          const conversation = state.conversations.find(c => c.id === conversationId);
+          
+          if (!conversation) {
+            throw new Error('Conversación no encontrada');
+          }
+          
+          // Extraer el sessionName del ID del contacto o buscar en los mensajes
+          // El contact.id tiene el formato: contact-{sessionName}
+          const sessionName = conversation.contact.id.replace('contact-', '');
+          
+          console.log('🗑️ Extracted sessionName:', sessionName);
+          
+          // Llamar al API para eliminar la conversación
+          await conversationApi.deleteConversation(sessionName);
+          
+          // Actualizar el estado local eliminando la conversación
+          set((state) => ({
+            conversations: state.conversations.filter(c => c.id !== conversationId),
+            selectedConversation: state.selectedConversation?.id === conversationId ? null : state.selectedConversation,
+            messages: Object.fromEntries(
+              Object.entries(state.messages).filter(([id]) => id !== conversationId)
+            )
+          }));
+          
+          console.log('✅ Conversation deleted successfully');
+        } catch (error) {
+          console.error('❌ Error deleting conversation:', error);
+          throw error;
+        }
       },
 
       // Filtros

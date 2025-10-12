@@ -1,5 +1,5 @@
 import { useEffect, useState } from 'react';
-import { Search, Filter, MoreVertical, MessageSquare, Users, CheckCircle2, Clock, ArrowUpRight, Phone, Tag, UserCheck, RefreshCw } from 'lucide-react';
+import { Search, Filter, MoreVertical, MessageSquare, Users, CheckCircle2, Clock, ArrowUpRight, Phone, Tag, UserCheck, RefreshCw, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
 import { useToast } from '@/hooks/use-toast';
@@ -32,6 +32,7 @@ import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
 import { es } from 'date-fns/locale';
 import { ConversationDetailModal } from '@/components/conversations/ConversationDetailModal';
+import { DeleteConversationDialog } from '@/components/conversations/DeleteConversationDialog';
 import { formatColombianPhoneNumber } from '@/lib/utils';
 
 const statusConfig = {
@@ -70,7 +71,15 @@ const platformConfig = {
   },
 };
 
-function ConversationCard({ conversation, onSelect }: { conversation: Conversation; onSelect: (conversation: Conversation) => void }) {
+function ConversationCard({ 
+  conversation, 
+  onSelect, 
+  onDelete 
+}: { 
+  conversation: Conversation; 
+  onSelect: (conversation: Conversation) => void;
+  onDelete: (conversation: Conversation) => void;
+}) {
   const { updateConversationStatus, markAsRead } = useConversationStore();
   const statusInfo = statusConfig[conversation.status];
   const platformInfo = platformConfig[conversation.platform];
@@ -150,6 +159,17 @@ function ConversationCard({ conversation, onSelect }: { conversation: Conversati
                   <MessageSquare className="mr-2 h-4 w-4" />
                   Reabrir conversación
                 </DropdownMenuItem>
+                <DropdownMenuSeparator />
+                <DropdownMenuItem 
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    onDelete(conversation);
+                  }}
+                  className="text-destructive focus:text-destructive"
+                >
+                  <Trash2 className="mr-2 h-4 w-4" />
+                  Eliminar conversación
+                </DropdownMenuItem>
               </DropdownMenuContent>
             </DropdownMenu>
           </div>
@@ -218,11 +238,14 @@ export default function Conversations() {
     loading,
     fetchConversations,
     refreshConversations,
+    deleteConversation,
     error,
   } = useConversationStore();
 
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);
+  const [conversationToDelete, setConversationToDelete] = useState<Conversation | null>(null);
+  const [isDeleting, setIsDeleting] = useState(false);
 
   const conversations = getFilteredConversations();
   const stats = getConversationStats();
@@ -235,6 +258,36 @@ export default function Conversations() {
   const handleSelectConversation = (conversation: Conversation) => {
     setSelectedConversation(conversation);
     setShowDetailModal(true);
+  };
+
+  const handleDeleteConversation = (conversation: Conversation) => {
+    setConversationToDelete(conversation);
+  };
+
+  const confirmDeleteConversation = async () => {
+    if (!conversationToDelete) return;
+
+    setIsDeleting(true);
+    try {
+      await deleteConversation(conversationToDelete.id);
+      toast({
+        title: 'Conversación eliminada',
+        description: `La conversación con "${conversationToDelete.contact.name}" ha sido eliminada exitosamente.`,
+      });
+      setConversationToDelete(null);
+    } catch (error) {
+      toast({
+        title: 'Error al eliminar',
+        description: 'No se pudo eliminar la conversación. Inténtalo de nuevo.',
+        variant: 'destructive',
+      });
+    } finally {
+      setIsDeleting(false);
+    }
+  };
+
+  const cancelDeleteConversation = () => {
+    setConversationToDelete(null);
   };
 
   const statCards = [
@@ -390,6 +443,7 @@ export default function Conversations() {
               key={conversation.id}
               conversation={conversation}
               onSelect={handleSelectConversation}
+              onDelete={handleDeleteConversation}
             />
           ))}
         </div>
@@ -403,6 +457,15 @@ export default function Conversations() {
           setSelectedConversation(null);
         }}
         conversation={selectedConversation}
+      />
+
+      {/* Diálogo de confirmación de eliminación */}
+      <DeleteConversationDialog
+        conversation={conversationToDelete}
+        isOpen={!!conversationToDelete}
+        onClose={cancelDeleteConversation}
+        onConfirm={confirmDeleteConversation}
+        isDeleting={isDeleting}
       />
     </div>
   );

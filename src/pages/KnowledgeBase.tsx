@@ -362,12 +362,22 @@ const KnowledgeBase: React.FC = () => {
       return;
     }
 
+    // Validar que se haya seleccionado un agente
+    if (!uploadForm.agentId || uploadForm.agentId.trim() === '' || uploadForm.selectedAgent === 'none') {
+      toast({
+        title: 'Error',
+        description: 'Debe seleccionar un agente para asociar el documento',
+        variant: 'destructive',
+      });
+      return;
+    }
+
     setUploading(true);
     try {
       const tags = uploadForm.tags.split(',').map(tag => tag.trim()).filter(tag => tag);
       
       // El agentId ya viene validado de la selección
-      const validAgentId = uploadForm.agentId && uploadForm.agentId.trim() ? uploadForm.agentId.trim() : undefined;
+      const validAgentId = uploadForm.agentId.trim();
       
       await documentApi.uploadDocument({
         file: uploadForm.file,
@@ -564,7 +574,7 @@ const KnowledgeBase: React.FC = () => {
                 <div>
                   <p className="mb-2">Arrastra y suelta un archivo aquí, o haz clic para seleccionar</p>
                   <p className="text-sm text-muted-foreground">
-                    Formatos soportados: PDF, Word, TXT, MD, CSV (máx. 10MB)
+                    Formatos soportados: PDF, Word, TXT, MD, CSV (máx. 30MB)
                   </p>
                 </div>
               )}
@@ -607,7 +617,7 @@ const KnowledgeBase: React.FC = () => {
               </div>
 
               <div>
-                <Label htmlFor="agentId">Agente (opcional)</Label>
+                <Label htmlFor="agentId">Agente *</Label>
                 <Select
                   value={uploadForm.selectedAgent}
                   onValueChange={handleAgentSelection}
@@ -616,7 +626,6 @@ const KnowledgeBase: React.FC = () => {
                     <SelectValue placeholder="Selecciona un agente específico" />
                   </SelectTrigger>
                   <SelectContent>
-                    <SelectItem value="none">Sin agente específico</SelectItem>
                     {agents.map((agent) => (
                       <SelectItem key={agent.id} value={agent.id}>
                         {agent.name}
@@ -656,7 +665,7 @@ const KnowledgeBase: React.FC = () => {
 
       {/* Estadísticas */}
       {stats && (
-        <div className="grid gap-4 md:grid-cols-4">
+        <div className="grid gap-4 md:grid-cols-1 max-w-xs">
           <Card>
             <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
               <CardTitle className="text-sm font-medium">Total Documentos</CardTitle>
@@ -664,36 +673,6 @@ const KnowledgeBase: React.FC = () => {
             </CardHeader>
             <CardContent>
               <div className="text-2xl font-bold">{stats.total}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Procesados</CardTitle>
-              <CheckCircle className="h-4 w-4 text-green-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-green-600">{stats.processed}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Pendientes</CardTitle>
-              <Clock className="h-4 w-4 text-yellow-600" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold text-yellow-600">{stats.pending}</div>
-            </CardContent>
-          </Card>
-
-          <Card>
-            <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
-              <CardTitle className="text-sm font-medium">Tasa de Éxito</CardTitle>
-              <AlertCircle className="h-4 w-4 text-muted-foreground" />
-            </CardHeader>
-            <CardContent>
-              <div className="text-2xl font-bold">{stats.successRate.toFixed(1)}%</div>
             </CardContent>
           </Card>
         </div>
@@ -970,14 +949,6 @@ const KnowledgeBase: React.FC = () => {
                         </Button>
                       </DropdownMenuTrigger>
                       <DropdownMenuContent align="end">
-                        <DropdownMenuItem>
-                          <Edit className="h-4 w-4 mr-2" />
-                          Editar
-                        </DropdownMenuItem>
-                        <DropdownMenuItem>
-                          <Download className="h-4 w-4 mr-2" />
-                          Descargar
-                        </DropdownMenuItem>
                         <DropdownMenuItem 
                           onClick={() => handleDelete(doc)}
                           className="text-red-600"

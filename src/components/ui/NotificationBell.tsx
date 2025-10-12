@@ -1,4 +1,4 @@
-import { Bell, Check, X, MessageSquare, AlertTriangle, Info, CheckCircle, AlertCircle } from 'lucide-react';
+import { Bell, Check, X, MessageSquare, AlertTriangle, Info, CheckCircle, AlertCircle, Trash2 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import {
   DropdownMenu,
@@ -58,7 +58,8 @@ export function NotificationBell() {
     unreadCount, 
     markAsRead, 
     markAllAsRead, 
-    removeNotification 
+    removeNotification,
+    clearAllNotifications
   } = useNotificationStore();
   const navigate = useNavigate();
 
@@ -81,6 +82,10 @@ export function NotificationBell() {
     removeNotification(notificationId);
   };
 
+  const handleClearAll = () => {
+    clearAllNotifications();
+  };
+
   return (
     <DropdownMenu>
       <DropdownMenuTrigger asChild>
@@ -100,17 +105,30 @@ export function NotificationBell() {
       <DropdownMenuContent className="w-80" align="end" forceMount>
         <DropdownMenuLabel className="flex items-center justify-between">
           <span>Notificaciones</span>
-          {unreadCount > 0 && (
-            <Button
-              variant="ghost"
-              size="sm"
-              onClick={handleMarkAllAsRead}
-              className="text-xs"
-            >
-              <Check className="h-3 w-3 mr-1" />
-              Marcar todas
-            </Button>
-          )}
+          <div className="flex gap-1">
+            {unreadCount > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleMarkAllAsRead}
+                className="text-xs h-7"
+              >
+                <Check className="h-3 w-3 mr-1" />
+                Marcar todas
+              </Button>
+            )}
+            {notifications.length > 0 && (
+              <Button
+                variant="ghost"
+                size="sm"
+                onClick={handleClearAll}
+                className="text-xs h-7 text-destructive hover:text-destructive"
+              >
+                <Trash2 className="h-3 w-3 mr-1" />
+                Borrar todas
+              </Button>
+            )}
+          </div>
         </DropdownMenuLabel>
         
         <DropdownMenuSeparator />

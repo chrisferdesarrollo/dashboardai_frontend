@@ -48,7 +48,7 @@ export const SUPPORTED_FILE_TYPES = [
 
 export const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv'];
 
-export const MAX_FILE_SIZE = 50 * 1024 * 1024; // 50MB
+export const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
 
 export const PROCESSING_STATUS_LABELS = {
   PENDING: 'Pendiente',
