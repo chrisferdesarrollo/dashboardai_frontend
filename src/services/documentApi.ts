@@ -109,6 +109,7 @@ class DocumentApi {
       formData.append('agentId', request.agentId);
     }
 
+    // NO enviar token en FormData, solo en header (ya lo hace el interceptor)
     const response = await client.post(
       '/documents/upload',
       formData,
@@ -116,6 +117,11 @@ class DocumentApi {
         headers: {
           'Content-Type': 'multipart/form-data',
         },
+        // Aumentar timeouts para archivos grandes (5 minutos)
+        timeout: 300000,
+        // Importante para archivos grandes
+        maxContentLength: Infinity,
+        maxBodyLength: Infinity,
       }
     );
 
