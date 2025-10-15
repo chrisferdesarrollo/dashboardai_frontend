@@ -27,6 +27,8 @@ import {
 } from '@/components/ui/dropdown-menu';
 import { Avatar, AvatarFallback, AvatarImage } from '@/components/ui/avatar';
 import { useConversationStore } from '@/store/conversationStore';
+import { useNotificationStore } from '@/store/notificationStore';
+import { useAgentNotifications } from '@/hooks/useAgentNotifications';
 import { Conversation } from '@/types/conversation';
 import { WhatsAppIcon, TelegramIcon } from '@/components/ui/platform-icons';
 import { formatDistanceToNow } from 'date-fns';
@@ -81,10 +83,22 @@ function ConversationCard({
   onDelete: (conversation: Conversation) => void;
 }) {
   const { updateConversationStatus, markAsRead } = useConversationStore();
+  const { getNewMessagesForSession, resetNewMessagesForSession } = useNotificationStore();
   const statusInfo = statusConfig[conversation.status];
   const platformInfo = platformConfig[conversation.platform];
   const PlatformIcon = platformInfo.icon;
   const StatusIcon = statusInfo.icon;
+
+  // Obtener mensajes nuevos para esta conversación
+  const newMessagesCount = getNewMessagesForSession(conversation.sessionName);
+
+  // Debug logging
+  console.log(`🔍 ConversationCard Debug:`, {
+    conversationId: conversation.id,
+    sessionName: conversation.sessionName,
+    newMessagesCount,
+    contactName: conversation.contact.name
+  });
 
   const handleStatusChange = async (newStatus: Conversation['status']) => {
     await updateConversationStatus(conversation.id, newStatus);
@@ -93,12 +107,26 @@ function ConversationCard({
   const handleMarkAsRead = async (e: React.MouseEvent) => {
     e.stopPropagation();
     await markAsRead(conversation.id);
+    // También resetear contador de mensajes nuevos
+    if (newMessagesCount > 0) {
+      console.log(`✅ Resetting ${newMessagesCount} new messages for session: ${conversation.sessionName}`);
+      resetNewMessagesForSession(conversation.sessionName);
+    }
+  };
+
+  const handleCardClick = () => {
+    // Resetear mensajes nuevos cuando se abre la conversación
+    if (newMessagesCount > 0) {
+      console.log(`🔍 Opening conversation, resetting ${newMessagesCount} new messages for session: ${conversation.sessionName}`);
+      resetNewMessagesForSession(conversation.sessionName);
+    }
+    onSelect(conversation);
   };
 
   return (
     <Card 
       className="group hover:shadow-lg hover:shadow-primary/10 transition-all duration-300 cursor-pointer hover:scale-[1.02] hover:bg-gradient-to-r hover:from-primary/5 hover:to-transparent border hover:border-primary/20"
-      onClick={() => onSelect(conversation)}
+      onClick={handleCardClick}
     >
       <CardHeader className="pb-3">
         <div className="flex items-start justify-between">
@@ -112,9 +140,9 @@ function ConversationCard({
                 <h3 className="font-semibold text-sm truncate">
                   {conversation.contact.name || 'Usuario anónimo'}
                 </h3>
-                {conversation.unreadCount > 0 && (
-                  <Badge variant="destructive" className="text-xs px-1.5 py-0.5 min-w-[1.25rem] h-5">
-                    {conversation.unreadCount}
+                {newMessagesCount > 0 && (
+                  <Badge variant="destructive" className="text-xs px-1.5 py-0.5 min-w-[1.25rem] h-5 animate-pulse">
+                    {newMessagesCount}
                   </Badge>
                 )}
               </div>
@@ -140,10 +168,10 @@ function ConversationCard({
                 </Button>
               </DropdownMenuTrigger>
               <DropdownMenuContent align="end">
-                {conversation.unreadCount > 0 && (
+                {newMessagesCount > 0 && (
                   <DropdownMenuItem onClick={handleMarkAsRead}>
                     <CheckCircle2 className="mr-2 h-4 w-4" />
-                    Marcar como leída
+                    Marcar como leída ({newMessagesCount} nuevos)
                   </DropdownMenuItem>
                 )}
                 <DropdownMenuItem onClick={() => handleStatusChange('resolved')}>
@@ -241,6 +269,9 @@ export default function Conversations() {
     deleteConversation,
     error,
   } = useConversationStore();
+
+  // Hook de notificaciones para mantener actualizados los contadores
+  useAgentNotifications();
 
   const [selectedConversation, setSelectedConversation] = useState<Conversation | null>(null);
   const [showDetailModal, setShowDetailModal] = useState(false);

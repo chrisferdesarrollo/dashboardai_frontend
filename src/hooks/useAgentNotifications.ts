@@ -3,17 +3,30 @@ import { useNotificationStore } from '@/store/notificationStore';
 import { useAgentStore } from '@/store/agentStore';
 import conversationLogApi, { ConversationLogResponse } from '@/services/conversationLogApi';
 
+// Singleton para evitar múltiples instancias
+let isPollingActive = false;
+let pollingInstanceCount = 0;
+
 /**
  * Hook para manejar notificaciones de mensajes de agentes en tiempo real
  * Este hook se conecta a la base de datos a través de polling para obtener
  * nuevos conversation logs y generar notificaciones correspondientes
  */
 export const useAgentNotifications = () => {
-  const { addNotification, lastPollingTimestamp, setLastPollingTimestamp } = useNotificationStore();
+  const { 
+    addNotification, 
+    lastPollingTimestamp, 
+    setLastPollingTimestamp,
+    updateConversationNewMessages,
+    getNewMessagesForSession 
+  } = useNotificationStore();
   const { agents } = useAgentStore();
   const pollingIntervalRef = useRef<NodeJS.Timeout | null>(null);
   const processedLogIdsRef = useRef<Set<string>>(new Set());
   const isFirstLoadRef = useRef<boolean>(true);
+  const instanceIdRef = useRef<number>(++pollingInstanceCount);
+
+  console.log(`🔄 NotificationHook Instance ${instanceIdRef.current} initialized`);
 
   // Función para crear notificación de nuevo mensaje desde conversation log
   const createMessageNotification = useCallback((log: ConversationLogResponse) => {
@@ -39,12 +52,16 @@ export const useAgentNotifications = () => {
       }
     }
     
+    // Actualizar contador de mensajes nuevos para esta conversación
+    updateConversationNewMessages(log.sessionName, 1);
+    
     // Log para debugging
     console.log('📨 Creando notificación para agente:', {
       agentId: log.agentId,
       agentName,
       sessionName: log.sessionName,
-      totalAgents: agents.length
+      totalAgents: agents.length,
+      newMessagesCount: getNewMessagesForSession(log.sessionName)
     });
     
     // Crear mensaje preview desde el user message
@@ -64,7 +81,7 @@ export const useAgentNotifications = () => {
       priority: 'medium',
       actionUrl: `/conversations?session=${log.sessionName}`,
     });
-  }, [addNotification, agents]);
+  }, [addNotification, agents, updateConversationNewMessages, getNewMessagesForSession]);
 
   // Función para crear notificación de error de agente
   const createAgentErrorNotification = useCallback((agentName: string, agentId: string, errorMessage: string) => {
@@ -183,6 +200,18 @@ export const useAgentNotifications = () => {
 
   // Configurar polling en tiempo real
   useEffect(() => {
+    const currentInstanceId = instanceIdRef.current;
+    console.log(`🚀 Instance ${currentInstanceId}: Starting polling. Active: ${isPollingActive}`);
+    
+    // Solo permitir una instancia de polling activa
+    if (isPollingActive) {
+      console.log(`⚠️ Instance ${currentInstanceId}: Polling already active, skipping`);
+      return;
+    }
+
+    isPollingActive = true;
+    console.log(`✅ Instance ${currentInstanceId}: Activated polling`);
+
     // Limpiar interval anterior si existe
     if (pollingIntervalRef.current) {
       clearInterval(pollingIntervalRef.current);
@@ -196,9 +225,14 @@ export const useAgentNotifications = () => {
 
     // Cleanup function
     return () => {
+      console.log(`🛑 Instance ${currentInstanceId}: Cleaning up polling`);
       if (pollingIntervalRef.current) {
         clearInterval(pollingIntervalRef.current);
         pollingIntervalRef.current = null;
+      }
+      if (isPollingActive) {
+        isPollingActive = false;
+        console.log(`✅ Instance ${currentInstanceId}: Deactivated polling`);
       }
     };
   }, [pollForNewLogs]);
@@ -209,5 +243,6 @@ export const useAgentNotifications = () => {
     createAgentConnectedNotification,
     createAgentDisconnectedNotification,
     pollForNewLogs, // Exponer para testing manual
+    getNewMessagesForSession, // Exponer función para obtener mensajes nuevos por sesión
   };
 };

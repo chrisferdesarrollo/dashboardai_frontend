@@ -49,6 +49,7 @@ export interface Conversation {
   id: string;
   agentId: string;
   agentName: string;
+  sessionName: string; // Agregado para rastrear mensajes nuevos
   contact: Contact;
   lastMessage?: Message;
   unreadCount: number;

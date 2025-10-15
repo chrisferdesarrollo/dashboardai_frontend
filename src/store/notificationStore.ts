@@ -19,6 +19,7 @@ interface NotificationStore {
   notifications: Notification[];
   unreadCount: number;
   lastPollingTimestamp: number | null; // Timestamp del último polling para conversation logs
+  conversationNewMessages: Record<string, number>; // sessionName -> count of new messages
   
   // Actions
   addNotification: (notification: Omit<Notification, 'id' | 'timestamp' | 'read'>) => void;
@@ -29,6 +30,12 @@ interface NotificationStore {
   getUnreadNotifications: () => Notification[];
   getNotificationsByType: (type: Notification['type']) => Notification[];
   setLastPollingTimestamp: (timestamp: number) => void;
+  
+  // New conversation message tracking
+  updateConversationNewMessages: (sessionName: string, increment: number) => void;
+  getNewMessagesForSession: (sessionName: string) => number;
+  resetNewMessagesForSession: (sessionName: string) => void;
+  clearAllConversationNewMessages: () => void;
 }
 
 export const useNotificationStore = create<NotificationStore>()(
@@ -37,6 +44,7 @@ export const useNotificationStore = create<NotificationStore>()(
       notifications: [],
       unreadCount: 0,
       lastPollingTimestamp: null,
+      conversationNewMessages: {},
 
       addNotification: (notificationData) => {
         const notification: Notification = {
@@ -111,6 +119,36 @@ export const useNotificationStore = create<NotificationStore>()(
       setLastPollingTimestamp: (timestamp) => {
         set({ lastPollingTimestamp: timestamp });
       },
+
+      // New conversation message tracking functions
+      updateConversationNewMessages: (sessionName, increment) => {
+        set((state) => {
+          const currentCount = state.conversationNewMessages[sessionName] || 0;
+          return {
+            conversationNewMessages: {
+              ...state.conversationNewMessages,
+              [sessionName]: currentCount + increment,
+            },
+          };
+        });
+      },
+
+      getNewMessagesForSession: (sessionName) => {
+        return get().conversationNewMessages[sessionName] || 0;
+      },
+
+      resetNewMessagesForSession: (sessionName) => {
+        set((state) => {
+          const { [sessionName]: _, ...rest } = state.conversationNewMessages;
+          return {
+            conversationNewMessages: rest,
+          };
+        });
+      },
+
+      clearAllConversationNewMessages: () => {
+        set({ conversationNewMessages: {} });
+      },
     }),
     {
       name: 'notification-store',
@@ -118,6 +156,7 @@ export const useNotificationStore = create<NotificationStore>()(
         notifications: state.notifications,
         unreadCount: state.unreadCount,
         lastPollingTimestamp: state.lastPollingTimestamp,
+        conversationNewMessages: state.conversationNewMessages,
       }),
     }
   )

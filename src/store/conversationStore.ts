@@ -180,6 +180,7 @@ const transformLogsToConversations = (sessionSummaries: ConversationSessionSumma
       id: conversationId,
       agentId: 'agent-1', // TODO: obtener del sessionName o mapear desde agentes
       agentName: summary.agentName || 'Agente sin nombre', // Usar el nombre del agente del backend
+      sessionName: summary.sessionName, // ✅ AGREGAR sessionName para notificaciones
       contact: {
         id: `contact-${summary.sessionName}`,
         name: lastLog?.userName || 'Usuario anónimo',
