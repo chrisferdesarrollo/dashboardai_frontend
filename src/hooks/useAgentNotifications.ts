@@ -108,21 +108,31 @@ export const useAgentNotifications = () => {
   // Función para hacer polling de nuevos conversation logs
   const pollForNewLogs = useCallback(async () => {
     try {
+      console.log('🔍 Polling for new logs...');
+      
       // Obtener el timestamp del último polling
       const since = lastPollingTimestamp 
         ? new Date(lastPollingTimestamp).toISOString()
         : undefined;
 
+      console.log('📅 Polling since timestamp:', since);
+
       // Hacer la consulta a la API
-      const response = await conversationLogApi.getRecentForNotifications(since);
+      const response = await conversationLogApi.getNotifications(since);
+      
+      console.log('📡 API Response:', response);
       
       if (response.success && response.data) {
+        console.log('✅ API call successful, received', response.data.length, 'logs');
+        
         // Filtrar logs que tengan userMessage (mensajes de usuarios)
         const newUserMessages = response.data.filter(log => 
           log.userMessage && 
           log.userMessage.trim() !== '' &&
           !processedLogIdsRef.current.has(log.id) // Solo logs que no hemos procesado
         );
+
+        console.log('🔍 Filtered to', newUserMessages.length, 'new user messages');
 
         // En la primera carga, solo registrar los IDs sin crear notificaciones
         if (isFirstLoadRef.current) {
@@ -145,6 +155,7 @@ export const useAgentNotifications = () => {
         } else {
           // En llamadas posteriores, crear notificaciones para mensajes nuevos
           newUserMessages.forEach(log => {
+            console.log('🔔 Creating notification for log:', log.id, log.sessionName);
             createMessageNotification(log);
             processedLogIdsRef.current.add(log.id);
           });
@@ -161,9 +172,11 @@ export const useAgentNotifications = () => {
             console.log('🔔 Creadas', newUserMessages.length, 'nuevas notificaciones');
           }
         }
+      } else {
+        console.warn('❌ API call failed or no success flag');
       }
     } catch (error) {
-      console.error('Error polling for new conversation logs:', error);
+      console.error('❌ Error polling for new conversation logs:', error);
       // No crear notificación de error para evitar spam
     }
   }, [lastPollingTimestamp, setLastPollingTimestamp, createMessageNotification]);

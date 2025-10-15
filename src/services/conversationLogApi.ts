@@ -57,22 +57,22 @@ export interface ConversationLogsApiResponse {
 // Servicio de API para conversation logs
 export const conversationLogApi = {
   /**
-   * Obtener logs recientes para notificaciones
-   * @param since - Timestamp ISO opcional desde el cual obtener logs
+   * Obtener notificaciones de nuevos mensajes para el usuario autenticado
+   * @param since - Timestamp ISO opcional desde el cual obtener mensajes
    * @returns Promise con la respuesta de la API
    */
-  async getRecentForNotifications(since?: string): Promise<ConversationLogsApiResponse> {
+  async getNotifications(since?: string): Promise<ConversationLogsApiResponse> {
     try {
       const client = await getApiClient();
       const params = since ? { since } : {};
       
-      const response = await client.get('/conversation-logs/recent-for-notifications', {
+      const response = await client.get('/conversation-logs/notifications', {
         params
       });
       
       return response.data;
     } catch (error) {
-      console.error('Error fetching recent conversation logs for notifications:', error);
+      console.error('Error fetching notifications:', error);
       throw error;
     }
   },
