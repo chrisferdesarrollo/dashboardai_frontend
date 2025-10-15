@@ -36,6 +36,26 @@ export interface DocumentFilter {
   fileType?: string;
 }
 
+export interface ExcelPreview {
+  success: boolean;
+  stats?: ExcelStats;
+  preview?: string;
+  fileName?: string;
+  fileSize?: number;
+  error?: string;
+}
+
+export interface ExcelStats {
+  numberOfSheets: number;
+  fileSize: number;
+  fileName: string;
+  sheets: Array<{
+    name: string;
+    rows: number;
+    physicalRows: number;
+  }>;
+}
+
 export const SUPPORTED_FILE_TYPES = [
   'application/pdf',
   'application/msword',
@@ -43,10 +63,16 @@ export const SUPPORTED_FILE_TYPES = [
   'text/plain',
   'text/markdown',
   'text/csv',
-  'application/csv'
+  'application/csv',
+  // Excel files
+  'application/vnd.ms-excel',
+  'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+  'application/excel',
+  'application/x-excel',
+  'application/x-msexcel'
 ];
 
-export const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv'];
+export const SUPPORTED_EXTENSIONS = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv', 'xls', 'xlsx'];
 
 export const MAX_FILE_SIZE = 30 * 1024 * 1024; // 30MB
 

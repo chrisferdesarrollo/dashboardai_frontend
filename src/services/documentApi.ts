@@ -1,5 +1,6 @@
 import axios from 'axios';
 import configService from './configService';
+import { ExcelPreview } from '@/types/document';
 
 // Función para crear cliente API con configuración dinámica
 const createApiClient = async () => {
@@ -210,6 +211,69 @@ class DocumentApi {
       params: { status },
     });
     return response.data;
+  }
+
+  /**
+   * Subir archivo Excel específicamente
+   */
+  async uploadExcelDocument(request: DocumentUploadRequest): Promise<DocumentUploadResponse> {
+    const client = await getApiClient();
+    const formData = new FormData();
+    formData.append('file', request.file);
+    formData.append('name', request.name);
+    
+    if (request.description) {
+      formData.append('description', request.description);
+    }
+    
+    if (request.tags && request.tags.length > 0) {
+      request.tags.forEach(tag => formData.append('tags', tag));
+    }
+    
+    if (request.agentId) {
+      formData.append('agentId', request.agentId);
+    }
+
+    const response = await client.post('/documents/upload-excel', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Obtener vista previa de archivo Excel
+   */
+  async previewExcelFile(file: File): Promise<ExcelPreview> {
+    const client = await getApiClient();
+    const formData = new FormData();
+    formData.append('file', file);
+
+    const response = await client.post('/documents/preview-excel', formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    });
+    return response.data;
+  }
+
+  /**
+   * Verificar si un archivo es de tipo Excel
+   */
+  isExcelFile(file: File): boolean {
+    const excelTypes = [
+      'application/vnd.ms-excel',
+      'application/vnd.openxmlformats-officedocument.spreadsheetml.sheet',
+      'application/excel',
+      'application/x-excel',
+      'application/x-msexcel'
+    ];
+    
+    const excelExtensions = ['.xls', '.xlsx'];
+    
+    return excelTypes.includes(file.type) || 
+           excelExtensions.some(ext => file.name.toLowerCase().endsWith(ext));
   }
 }
 

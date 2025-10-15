@@ -17,7 +17,9 @@ import {
   RefreshCw,
   Bot,
   MessageCircle,
-  Phone
+  Phone,
+  FileSpreadsheet,
+  Eye
 } from 'lucide-react';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -69,6 +71,9 @@ const KnowledgeBase: React.FC = () => {
   const [filteredDocuments, setFilteredDocuments] = useState<DocumentResponse[]>([]);
   const fileInputRef = useRef<HTMLInputElement>(null);
   const { toast } = useToast();
+
+  // Estados para Excel
+  const [isExcelFile, setIsExcelFile] = useState(false);
 
   // Form state para subida de documentos
   const [uploadForm, setUploadForm] = useState({
@@ -275,11 +280,12 @@ const KnowledgeBase: React.FC = () => {
     if (files.length > 0) {
       const file = files[0];
       
-      // Validar tamaño
-      if (file.size > MAX_FILE_SIZE) {
+      // Validar tamaño (aumentado para Excel)
+      const maxSize = documentApi.isExcelFile(file) ? 50 * 1024 * 1024 : MAX_FILE_SIZE; // 50MB para Excel, 30MB otros
+      if (file.size > maxSize) {
         toast({
           title: 'Error',
-          description: 'El archivo excede el tamaño máximo permitido (10MB)',
+          description: `El archivo excede el tamaño máximo permitido (${documentApi.isExcelFile(file) ? '50MB' : '30MB'})`,
           variant: 'destructive',
         });
         return;
@@ -287,21 +293,26 @@ const KnowledgeBase: React.FC = () => {
 
       // Validar tipo
       const extension = file.name.split('.').pop()?.toLowerCase();
-      const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv'];
+      const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv', 'xls', 'xlsx'];
       if (!extension || !allowedExtensions.includes(extension)) {
         toast({
           title: 'Error',
-          description: 'Tipo de archivo no permitido. Formatos soportados: PDF, Word, TXT, MD, CSV',
+          description: 'Tipo de archivo no permitido. Formatos soportados: PDF, Word, TXT, MD, CSV, Excel',
           variant: 'destructive',
         });
         return;
       }
+
+      // Detectar si es Excel
+      const isExcel = documentApi.isExcelFile(file);
+      setIsExcelFile(isExcel);
 
       setUploadForm(prev => ({
         ...prev,
         file,
         name: file.name.split('.')[0] // Nombre sin extensión como nombre por defecto
       }));
+
       setUploadDialogOpen(true);
     }
   }, [toast]);
@@ -311,11 +322,12 @@ const KnowledgeBase: React.FC = () => {
     if (files && files.length > 0) {
       const file = files[0];
       
-      // Validar tamaño
-      if (file.size > MAX_FILE_SIZE) {
+      // Validar tamaño (aumentado para Excel)
+      const maxSize = documentApi.isExcelFile(file) ? 50 * 1024 * 1024 : MAX_FILE_SIZE; // 50MB para Excel, 30MB otros
+      if (file.size > maxSize) {
         toast({
           title: 'Error',
-          description: 'El archivo excede el tamaño máximo permitido (10MB)',
+          description: `El archivo excede el tamaño máximo permitido (${documentApi.isExcelFile(file) ? '50MB' : '30MB'})`,
           variant: 'destructive',
         });
         return;
@@ -323,21 +335,26 @@ const KnowledgeBase: React.FC = () => {
 
       // Validar tipo
       const extension = file.name.split('.').pop()?.toLowerCase();
-      const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv'];
+      const allowedExtensions = ['pdf', 'doc', 'docx', 'txt', 'md', 'csv', 'xls', 'xlsx'];
       if (!extension || !allowedExtensions.includes(extension)) {
         toast({
           title: 'Error',
-          description: 'Tipo de archivo no permitido. Formatos soportados: PDF, Word, TXT, MD, CSV',
+          description: 'Tipo de archivo no permitido. Formatos soportados: PDF, Word, TXT, MD, CSV, Excel',
           variant: 'destructive',
         });
         return;
       }
+
+      // Detectar si es Excel
+      const isExcel = documentApi.isExcelFile(file);
+      setIsExcelFile(isExcel);
 
       setUploadForm(prev => ({
         ...prev,
         file,
         name: file.name.split('.')[0] // Nombre sin extensión como nombre por defecto
       }));
+
       setUploadDialogOpen(true);
     }
   };
@@ -379,17 +396,28 @@ const KnowledgeBase: React.FC = () => {
       // El agentId ya viene validado de la selección
       const validAgentId = uploadForm.agentId.trim();
       
-      await documentApi.uploadDocument({
-        file: uploadForm.file,
-        name: uploadForm.name.trim(),
-        description: uploadForm.description.trim() || undefined,
-        tags: tags.length > 0 ? tags : undefined,
-        agentId: validAgentId,
-      });
+      // Usar el endpoint apropiado según el tipo de archivo
+      if (isExcelFile) {
+        await documentApi.uploadExcelDocument({
+          file: uploadForm.file,
+          name: uploadForm.name.trim(),
+          description: uploadForm.description.trim() || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          agentId: validAgentId,
+        });
+      } else {
+        await documentApi.uploadDocument({
+          file: uploadForm.file,
+          name: uploadForm.name.trim(),
+          description: uploadForm.description.trim() || undefined,
+          tags: tags.length > 0 ? tags : undefined,
+          agentId: validAgentId,
+        });
+      }
 
       toast({
         title: 'Éxito',
-        description: 'Documento subido exitosamente',
+        description: `${isExcelFile ? 'Archivo Excel' : 'Documento'} subido exitosamente`,
       });
 
       // Resetear formulario y cerrar dialog
@@ -401,6 +429,7 @@ const KnowledgeBase: React.FC = () => {
         agentId: '',
         file: null
       });
+      setIsExcelFile(false);
       setUploadDialogOpen(false);
 
       // Recargar documentos y estadísticas
@@ -559,7 +588,7 @@ const KnowledgeBase: React.FC = () => {
                 ref={fileInputRef}
                 type="file"
                 onChange={handleFileInputChange}
-                accept=".pdf,.doc,.docx,.txt,.md,.csv"
+                accept=".pdf,.doc,.docx,.txt,.md,.csv,.xls,.xlsx"
                 className="hidden"
               />
               <Upload className="h-8 w-8 mx-auto mb-4 text-gray-400" />
@@ -574,7 +603,7 @@ const KnowledgeBase: React.FC = () => {
                 <div>
                   <p className="mb-2">Arrastra y suelta un archivo aquí, o haz clic para seleccionar</p>
                   <p className="text-sm text-muted-foreground">
-                    Formatos soportados: PDF, Word, TXT, MD, CSV (máx. 30MB)
+                    Formatos soportados: PDF, Word, TXT, MD, CSV, Excel (máx. 30MB, 50MB para Excel)
                   </p>
                 </div>
               )}
