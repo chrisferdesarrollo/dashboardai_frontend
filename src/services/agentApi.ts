@@ -1,6 +1,7 @@
 import axios from 'axios';
 import configService from './configService';
 import { whatsappApi } from './whatsappApi';
+import { telegramApi } from './telegramApi';
 import { Agent, WhatsAppPlatformConfig } from '@/types/agent';
 
 // Función para crear cliente API con configuración dinámica
@@ -409,7 +410,31 @@ export const agentService = {
     try {
       console.log('🔌 [TELEGRAM-CONNECT] Conectando agente de Telegram:', agentId);
       
+      // Primero obtener los datos del agente para conseguir el botToken
       const agentApi = await getApiClient();
+      const agentResponse = await agentApi.get(`/agents/telegram/${agentId}`);
+      const agent = agentResponse.data;
+      
+      // Extraer bot token del campo directo o platform_config
+      let botToken = agent.botToken;
+      if (!botToken || botToken === 'prueba') {
+        try {
+          const platformConfig = JSON.parse(agent.platformConfig || '{}');
+          botToken = platformConfig.botId || platformConfig.botToken || platformConfig.token;
+        } catch (e) {
+          console.warn('No se pudo parsear platformConfig');
+        }
+      }
+      
+      if (!botToken) {
+        throw new Error('No se encontró bot token para el agente');
+      }
+      
+      // Configurar webhook con N8N usando telegramApi
+      const { telegramApi } = await import('./telegramApi');
+      await telegramApi.connectTelegramAgent(botToken, agentId);
+      
+      // Marcar agente como conectado en el backend
       await agentApi.post(`/agents/telegram/${agentId}/connect`);
       
       console.log('✅ [TELEGRAM-CONNECT] Agente conectado exitosamente');
@@ -426,8 +451,40 @@ export const agentService = {
     try {
       console.log('🔌 [TELEGRAM-DISCONNECT] Desconectando agente de Telegram:', agentId);
       
+      // 1. Obtener información del agente para extraer el bot token
       const agentApi = await getApiClient();
+      const agentResponse = await agentApi.get(`/agents/telegram/${agentId}`);
+      const agent = agentResponse.data;
+      
+      // 2. Extraer bot token de la configuración de plataforma
+      let botToken: string | null = agent.botToken;
+      if (!botToken || botToken === 'prueba') {
+        try {
+          const platformConfig = typeof agent.platformConfig === 'string' 
+            ? JSON.parse(agent.platformConfig) 
+            : agent.platformConfig;
+          botToken = platformConfig.bot_token || platformConfig.botToken || null;
+        } catch (parseError) {
+          console.warn('⚠️ [TELEGRAM-DISCONNECT] Error parseando platformConfig:', parseError);
+        }
+      }
+      
+      // 3. Desconectar en el backend
       await agentApi.post(`/agents/telegram/${agentId}/disconnect`);
+      console.log('✅ [TELEGRAM-DISCONNECT] Agente desconectado en backend');
+      
+      // 4. Si tenemos bot token, desconectar el webhook
+      if (botToken) {
+        try {
+          console.log('🔌 [TELEGRAM-DISCONNECT] Desconectando webhook con botToken...');
+          await telegramApi.disconnectTelegramAgent(botToken);
+          console.log('✅ [TELEGRAM-DISCONNECT] Webhook desconectado exitosamente');
+        } catch (webhookError) {
+          console.warn('⚠️ [TELEGRAM-DISCONNECT] Error desconectando webhook (estado backend ya actualizado):', webhookError);
+        }
+      } else {
+        console.warn('⚠️ [TELEGRAM-DISCONNECT] No se encontró bot token, solo se desconectó en backend');
+      }
       
       console.log('✅ [TELEGRAM-DISCONNECT] Agente desconectado exitosamente');
     } catch (error: unknown) {

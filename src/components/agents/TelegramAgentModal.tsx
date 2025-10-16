@@ -9,6 +9,7 @@ import { ArrowLeft, Bot, CheckCircle, ExternalLink, Loader2, Check, X } from 'lu
 import { TelegramIcon } from '@/components/ui/platform-icons';
 import { useAgentStore } from '@/store/agentStore';
 import { telegramApi } from '@/services/telegramApi';
+import { agentService } from '@/services/agentApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface TelegramAgentModalProps {
@@ -164,24 +165,26 @@ export function TelegramAgentModal({
           variant: "destructive",
         });
       } else {
-        // Primero conectar el bot de Telegram al webhook
+        // Primero crear el agente en el sistema
+        console.log('🤖 Creando agente en el sistema...');
+        const createdAgent = await createAgent(agentData);
+        console.log('✅ Agente creado exitosamente con ID:', createdAgent.id);
+        
+        // Luego conectar el bot de Telegram al webhook usando el agentId
         try {
-          console.log('🤖 Conectando bot de Telegram al webhook...');
-          const telegramResult = await telegramApi.connectTelegramAgent(formData.botToken);
-          
-          if (!telegramResult.success) {
-            throw new Error(telegramResult.message || 'Error conectando el bot de Telegram');
-          }
-          
+          console.log('🤖 Conectando bot de Telegram al webhook con agentId:', createdAgent.id);
+          await agentService.connectTelegramAgent(createdAgent.id);
           console.log('✅ Bot de Telegram conectado exitosamente');
         } catch (telegramError: unknown) {
           console.error('❌ Error conectando bot de Telegram:', telegramError);
-          throw new Error(telegramError instanceof Error ? telegramError.message : 'Error conectando bot de Telegram');
+          // El agente ya fue creado, así que mostrar advertencia pero no fallar completamente
+          toast({
+            title: "Agente creado",
+            description: `Agente "${formData.name}" creado, pero hubo un problema conectando Telegram. Puedes intentar conectarlo manualmente.`,
+            variant: "default",
+          });
         }
 
-        // Luego crear el agente en el sistema
-        await createAgent(agentData);
-        
         setCurrentStep('completed');
         toast({
           title: "Agente creado",
