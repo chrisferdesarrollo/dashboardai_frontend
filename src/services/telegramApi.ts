@@ -118,9 +118,9 @@ class TelegramApi {
     try {
       console.log('🚀 [TELEGRAM-CONFIGURE] Iniciando configuración de bot:', botUsername);
       
-      // Si es operación de conexión de agente, usar la función específica
+      // Si es operación de conexión de agente, necesitamos el agentId
       if (operationType === 'connect') {
-        return this.connectTelegramAgent(botToken);
+        throw new Error('Para conectar un agente, use connectTelegramAgent con agentId');
       }
       
       // Primero validar que el bot funciona
@@ -131,7 +131,7 @@ class TelegramApi {
 
       // Intentar configuración a través de n8n
       try {
-        const url = '/telegram-api';
+        const url = '/telegram/*'; // Path dinámico
         const payload: TelegramConfigurationRequest = { 
           botToken,
           botUsername,
@@ -384,7 +384,7 @@ class TelegramApi {
    * Conecta un agente de Telegram al webhook específico
    * Esta función se ejecuta al presionar "Crear Agente"
    */
-  async connectTelegramAgent(botToken: string): Promise<TelegramBotResponse> {
+  async connectTelegramAgent(botToken: string, agentId: string): Promise<TelegramBotResponse> {
     try {
       console.log('🤖 [TELEGRAM-CONNECT-AGENT] Conectando agente de Telegram');
       
@@ -394,8 +394,8 @@ class TelegramApi {
         throw new Error('Token de bot inválido');
       }
 
-      // URL específica para conectar el agente
-      const agentWebhookUrl = 'https://n8n.topias.app/webhook/telegram-api';
+      // URL específica para este agente - aquí es donde Telegram enviará los mensajes
+      const agentWebhookUrl = `https://n8n.topias.app/webhook/telegram-${agentId}`;
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 
@@ -532,13 +532,14 @@ export const telegramApi = new TelegramApi();
 /*
 EJEMPLO DE USO PARA CONECTAR AGENTE AL PRESIONAR "CREAR AGENTE":
 
+// Ejemplo de uso actualizado:
 // En tu componente donde tienes el botón "Crear Agente"
 import { telegramApi } from '../services/telegramApi';
 
-const handleCreateAgent = async (botToken: string) => {
+const handleCreateAgent = async (botToken: string, agentId: string) => {
   try {
-    // Conectar el agente usando la nueva función
-    const result = await telegramApi.connectTelegramAgent(botToken);
+    // Conectar el agente usando la nueva función con agentId
+    const result = await telegramApi.connectTelegramAgent(botToken, agentId);
     
     if (result.success) {
       console.log('✅ Agente conectado:', result.message);
