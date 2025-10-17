@@ -164,28 +164,58 @@ export function TelegramAgentModal({
           variant: "destructive",
         });
       } else {
-        // Primero conectar el bot de Telegram al webhook
+        // Crear el agente en el sistema
+        const createdAgent = await createAgent(agentData);
+        
+        console.log('✅ Agente creado en base de datos:', createdAgent);
+        
+        // Configurar el webhook de Telegram directamente con el agent_id
         try {
-          console.log('🤖 Conectando bot de Telegram al webhook...');
-          const telegramResult = await telegramApi.connectTelegramAgent(formData.botToken);
+          const agentId = createdAgent?.id;
           
-          if (!telegramResult.success) {
-            throw new Error(telegramResult.message || 'Error conectando el bot de Telegram');
+          if (!agentId) {
+            throw new Error('No se pudo obtener el ID del agente creado');
           }
           
-          console.log('✅ Bot de Telegram conectado exitosamente');
-        } catch (telegramError: unknown) {
-          console.error('❌ Error conectando bot de Telegram:', telegramError);
-          throw new Error(telegramError instanceof Error ? telegramError.message : 'Error conectando bot de Telegram');
+          console.log('🔗 Configurando webhook de Telegram con agent_id:', agentId);
+          
+          // Configurar el webhook directamente en la API de Telegram
+          const webhookUrl = `https://n8n.topias.app/webhook/telegram-api/${agentId}`;
+          const telegramApiUrl = `https://api.telegram.org/bot${formData.botToken}/setWebhook`;
+          
+          const response = await fetch(telegramApiUrl, {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+              url: webhookUrl,
+              allowed_updates: ['message', 'edited_message', 'callback_query']
+            })
+          });
+          
+          const result = await response.json();
+          
+          if (result.ok) {
+            console.log('✅ Webhook de Telegram configurado correctamente:', webhookUrl);
+          } else {
+            console.error('❌ Error al configurar webhook:', result);
+            throw new Error(result.description || 'Error configurando webhook de Telegram');
+          }
+          
+        } catch (webhookError: unknown) {
+          console.error('❌ Error configurando webhook de Telegram:', webhookError);
+          toast({
+            title: "Advertencia",
+            description: "El agente se creó pero hubo un problema configurando el webhook. Intenta reconectar el bot.",
+            variant: "destructive",
+          });
         }
 
-        // Luego crear el agente en el sistema
-        await createAgent(agentData);
-        
         setCurrentStep('completed');
         toast({
           title: "Agente creado",
-          description: `¡Agente "${formData.name}" creado exitosamente y conectado a Telegram!`,
+          description: `¡Agente "${formData.name}" creado exitosamente!`,
         });
         
         // Auto cerrar después de 2 segundos

@@ -1,0 +1,59 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Test Telegram Webhook</title>
+</head>
+<body>
+    <h1>Test Telegram Webhook</h1>
+    <button onclick="testWebhook()">Probar Webhook</button>
+    <div id="result"></div>
+
+    <script>
+        async function testWebhook() {
+            const agentId = prompt('Ingresa el agent_id (UUID del agente creado):');
+            const botToken = prompt('Ingresa el bot token:');
+            
+            if (!agentId || !botToken) {
+                alert('Debes ingresar ambos valores');
+                return;
+            }
+            
+            const resultDiv = document.getElementById('result');
+            resultDiv.innerHTML = '<p>Verificando webhook...</p>';
+            
+            try {
+                // Verificar el webhook actual
+                const checkResponse = await fetch(`https://api.telegram.org/bot${botToken}/getWebhookInfo`);
+                const checkData = await checkResponse.json();
+                
+                resultDiv.innerHTML += `<h3>Estado actual del webhook:</h3><pre>${JSON.stringify(checkData, null, 2)}</pre>`;
+                
+                // Configurar el webhook
+                const webhookUrl = `https://n8n.topias.app/webhook/telegram-api/${agentId}`;
+                const setResponse = await fetch(`https://api.telegram.org/bot${botToken}/setWebhook`, {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: JSON.stringify({
+                        url: webhookUrl,
+                        allowed_updates: ['message', 'edited_message', 'callback_query']
+                    })
+                });
+                
+                const setData = await setResponse.json();
+                resultDiv.innerHTML += `<h3>Resultado de configuración:</h3><pre>${JSON.stringify(setData, null, 2)}</pre>`;
+                
+                if (setData.ok) {
+                    resultDiv.innerHTML += `<p style="color: green; font-weight: bold;">✅ Webhook configurado correctamente en: ${webhookUrl}</p>`;
+                } else {
+                    resultDiv.innerHTML += `<p style="color: red; font-weight: bold;">❌ Error: ${setData.description}</p>`;
+                }
+                
+            } catch (error) {
+                resultDiv.innerHTML += `<p style="color: red;">Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

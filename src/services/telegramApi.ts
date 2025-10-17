@@ -383,10 +383,12 @@ class TelegramApi {
   /**
    * Conecta un agente de Telegram al webhook específico
    * Esta función se ejecuta al presionar "Crear Agente"
+   * @param botToken - Token del bot de Telegram
+   * @param agentId - ID del agente creado en la base de datos (requerido para identificar el bot)
    */
-  async connectTelegramAgent(botToken: string): Promise<TelegramBotResponse> {
+  async connectTelegramAgent(botToken: string, agentId?: string): Promise<TelegramBotResponse> {
     try {
-      console.log('🤖 [TELEGRAM-CONNECT-AGENT] Conectando agente de Telegram');
+      console.log('🤖 [TELEGRAM-CONNECT-AGENT] Conectando agente de Telegram', { agentId });
       
       // Primero validar que el bot funciona
       const isValid = await this.validateBotToken(botToken);
@@ -394,8 +396,15 @@ class TelegramApi {
         throw new Error('Token de bot inválido');
       }
 
-      // URL específica para conectar el agente
-      const agentWebhookUrl = 'https://n8n.topias.app/webhook/telegram-api';
+      // Si no hay agentId, lanzar error porque ahora es requerido
+      if (!agentId) {
+        throw new Error('El ID del agente es requerido para configurar el webhook');
+      }
+
+      // URL específica para conectar el agente CON el agent_id
+      const webhookBaseUrl = 'https://n8n.topias.app/webhook';
+      const webhookPath = `/telegram-api/${agentId}`;
+      const fullWebhookUrl = `${webhookBaseUrl}${webhookPath}`;
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 
@@ -403,19 +412,17 @@ class TelegramApi {
         operationType: 'connect'
       };
       
-      // Crear cliente axios específico para esta URL
-      const agentClient = axios.create({
-        baseURL: agentWebhookUrl,
+      console.log('📡 [TELEGRAM-CONNECT-AGENT] URL completa del webhook:', fullWebhookUrl);
+      console.log('📡 [TELEGRAM-CONNECT-AGENT] Agent ID:', agentId);
+      console.log('📄 [TELEGRAM-CONNECT-AGENT] Payload:', { ...payload, botToken: '[HIDDEN]' });
+      
+      // Hacer la petición directamente sin baseURL para evitar problemas
+      const response = await axios.post(fullWebhookUrl, payload, {
         timeout: 30000,
         headers: {
           'Content-Type': 'application/json',
         },
       });
-      
-      console.log('📡 [TELEGRAM-CONNECT-AGENT] Enviando request a:', agentWebhookUrl);
-      console.log('📄 [TELEGRAM-CONNECT-AGENT] Payload:', { ...payload, botToken: '[HIDDEN]' });
-      
-      const response = await agentClient.post('', payload);
       
       console.log('✅ [TELEGRAM-CONNECT-AGENT] Agente conectado exitosamente');
       
