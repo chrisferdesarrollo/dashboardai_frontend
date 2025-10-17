@@ -86,6 +86,7 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
   const [isDisconnecting, setIsDisconnecting] = useState(false);
   const [connectionStatus, setConnectionStatus] = useState<'connected' | 'disconnected' | 'unknown'>('unknown');
   const [showConnectionModal, setShowConnectionModal] = useState(false);
+  const [isReconnecting, setIsReconnecting] = useState(false); // Track if we're reconnecting
   
   // Obtener conversaciones del store
   const { conversations } = useConversationStore();
@@ -105,8 +106,8 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
   // La verificación ya no es necesaria gracias a las funciones helper
   const PlatformIcon = platformInfo.icon;
 
-  // Función para conectar WhatsApp (ahora abre el modal)
-  const handleConnect = useCallback(() => {
+  // Función para conectar WhatsApp (usa datos guardados para recrear la sesión)
+  const handleConnect = useCallback(async () => {
     if (!agent.sessionName || agent.platform !== 'whatsapp') {
       toast({
         title: "Error",
@@ -116,8 +117,29 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
       return;
     }
 
-    setShowConnectionModal(true);
-  }, [agent.sessionName, agent.platform]);
+    console.log('🔄 [AgentCard] Reconectando WhatsApp con datos guardados:', {
+      id: agent.id,
+      sessionName: agent.sessionName,
+      name: agent.name
+    });
+
+    // Si el agente ya está activo, solo mostramos el modal para escanear QR
+    if (agent.status === 'active') {
+      setIsReconnecting(false);
+      setShowConnectionModal(true);
+      return;
+    }
+
+    // Si está inactivo, solo abrimos el modal que se encargará de crear la sesión
+    console.log('🚀 [AgentCard] Abriendo modal para reconectar agente inactivo:', {
+      id: agent.id,
+      sessionName: agent.sessionName,
+      name: agent.name
+    });
+    
+    setIsReconnecting(true); // Marcar que estamos reconectando
+    setShowConnectionModal(true); // El modal se encargará de crear la instancia y mostrar el QR
+  }, [agent.sessionName, agent.platform, agent.id, agent.status, agent.name, onStatusChange]);
 
   // Función para desconectar WhatsApp
   const handleDisconnect = useCallback(async () => {
@@ -134,49 +156,38 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
 
     setIsDisconnecting(true);
     
-    // Primero actualizar el estado en la base de datos
     try {
-      console.log('🔌 [AgentCard] Actualizando estado a inactive...');
+      console.log('🗑️ [AgentCard] Eliminando instancia de WhatsApp en Evolution API...');
+      
+      // Eliminar la instancia de WhatsApp en Evolution API
+      await whatsappApi.deleteWhatsAppSession(agent.sessionName);
+      console.log('✅ [AgentCard] Instancia eliminada de Evolution API');
+      
+      // Actualizar el estado a inactive en la BD (conserva todos los datos)
+      console.log('🔌 [AgentCard] Actualizando estado a inactive en BD...');
       await agentService.updateAgentStatus(agent.id, 'inactive');
       console.log('🔌 [AgentCard] Estado actualizado en backend, llamando onStatusChange...');
       onStatusChange?.(agent.id, 'inactive');
       console.log('🔌 [AgentCard] onStatusChange llamado exitosamente');
       
+      setConnectionStatus('disconnected');
+      
       toast({
-        title: "Estado actualizado",
-        description: `Estado del agente ${agent.name} cambiado a desconectado`,
+        title: "Agente desconectado",
+        description: `${agent.name} se ha desconectado. Los datos se conservan para reconectar más tarde.`,
         variant: "default",
       });
       
-    } catch (dbError) {
-      console.error('❌ [AgentCard] Error actualizando estado del agente en BD:', dbError);
+    } catch (error) {
+      console.error('❌ [AgentCard] Error desconectando WhatsApp:', error);
       toast({
         title: "Error",
-        description: "No se pudo actualizar el estado del agente",
+        description: "No se pudo desconectar el agente de WhatsApp",
         variant: "destructive",
       });
+    } finally {
       setIsDisconnecting(false);
-      return;
     }
-
-    // Luego intentar desconectar WhatsApp (opcional)
-    try {
-      console.log('🔌 [AgentCard] Intentando desconectar sesión de WhatsApp...');
-      const result = await whatsappApi.disconnectWhatsAppSession(agent.sessionName);
-      console.log('🔌 [AgentCard] Resultado de desconexión WhatsApp:', result);
-      
-      if (result.success) {
-        setConnectionStatus('disconnected');
-        console.log('✅ [AgentCard] WhatsApp desconectado exitosamente');
-      } else {
-        console.warn('⚠️ [AgentCard] WhatsApp no se pudo desconectar, pero estado actualizado en BD');
-      }
-    } catch (whatsappError) {
-      console.warn('⚠️ [AgentCard] Error desconectando WhatsApp (estado ya actualizado en BD):', whatsappError);
-      // No mostramos error al usuario porque lo importante (actualizar estado) ya se hizo
-    }
-
-    setIsDisconnecting(false);
   }, [agent.sessionName, agent.platform, agent.id, agent.name, agent.status, onStatusChange]);
 
   // Función para conectar agente de Telegram
@@ -416,9 +427,13 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
         {/* Modal de conexión WhatsApp */}
         <WhatsAppConnectionModal
           isOpen={showConnectionModal}
-          onClose={() => setShowConnectionModal(false)}
+          onClose={() => {
+            setShowConnectionModal(false);
+            setIsReconnecting(false); // Reset reconexión flag
+          }}
           agent={agent}
           onStatusChange={onStatusChange || (() => {})}
+          isReconnecting={isReconnecting}
         />
       </CardContent>
     </Card>

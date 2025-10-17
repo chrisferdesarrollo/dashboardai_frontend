@@ -14,6 +14,7 @@ interface WhatsAppConnectionModalProps {
   onClose: () => void;
   agent: Agent;
   onStatusChange: (agentId: string, newStatus: 'active' | 'inactive' | 'error') => void;
+  isReconnecting?: boolean; // Nueva prop para saber si estamos reconectando
 }
 
 interface WhatsAppSession {
@@ -27,7 +28,8 @@ export function WhatsAppConnectionModal({
   isOpen, 
   onClose, 
   agent, 
-  onStatusChange 
+  onStatusChange,
+  isReconnecting = false 
 }: WhatsAppConnectionModalProps) {
   const { toast } = useToast();
   const { updateAgentStatus } = useAgentStore();
@@ -69,12 +71,21 @@ export function WhatsAppConnectionModal({
     
     try {
       console.log('🔗 Conectando sesión WhatsApp:', agent.sessionName);
+      console.log('🔄 Modo reconexión:', isReconnecting);
       
       // Resetear estado de expiración cuando se genera nuevo QR
       setQrExpired(false);
       
-      // Llamar al workflow para conectar la sesión (esto debe generar QR)
-      const response = await whatsappApi.connectWhatsAppSession(agent.sessionName, 'connect');
+      // Si estamos reconectando (agente estaba inactive), crear nueva instancia
+      // Si no, solo conectar (agente ya activo pero sin QR escaneado)
+      const operationType = isReconnecting ? 'create' : 'connect';
+      const apiMethod = isReconnecting ? 'createWhatsAppSession' : 'connectWhatsAppSession';
+      
+      console.log(`📡 Llamando a ${apiMethod} con operationType: ${operationType}`);
+      
+      const response = isReconnecting 
+        ? await whatsappApi.createWhatsAppSession(agent.sessionName, operationType)
+        : await whatsappApi.connectWhatsAppSession(agent.sessionName, operationType);
       
       if (response.success && response.base64) {
         console.log('✅ QR recibido para conexión');
@@ -179,16 +190,17 @@ export function WhatsAppConnectionModal({
     } finally {
       setIsConnecting(false);
     }
-  }, [agent.sessionName, agent.id, agent.name, toast, updateAgentStatus, onStatusChange, onClose]);
+  }, [agent.sessionName, agent.id, agent.name, toast, updateAgentStatus, onStatusChange, onClose, isReconnecting]);
 
   // Auto-start connection process when modal opens
   useEffect(() => {
     if (isOpen && agent.sessionName && !whatsappSession) {
+      console.log('🚀 [WhatsAppConnectionModal] Auto-iniciando conexión:', { isReconnecting, sessionName: agent.sessionName });
       connectWhatsAppSession();
     }
     // Removing connectWhatsAppSession from dependencies to prevent infinite re-renders
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [isOpen, agent.sessionName, whatsappSession]);
+  }, [isOpen, agent.sessionName, whatsappSession, isReconnecting]);
 
   // Manejar cierre del modal
   const handleClose = async () => {

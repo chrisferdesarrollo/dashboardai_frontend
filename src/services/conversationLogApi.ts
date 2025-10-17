@@ -46,6 +46,7 @@ export interface ConversationLogResponse {
   createdAt: string;
   userId?: number;
   agentId?: string;
+  agentName?: string;
 }
 
 export interface ConversationLogsApiResponse {

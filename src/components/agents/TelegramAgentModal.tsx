@@ -363,7 +363,7 @@ export function TelegramAgentModal({
                   <Button
                     onClick={() => window.open('https://t.me/botfather', '_blank')}
                     variant="outline"
-                    className="w-full"
+                    className="w-full border border-[#0088CC] text-[#0088CC] hover:bg-[#0088CC]/10 hover:border-[#0077B3] hover:text-[#0077B3] dark:border-[#64B5F6] dark:text-[#64B5F6] dark:hover:bg-[#0088CC]/20 dark:hover:border-[#0088CC] dark:hover:text-[#0088CC]"
                   >
                     <ExternalLink className="h-4 w-4 mr-2" />
                     Abrir @BotFather en Telegram
@@ -438,7 +438,7 @@ export function TelegramAgentModal({
                 type="button"
                 onClick={configureTelegramBot}
                 disabled={!validateBotSetup() || isLoading}
-                className="flex-1"
+                className="flex-1 bg-blue-100 hover:bg-blue-200 text-blue-800 border-blue-200 dark:bg-blue-900/50 dark:hover:bg-blue-900/70 dark:text-blue-300 dark:border-blue-800"
               >
                 {isLoading ? (
                   <>

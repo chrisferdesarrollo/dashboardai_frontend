@@ -30,10 +30,12 @@ export const useAgentNotifications = () => {
 
   // Función para crear notificación de nuevo mensaje desde conversation log
   const createMessageNotification = useCallback((log: ConversationLogResponse) => {
-    // Obtener el agente correspondiente si existe
-    let agentName = 'Agente';
+    // Usar el nombre del agente que viene del backend
+    // Si no viene, usar el fallback anterior
+    let agentName = log.agentName || 'Agente';
     
-    if (log.agentId) {
+    // Solo si no viene agentName del backend, intentar buscar localmente
+    if (!log.agentName && log.agentId) {
       // Buscar por ID exacto
       const agent = agents.find(a => a.id === log.agentId);
       if (agent) {
@@ -59,6 +61,7 @@ export const useAgentNotifications = () => {
     console.log('📨 Creando notificación para agente:', {
       agentId: log.agentId,
       agentName,
+      agentNameFromBackend: log.agentName,
       sessionName: log.sessionName,
       totalAgents: agents.length,
       newMessagesCount: getNewMessagesForSession(log.sessionName)
