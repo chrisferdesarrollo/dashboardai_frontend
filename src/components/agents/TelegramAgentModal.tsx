@@ -9,6 +9,7 @@ import { ArrowLeft, Bot, CheckCircle, ExternalLink, Loader2, Check, X } from 'lu
 import { TelegramIcon } from '@/components/ui/platform-icons';
 import { useAgentStore } from '@/store/agentStore';
 import { telegramApi } from '@/services/telegramApi';
+import { agentService } from '@/services/agentApi';
 import { useToast } from '@/hooks/use-toast';
 
 interface TelegramAgentModalProps {
@@ -164,6 +165,7 @@ export function TelegramAgentModal({
           variant: "destructive",
         });
       } else {
+<<<<<<< HEAD
         // Crear el agente en el sistema
         const createdAgent = await createAgent(agentData);
         
@@ -209,6 +211,25 @@ export function TelegramAgentModal({
             title: "Advertencia",
             description: "El agente se creó pero hubo un problema configurando el webhook. Intenta reconectar el bot.",
             variant: "destructive",
+=======
+        // Primero crear el agente en el sistema
+        console.log('🤖 Creando agente en el sistema...');
+        const createdAgent = await createAgent(agentData);
+        console.log('✅ Agente creado exitosamente con ID:', createdAgent.id);
+        
+        // Luego conectar el bot de Telegram al webhook usando el agentId
+        try {
+          console.log('🤖 Conectando bot de Telegram al webhook con agentId:', createdAgent.id);
+          await agentService.connectTelegramAgent(createdAgent.id);
+          console.log('✅ Bot de Telegram conectado exitosamente');
+        } catch (telegramError: unknown) {
+          console.error('❌ Error conectando bot de Telegram:', telegramError);
+          // El agente ya fue creado, así que mostrar advertencia pero no fallar completamente
+          toast({
+            title: "Agente creado",
+            description: `Agente "${formData.name}" creado, pero hubo un problema conectando Telegram. Puedes intentar conectarlo manualmente.`,
+            variant: "default",
+>>>>>>> 996d6b718162ab49ca7c77529f63ad98b7204018
           });
         }
 

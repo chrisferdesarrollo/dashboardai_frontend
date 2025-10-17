@@ -118,9 +118,9 @@ class TelegramApi {
     try {
       console.log('🚀 [TELEGRAM-CONFIGURE] Iniciando configuración de bot:', botUsername);
       
-      // Si es operación de conexión de agente, usar la función específica
+      // Si es operación de conexión de agente, necesitamos el agentId
       if (operationType === 'connect') {
-        return this.connectTelegramAgent(botToken);
+        throw new Error('Para conectar un agente, use connectTelegramAgent con agentId');
       }
       
       // Primero validar que el bot funciona
@@ -131,7 +131,7 @@ class TelegramApi {
 
       // Intentar configuración a través de n8n
       try {
-        const url = '/telegram-api';
+        const url = '/telegram/*'; // Path dinámico
         const payload: TelegramConfigurationRequest = { 
           botToken,
           botUsername,
@@ -386,7 +386,11 @@ class TelegramApi {
    * @param botToken - Token del bot de Telegram
    * @param agentId - ID del agente creado en la base de datos (requerido para identificar el bot)
    */
+<<<<<<< HEAD
   async connectTelegramAgent(botToken: string, agentId?: string): Promise<TelegramBotResponse> {
+=======
+  async connectTelegramAgent(botToken: string, agentId: string): Promise<TelegramBotResponse> {
+>>>>>>> 996d6b718162ab49ca7c77529f63ad98b7204018
     try {
       console.log('🤖 [TELEGRAM-CONNECT-AGENT] Conectando agente de Telegram', { agentId });
       
@@ -396,6 +400,7 @@ class TelegramApi {
         throw new Error('Token de bot inválido');
       }
 
+<<<<<<< HEAD
       // Si no hay agentId, lanzar error porque ahora es requerido
       if (!agentId) {
         throw new Error('El ID del agente es requerido para configurar el webhook');
@@ -405,6 +410,10 @@ class TelegramApi {
       const webhookBaseUrl = 'https://n8n.topias.app/webhook';
       const webhookPath = `/telegram-api/${agentId}`;
       const fullWebhookUrl = `${webhookBaseUrl}${webhookPath}`;
+=======
+      // URL específica para este agente - aquí es donde Telegram enviará los mensajes
+      const agentWebhookUrl = `https://n8n.topias.app/webhook/telegram-${agentId}`;
+>>>>>>> 996d6b718162ab49ca7c77529f63ad98b7204018
       
       // Payload específico para conectar agente
       const payload: TelegramAgentConnectionRequest = { 
@@ -539,13 +548,14 @@ export const telegramApi = new TelegramApi();
 /*
 EJEMPLO DE USO PARA CONECTAR AGENTE AL PRESIONAR "CREAR AGENTE":
 
+// Ejemplo de uso actualizado:
 // En tu componente donde tienes el botón "Crear Agente"
 import { telegramApi } from '../services/telegramApi';
 
-const handleCreateAgent = async (botToken: string) => {
+const handleCreateAgent = async (botToken: string, agentId: string) => {
   try {
-    // Conectar el agente usando la nueva función
-    const result = await telegramApi.connectTelegramAgent(botToken);
+    // Conectar el agente usando la nueva función con agentId
+    const result = await telegramApi.connectTelegramAgent(botToken, agentId);
     
     if (result.success) {
       console.log('✅ Agente conectado:', result.message);

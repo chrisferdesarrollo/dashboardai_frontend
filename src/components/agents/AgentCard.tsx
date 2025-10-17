@@ -195,34 +195,18 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     setIsConnecting(true);
     
     try {
-      // Primero actualizar el estado en el backend
-      console.log('🔌 [TELEGRAM-CONNECT] Actualizando estado del agente en backend...');
+      // Conectar el agente (actualiza backend + configura webhook)
+      console.log('🔌 [TELEGRAM-CONNECT] Conectando agente:', agent.id);
       await agentService.connectTelegramAgent(agent.id);
-      console.log('🔌 [TELEGRAM-CONNECT] Estado actualizado en backend, llamando onStatusChange...');
+      console.log('🔌 [TELEGRAM-CONNECT] Agente conectado exitosamente, llamando onStatusChange...');
       onStatusChange?.(agent.id, 'active');
       console.log('🔌 [TELEGRAM-CONNECT] onStatusChange llamado exitosamente');
       
-      // Luego activar el bot en el webhook de n8n
-      try {
-        console.log('🔌 [TELEGRAM-CONNECT] Obteniendo botToken del agente...');
-        const botToken = await agentService.getTelegramBotToken(agent.id);
-        console.log('🔌 [TELEGRAM-CONNECT] BotToken obtenido, activando bot en webhook...');
-        const result = await telegramApi.connectTelegramAgent(botToken);
-        console.log('🔌 [TELEGRAM-CONNECT] Resultado de activación del webhook:', result);
-        
-        toast({
-          title: "Agente conectado",
-          description: `${agent.name} se ha conectado exitosamente`,
-          variant: "default",
-        });
-      } catch (webhookError) {
-        console.warn('⚠️ [TELEGRAM-CONNECT] Error activando bot en webhook (estado ya actualizado):', webhookError);
-        toast({
-          title: "Agente conectado",
-          description: `${agent.name} se ha conectado (sin activación del bot)`,
-          variant: "default",
-        });
-      }
+      toast({
+        title: "Agente conectado",
+        description: `${agent.name} se ha conectado exitosamente`,
+        variant: "default",
+      });
       
     } catch (error) {
       console.error('❌ [TELEGRAM-CONNECT] Error conectando agente:', error);
@@ -252,34 +236,18 @@ export function AgentCard({ agent, onEdit, onDelete, onView, onStatusChange }: A
     setIsDisconnecting(true);
     
     try {
-      // Primero actualizar el estado en el backend
-      console.log('🔌 [TELEGRAM-DISCONNECT] Actualizando estado del agente en backend...');
+      // Desconectar el agente (actualiza backend + configura webhook)
+      console.log('🔌 [TELEGRAM-DISCONNECT] Desconectando agente:', agent.id);
       await agentService.disconnectTelegramAgent(agent.id);
-      console.log('🔌 [TELEGRAM-DISCONNECT] Estado actualizado en backend, llamando onStatusChange...');
+      console.log('🔌 [TELEGRAM-DISCONNECT] Agente desconectado exitosamente, llamando onStatusChange...');
       onStatusChange?.(agent.id, 'inactive');
       console.log('🔌 [TELEGRAM-DISCONNECT] onStatusChange llamado exitosamente');
       
-      // Luego enviar comando /stop al webhook
-      try {
-        console.log('🔌 [TELEGRAM-DISCONNECT] Obteniendo botToken del agente...');
-        const botToken = await agentService.getTelegramBotToken(agent.id);
-        console.log('🔌 [TELEGRAM-DISCONNECT] BotToken obtenido, enviando comando /stop al webhook...');
-        const result = await telegramApi.disconnectTelegramAgent(botToken);
-        console.log('🔌 [TELEGRAM-DISCONNECT] Resultado de desconexión del webhook:', result);
-        
-        toast({
-          title: "Agente desconectado",
-          description: `${agent.name} se ha desconectado exitosamente`,
-          variant: "default",
-        });
-      } catch (webhookError) {
-        console.warn('⚠️ [TELEGRAM-DISCONNECT] Error enviando /stop al webhook (estado ya actualizado):', webhookError);
-        toast({
-          title: "Agente desconectado",
-          description: `${agent.name} se ha desconectado (sin notificación al bot)`,
-          variant: "default",
-        });
-      }
+      toast({
+        title: "Agente desconectado",
+        description: `${agent.name} se ha desconectado exitosamente`,
+        variant: "default",
+      });
       
     } catch (error) {
       console.error('❌ [TELEGRAM-DISCONNECT] Error desconectando agente:', error);
