@@ -17,6 +17,7 @@ interface TelegramAgentModalProps {
   onClose: () => void;
   onBack: () => void;
   isEditing?: boolean;
+  fromTemplate?: boolean; // Nuevo: indica si viene desde un template
   initialAgent?: {
     id?: string;
     name?: string;
@@ -76,7 +77,8 @@ export function TelegramAgentModal({
   isOpen, 
   onClose, 
   onBack, 
-  isEditing = false, 
+  isEditing = false,
+  fromTemplate = false, // Nuevo parámetro
   initialAgent 
 }: TelegramAgentModalProps) {
   const { createAgent, updateAgent } = useAgentStore();
@@ -107,10 +109,20 @@ export function TelegramAgentModal({
       };
       setFormData(agentData);
       setCurrentStep('agent-config');
+    } else if (fromTemplate && initialAgent) {
+      // Si viene desde template, cargar los datos y quedarse en el paso del bot
+      const agentData = {
+        ...initialFormData,
+        name: initialAgent.name || '',
+        description: initialAgent.description || '',
+        systemPrompt: initialAgent.systemPrompt || '',
+      };
+      setFormData(agentData);
+      setCurrentStep('telegram-bot-setup'); // Quedarse en configuración del bot
     } else {
       resetModalState();
     }
-  }, [isEditing, initialAgent, isOpen, resetModalState]);
+  }, [isEditing, fromTemplate, initialAgent, isOpen, resetModalState]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -304,6 +316,13 @@ export function TelegramAgentModal({
 
   const configureTelegramBot = async () => {
     if (!validateBotSetup()) return;
+    
+    // Si viene desde template, crear directamente sin mostrar el formulario
+    if (fromTemplate) {
+      const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+      await handleSubmit(fakeEvent);
+      return;
+    }
     
     // Validar que el token sea válido antes de continuar
     if (botValidation.tokenValid) {

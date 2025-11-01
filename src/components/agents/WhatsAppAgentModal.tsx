@@ -19,6 +19,7 @@ interface WhatsAppAgentModalProps {
   onClose: () => void;
   onBack: () => void;
   agent?: Agent | null;
+  fromTemplate?: boolean; // Nuevo: indica si viene desde un template
 }
 
 type CreationStep = 'whatsapp-linking' | 'agent-config' | 'completed';
@@ -38,7 +39,7 @@ interface WorkflowSelection {
   executionOrder: number;
 }
 
-export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppAgentModalProps) {
+export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent, fromTemplate = false }: WhatsAppAgentModalProps) {
   const { createAgent, updateAgent, loading } = useAgentStore();
   const { toast } = useToast();
   const { user } = useAuth();
@@ -747,10 +748,18 @@ export function WhatsAppAgentModal({ isOpen, onClose, onBack, agent }: WhatsAppA
                   {whatsappSession.isConnected && (
                     <Button
                       type="button"
-                      onClick={() => setCurrentStep('agent-config')}
+                      onClick={() => {
+                        // Si viene desde template, crear directamente
+                        if (fromTemplate) {
+                          const fakeEvent = { preventDefault: () => {} } as React.FormEvent;
+                          handleSubmit(fakeEvent);
+                        } else {
+                          setCurrentStep('agent-config');
+                        }
+                      }}
                       className="flex-1"
                     >
-                      Continuar
+                      {fromTemplate ? 'Crear Agente' : 'Continuar'}
                     </Button>
                   )}
                 </div>

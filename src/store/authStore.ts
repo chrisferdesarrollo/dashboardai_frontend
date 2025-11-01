@@ -5,6 +5,7 @@ import { authService } from '@/services/authService';
 
 interface AuthStore extends AuthState {
   login: (credentials: LoginRequest) => Promise<void>;
+  demoLogin: () => Promise<void>;
   signup: (data: SignupRequest) => Promise<SignupResponse>;
   logout: () => void;
   refreshUser: () => Promise<void>;
@@ -65,6 +66,53 @@ export const useAuthStore = create<AuthStore>()(
           } else if (typeof error === 'object' && error !== null) {
             const errorObj = error as { response?: { data?: { message?: string } } };
             errorMessage = errorObj?.response?.data?.message || 'Error al iniciar sesión';
+          }
+          
+          console.error('❌ AuthStore: Mensaje de error:', errorMessage);
+          throw new Error(errorMessage);
+        }
+      },
+
+      demoLogin: async () => {
+        try {
+          console.log('🔵 AuthStore: Iniciando proceso de login demo');
+          set({ isLoading: true });
+          
+          const response = await authService.demoLogin();
+          console.log('🔵 AuthStore: Respuesta del servicio demo:', response);
+          
+          const user: User = {
+            id: response.id,
+            username: response.username,
+            email: response.email,
+            roles: response.roles,
+          };
+
+          console.log('🔵 AuthStore: Usuario demo creado:', user);
+
+          // Guardar token en localStorage
+          localStorage.setItem('token', response.accessToken);
+          console.log('🔵 AuthStore: Token demo guardado en localStorage');
+          
+          set({
+            user,
+            token: response.accessToken,
+            isAuthenticated: true,
+            isLoading: false,
+          });
+          
+          console.log('✅ AuthStore: Login demo completado exitosamente');
+        } catch (error) {
+          console.error('❌ AuthStore: Error en login demo:', error);
+          set({ isLoading: false });
+          
+          let errorMessage = 'Error al acceder al modo demo';
+          
+          if (error instanceof Error) {
+            errorMessage = error.message;
+          } else if (typeof error === 'object' && error !== null) {
+            const errorObj = error as { response?: { data?: { message?: string } } };
+            errorMessage = errorObj?.response?.data?.message || 'Error al acceder al modo demo';
           }
           
           console.error('❌ AuthStore: Mensaje de error:', errorMessage);

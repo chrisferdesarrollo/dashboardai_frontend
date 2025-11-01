@@ -12,6 +12,7 @@ import { useAuthStore } from "@/store/authStore";
 import { useAgentNotifications } from "@/hooks/useAgentNotifications";
 import Dashboard from "./pages/Dashboard";
 import Agents from "./pages/Agents";
+import AgentTemplates from "./pages/AgentTemplates";
 import Conversations from "./pages/Conversations";
 import DataExtraction from "./pages/DataExtraction";
 import KnowledgeBase from "./pages/KnowledgeBase";
@@ -68,6 +69,16 @@ const AppContent = () => {
                 <ProtectedRoute>
                   <DashboardLayout>
                     <Agents />
+                  </DashboardLayout>
+                </ProtectedRoute>
+              }
+            />
+            <Route
+              path="/agent-templates"
+              element={
+                <ProtectedRoute>
+                  <DashboardLayout>
+                    <AgentTemplates />
                   </DashboardLayout>
                 </ProtectedRoute>
               }

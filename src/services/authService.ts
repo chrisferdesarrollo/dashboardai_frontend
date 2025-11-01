@@ -226,6 +226,36 @@ export const authService = {
     const response = await api.get('/test/user');
     return response.data;
   },
+
+  // Login demo (sin necesidad de credenciales)
+  async demoLogin(): Promise<JwtResponse> {
+    console.log('🔵 AuthService: Intentando login demo');
+    
+    try {
+      console.log('🔵 AuthService: URL completa:', `${API_BASE_URL}/auth/demo`);
+      const response = await api.post<JwtResponse>('/auth/demo');
+      console.log('✅ AuthService: Login demo exitoso:', response.data);
+      return response.data;
+    } catch (error: unknown) {
+      console.error('❌ AuthService: Error en login demo:', error);
+      
+      if (axios.isAxiosError(error) && error.response) {
+        const status = error.response.status;
+        const message = error.response.data?.message;
+        
+        switch (status) {
+          case 500:
+            throw new Error('Error del servidor. Intente más tarde');
+          default:
+            throw new Error(message || 'Error al acceder al modo demo');
+        }
+      } else if (axios.isAxiosError(error) && error.request) {
+        throw new Error('No se pudo conectar con el servidor. Verifique su conexión');
+      } else {
+        throw new Error('Error al procesar la solicitud de modo demo');
+      }
+    }
+  },
 };
 
 export { api };

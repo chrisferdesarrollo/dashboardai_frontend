@@ -28,7 +28,7 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const navigate = useNavigate();
   
-  const { login, isLoading } = useAuthStore();
+  const { login, demoLogin, isLoading } = useAuthStore();
 
   const {
     register,
@@ -86,6 +86,34 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
       
       // No auto-limpiar el error para que el usuario pueda leerlo
       // El error se limpiará solo cuando se intente enviar el formulario nuevamente
+    }
+  };
+
+  const handleDemoLogin = async () => {
+    try {
+      console.log('🔵 LoginForm: Iniciando login demo');
+      
+      // Limpiar errores previos y marcar como enviando
+      setError(null);
+      setIsSubmitting(true);
+      
+      await demoLogin();
+      
+      console.log('✅ LoginForm: Login demo exitoso, navegando al dashboard');
+      setIsSubmitting(false);
+      navigate('/');
+    } catch (err) {
+      console.error('❌ LoginForm: Error capturado en demo:', err);
+      setIsSubmitting(false);
+      
+      let errorMessage = 'Error al acceder al modo demo';
+      
+      if (err instanceof Error) {
+        errorMessage = err.message;
+      }
+      
+      console.error('❌ LoginForm: Mensaje de error a mostrar:', errorMessage);
+      setError(errorMessage);
     }
   };
 
@@ -188,6 +216,37 @@ export const LoginForm = ({ onSwitchToSignup }: LoginFormProps) => {
               </>
             ) : (
               'Iniciar Sesión'
+            )}
+          </Button>
+
+          <div className="relative w-full">
+            <div className="absolute inset-0 flex items-center">
+              <span className="w-full border-t" />
+            </div>
+            <div className="relative flex justify-center text-xs uppercase">
+              <span className="bg-white dark:bg-gray-800 px-2 text-muted-foreground">
+                o
+              </span>
+            </div>
+          </div>
+
+          <Button 
+            type="button"
+            variant="outline"
+            className="w-full border-2 border-dashed border-purple-300 text-purple-700 hover:bg-purple-50 dark:border-purple-700 dark:text-purple-400 dark:hover:bg-purple-900/20" 
+            disabled={isLoading || isSubmitting}
+            onClick={handleDemoLogin}
+          >
+            {(isLoading || isSubmitting) ? (
+              <>
+                <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                Cargando...
+              </>
+            ) : (
+              <>
+                <span className="mr-2">🚀</span>
+                Probar en Modo Demo
+              </>
             )}
           </Button>
           
